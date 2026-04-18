@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Adventurer's Quest</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600&display=swap');
         @font-face {
             font-family: 'AntiquityPrint';
             src: url('https://raw.githubusercontent.com/precidoboss/adventurer/main/antiquity-print.ttf');
@@ -29,18 +30,7 @@
             image-rendering: pixelated;
         }
 
-        #ui-overlay {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            right: 20px;
-            display: flex;
-            justify-content: space-between;
-            color: #ffcccc;
-            font-size: 24px;
-            text-shadow: 2px 2px #000;
-            pointer-events: none;
-        }
+        /* UI drawn on canvas */
 
         .loading-screen {
             position: absolute;
@@ -62,18 +52,7 @@
             color: rgba(255, 204, 204, 0.6);
             font-size: 14px;
         }
-        #hp-wrap {
-            position: absolute;
-            bottom: 14px;
-            left: 20px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            pointer-events: none;
-        }
-        #hp-label { color: #ffcccc; font-size: 17px; text-shadow: 1px 1px #000; }
-        #hp-bg { width: 160px; height: 14px; background: #333; border: 2px solid #666; border-radius: 3px; overflow: hidden; }
-        #hp-fill { height: 100%; width: 100%; background: linear-gradient(90deg,#e74c3c,#c0392b); transition: width 0.15s; }
+        /* HP drawn on canvas */
         #game-over {
             display: none;
             position: absolute;
@@ -94,24 +73,384 @@
             border: 2px solid #884444; border-radius: 6px; cursor: pointer;
         }
         #game-over button:hover { background: #5a2020; }
-    </style>
+
+        /* ===== PAUSE MENU ===== */
+        .pause-box {
+            background: linear-gradient(160deg,#1a0c04,#0e0805);
+            border: 2px solid #8a5c28;
+            border-radius: 10px;
+            padding: 36px 52px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 0 60px rgba(200,120,0,0.25);
+        }
+        .pause-title {
+            font-family: 'Cinzel Decorative', cursive;
+            font-size: 32px;
+            color: #ffd700;
+            letter-spacing: 6px;
+            text-shadow: 0 0 20px rgba(255,200,0,0.5);
+            margin-bottom: 8px;
+        }
+        .pause-btn {
+            font-family: 'Cinzel', serif;
+            font-size: 16px;
+            padding: 11px 44px;
+            width: 200px;
+            background: #1e0e04;
+            color: #ffe8a0;
+            border: 1.5px solid #7a4a18;
+            border-radius: 4px;
+            cursor: pointer;
+            letter-spacing: 3px;
+            transition: all 0.2s;
+        }
+        .pause-btn:hover { background: #3a1e08; border-color: #ffd700; color: #fff; }
+
+        /* ===== HOME PAGE — ROCK / STONE THEME ===== */
+        @import url('https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap');
+
+        #home-screen {
+            position: absolute; inset: 0; z-index: 30;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            overflow: hidden;
+            background: #0d0a07;
+        }
+        #home-canvas { position: absolute; inset: 0; width:100%; height:100%; }
+
+        /* Stone crack texture overlay */
+        .stone-cracks {
+            position: absolute; inset: 0; z-index: 1; pointer-events: none;
+            background-image:
+                repeating-linear-gradient(73deg, transparent 0px, transparent 120px, rgba(0,0,0,0.08) 120px, rgba(0,0,0,0.08) 121px),
+                repeating-linear-gradient(142deg, transparent 0px, transparent 80px, rgba(0,0,0,0.06) 80px, rgba(0,0,0,0.06) 81px),
+                repeating-linear-gradient(27deg, transparent 0px, transparent 200px, rgba(255,255,255,0.015) 200px, rgba(255,255,255,0.015) 201px);
+        }
+
+        /* Stone corner blocks */
+        .stone-corner {
+            position: absolute; width: 80px; height: 80px; z-index: 3;
+            background: radial-gradient(ellipse at center, #3a2e22 0%, #1a1410 100%);
+            border: 2px solid #5a4530;
+            opacity: 0; animation: fadeIn 0.8s 0.5s forwards;
+        }
+        .stone-corner.tl { top:0; left:0; clip-path: polygon(0 0, 100% 0, 0 100%); }
+        .stone-corner.tr { top:0; right:0; clip-path: polygon(0 0, 100% 0, 100% 100%); }
+        .stone-corner.bl { bottom:0; left:0; clip-path: polygon(0 0, 0 100%, 100% 100%); }
+        .stone-corner.br { bottom:0; right:0; clip-path: polygon(100% 0, 0 100%, 100% 100%); }
+
+        /* View system */
+        .home-view { position:absolute; inset:0; display:none; align-items:center; justify-content:center; z-index:2; }
+        .home-view.active { display:flex; }
+
+        .home-content {
+            display: flex; flex-direction: column;
+            align-items: center; gap: 0;
+            position: relative; z-index: 2;
+        }
+        .home-eyebrow {
+            font-family: 'Cinzel', serif;
+            font-size: 12px; letter-spacing: 8px; color: #8a6030;
+            text-transform: uppercase; margin-bottom: 10px;
+            opacity: 0; animation: fadeSlideUp 0.7s 0.2s forwards;
+        }
+        .home-title {
+            font-family: 'Cinzel Decorative', cursive;
+            font-size: clamp(38px, 6.5vw, 78px); font-weight: 900;
+            text-align: center; line-height: 1.05; letter-spacing: 1px;
+            background: linear-gradient(180deg, #c8c0b0 0%, #e8dfc8 30%, #b0a888 60%, #786040 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+            filter: drop-shadow(0 2px 8px rgba(0,0,0,0.8)) drop-shadow(0 0 30px rgba(120,90,40,0.4));
+            opacity: 0; animation: fadeSlideUp 0.9s 0.4s forwards, titleGlow 5s 1.4s infinite;
+        }
+        .home-subtitle {
+            font-family: 'Cinzel', serif; font-size: clamp(10px,1.5vw,14px);
+            color: #7a6040; letter-spacing: 5px; text-transform: uppercase;
+            margin-top: 8px;
+            opacity: 0; animation: fadeSlideUp 0.7s 0.7s forwards;
+        }
+
+        /* Stone divider */
+        .stone-divider {
+            display: flex; align-items: center; gap: 12px;
+            width: 340px; margin: 16px 0;
+            opacity: 0; animation: fadeIn 0.8s 0.9s forwards;
+        }
+        .stone-divider span:not(.diamond) {
+            flex: 1; height: 1px;
+            background: linear-gradient(90deg, transparent, #6a4e28, transparent);
+        }
+        .stone-divider .diamond { color: #8a6030; font-size: 12px; }
+
+        /* Character preview */
+        .char-preview {
+            display: flex; align-items: center; gap: 24px;
+            margin: 4px 0;
+            opacity: 0; animation: fadeSlideUp 0.8s 1s forwards;
+        }
+        .char-card {
+            display: flex; flex-direction: column; align-items: center; gap: 6px;
+            background: linear-gradient(160deg, rgba(40,30,18,0.85), rgba(20,15,8,0.9));
+            border: 1px solid #5a3e20;
+            border-radius: 6px; padding: 10px 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+        }
+        .char-canvas { image-rendering: pixelated; width: 96px; height: auto; }
+        .char-label {
+            font-family: 'Cinzel', serif; font-size: 11px; color: #a07848;
+            letter-spacing: 2px; text-transform: uppercase;
+        }
+        .char-vs {
+            font-family: 'Cinzel Decorative', cursive; font-size: 22px;
+            color: #6a4018; text-shadow: 0 0 15px rgba(180,100,0,0.5);
+        }
+
+        /* Stone buttons */
+        .home-btns-row {
+            display: flex; gap: 16px; margin-top: 4px;
+            opacity: 0; animation: fadeSlideUp 0.7s 1.2s forwards;
+        }
+        .stone-btn {
+            cursor: pointer; position: relative;
+            transition: transform 0.15s, filter 0.15s;
+        }
+        .stone-btn:hover { transform: translateY(-2px); filter: brightness(1.2); }
+        .stone-btn:active { transform: translateY(1px); filter: brightness(0.9); }
+        .stone-btn-inner {
+            font-family: 'Cinzel', serif; font-size: 13px;
+            letter-spacing: 3px; text-transform: uppercase;
+            padding: 12px 28px; border-radius: 3px;
+        }
+        .stone-btn.primary .stone-btn-inner {
+            background: linear-gradient(160deg, #3a2810, #1e140a);
+            color: #e8c870; border: 1.5px solid #8a5828;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,200,80,0.1);
+        }
+        .stone-btn.secondary .stone-btn-inner {
+            background: linear-gradient(160deg, #281e12, #18120a);
+            color: #a08050; border: 1.5px solid #5a3e18;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.5);
+        }
+
+        /* HOW TO PLAY */
+        .howto-box {
+            background: linear-gradient(160deg, rgba(28,20,10,0.96), rgba(14,10,6,0.97));
+            border: 1.5px solid #6a4820;
+            border-radius: 8px;
+            padding: 28px 36px;
+            max-width: 820px; width: 90vw;
+            max-height: 85vh;
+            overflow-y: auto;
+            display: flex; flex-direction: column; align-items: center; gap: 20px;
+            box-shadow: 0 0 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,200,80,0.05);
+        }
+        .howto-box::-webkit-scrollbar { width: 6px; }
+        .howto-box::-webkit-scrollbar-track { background: #1a1008; }
+        .howto-box::-webkit-scrollbar-thumb { background: #5a3a18; border-radius: 3px; }
+        .howto-title {
+            font-family: 'Cinzel Decorative', cursive; font-size: 22px;
+            color: #c8a040; letter-spacing: 4px;
+            text-shadow: 0 0 20px rgba(200,160,40,0.4);
+        }
+        .howto-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%;
+        }
+        .howto-section { background: rgba(255,255,255,0.02); border: 1px solid #3a2810; border-radius: 4px; padding: 16px; }
+        .howto-section.span2 { grid-column: span 2; }
+        .howto-section-title {
+            font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 3px;
+            color: #a07838; text-transform: uppercase; margin-bottom: 12px;
+            border-bottom: 1px solid #3a2810; padding-bottom: 6px;
+        }
+
+        /* Controls */
+        .howto-controls { display: flex; flex-direction: column; gap: 10px; }
+        .ctrl-row { display: flex; align-items: center; gap: 12px; }
+        .ctrl-keys { display: flex; align-items: center; gap: 4px; min-width: 110px; position: relative; }
+        .ctrl-key-img { image-rendering: pixelated; width: 28px; height: 28px; }
+        .ctrl-key-lbl {
+            position: absolute; top:50%; left:50%; transform: translate(-50%,-50%);
+            font-family: 'Cinzel', serif; font-size: 8px; color: #c8b080;
+            letter-spacing: 0; pointer-events: none; white-space: nowrap;
+        }
+        .ctrl-desc { font-family: 'Cinzel', serif; font-size: 11px; color: #907050; letter-spacing: 1px; }
+
+        /* Tips */
+        .howto-tips { display: flex; flex-direction: column; gap: 8px; }
+        .tip-row { display: flex; gap: 10px; align-items: flex-start; }
+        .tip-icon { font-size: 16px; min-width: 24px; }
+        .tip-row span:last-child { font-family: 'Cinzel', serif; font-size: 11px; color: #907050; line-height: 1.5; }
+
+        /* Character cards in howto */
+        .howto-chars { display: flex; gap: 20px; justify-content: center; }
+        .hc-card {
+            flex: 1; max-width: 300px;
+            background: rgba(255,255,255,0.02); border: 1px solid #3a2810;
+            border-radius: 4px; padding: 14px;
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+        }
+        .hc-sprite { image-rendering: pixelated; width: 96px; height: auto; }
+        .hc-name { font-family: 'Cinzel', serif; font-size: 13px; color: #c8a040; letter-spacing: 2px; }
+        .hc-desc { font-family: 'Cinzel', serif; font-size: 10px; color: #706040; text-align: center; line-height: 1.6; }
+        .hc-stats { display: flex; gap: 12px; }
+        .hc-stats span { font-family: 'Cinzel', serif; font-size: 10px; color: #907050; }
+
+        /* Animations */
+        @keyframes fadeSlideUp {
+            from { opacity:0; transform: translateY(16px); }
+            to   { opacity:1; transform: translateY(0); }
+        }
+        @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+        @keyframes titleGlow {
+            0%,100% { filter: drop-shadow(0 2px 8px rgba(0,0,0,0.8)) drop-shadow(0 0 20px rgba(100,80,40,0.3)); }
+            50%      { filter: drop-shadow(0 2px 8px rgba(0,0,0,0.8)) drop-shadow(0 0 40px rgba(160,120,60,0.5)); }
+        }
+        @keyframes runeFloat {
+            0%   { transform: translateY(110vh) rotate(0deg);   opacity: 0; }
+            10%  { opacity: 0.4; }
+            90%  { opacity: 0.2; }
+            100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
+        }
+        @keyframes dustFloat {
+            0%   { transform: translateY(0) translateX(0); opacity: 0; }
+            20%  { opacity: 1; }
+            100% { transform: translateY(-120px) translateX(20px); opacity: 0; }
+        }
+        #home-screen.fade-out { animation: homeFadeOut 0.6s forwards; }
+        @keyframes homeFadeOut { to { opacity:0; pointer-events:none; } }
+                </style>
 </head>
 <body>
 
+<div id="home-screen">
+    <canvas id="home-canvas"></canvas>
+    <!-- Stone cracks overlay -->
+    <div class="stone-cracks"></div>
+    <!-- Corner stones -->
+    <div class="stone-corner tl"></div>
+    <div class="stone-corner tr"></div>
+    <div class="stone-corner bl"></div>
+    <div class="stone-corner br"></div>
+
+    <!-- MAIN MENU VIEW -->
+    <div id="home-main" class="home-view active">
+        <div class="home-content">
+            <div class="home-eyebrow">— Ancient Ruins —</div>
+            <div class="home-title">Adventurer's<br>Quest</div>
+            <div class="home-subtitle">Carved in Stone. Forged in Blood.</div>
+            <div class="stone-divider"><span></span><span class="diamond">◆</span><span></span></div>
+            <!-- Characters preview -->
+            <div class="char-preview">
+                <div class="char-card hero">
+                    <canvas class="char-canvas" id="hero-canvas" width="96" height="80"></canvas>
+                    <div class="char-label">The Warrior</div>
+                </div>
+                <div class="char-vs">VS</div>
+                <div class="char-card enemy">
+                    <canvas class="char-canvas" id="enemy-canvas" width="96" height="96"></canvas>
+                    <div class="char-label">The Guardian</div>
+                </div>
+            </div>
+            <div class="stone-divider"><span></span><span class="diamond">◆</span><span></span></div>
+            <div class="home-btns-row">
+                <div class="stone-btn primary" onclick="startGame()">
+                    <div class="stone-btn-inner">BEGIN QUEST</div>
+                </div>
+                <div class="stone-btn secondary" onclick="showView('home-howto')">
+                    <div class="stone-btn-inner">HOW TO PLAY</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HOW TO PLAY VIEW -->
+    <div id="home-howto" class="home-view">
+        <div class="howto-box">
+            <div class="howto-title">⚔ HOW TO PLAY ⚔</div>
+            <div class="howto-grid">
+                <div class="howto-section">
+                    <div class="howto-section-title">Controls</div>
+                    <div class="howto-controls">
+                        <div class="ctrl-row">
+                            <div class="ctrl-keys">
+                                <img src="https://raw.githubusercontent.com/precidoboss/adventurer/main/HotkeyBox_34x34.png" class="ctrl-key-img"><span class="ctrl-key-lbl">A</span>
+                                <img src="https://raw.githubusercontent.com/precidoboss/adventurer/main/HotkeyBox_34x34.png" class="ctrl-key-img"><span class="ctrl-key-lbl">D</span>
+                            </div>
+                            <span class="ctrl-desc">Move Left / Right</span>
+                        </div>
+                        <div class="ctrl-row">
+                            <div class="ctrl-keys">
+                                <img src="https://raw.githubusercontent.com/precidoboss/adventurer/main/HotkeyBox_34x34.png" class="ctrl-key-img"><span class="ctrl-key-lbl">W</span>
+                            </div>
+                            <span class="ctrl-desc">Jump</span>
+                        </div>
+                        <div class="ctrl-row">
+                            <div class="ctrl-keys">
+                                <img src="https://raw.githubusercontent.com/precidoboss/adventurer/main/HotkeyBox_34x34.png" class="ctrl-key-img"><span class="ctrl-key-lbl">K / Space</span>
+                            </div>
+                            <span class="ctrl-desc">Attack</span>
+                        </div>
+                        <div class="ctrl-row">
+                            <div class="ctrl-keys">
+                                <img src="https://raw.githubusercontent.com/precidoboss/adventurer/main/HotkeyBox_34x34.png" class="ctrl-key-img"><span class="ctrl-key-lbl">Esc</span>
+                            </div>
+                            <span class="ctrl-desc">Pause / Resume</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="howto-section">
+                    <div class="howto-section-title">Objectives</div>
+                    <div class="howto-tips">
+                        <div class="tip-row"><span class="tip-icon">🪙</span><span>Collect coins and open chests for score</span></div>
+                        <div class="tip-row"><span class="tip-icon">⚔</span><span>Defeat enemies blocking your path</span></div>
+                        <div class="tip-row"><span class="tip-icon">🔥</span><span>Dodge fire traps and spike floors</span></div>
+                        <div class="tip-row"><span class="tip-icon">🏃</span><span>Run as far as you can to earn distance</span></div>
+                        <div class="tip-row"><span class="tip-icon">❤️</span><span>You have 180 HP — don't waste it</span></div>
+                    </div>
+                </div>
+                <div class="howto-section span2">
+                    <div class="howto-section-title">Characters</div>
+                    <div class="howto-chars">
+                        <div class="hc-card">
+                            <canvas class="hc-sprite" id="howto-hero-canvas" width="96" height="80"></canvas>
+                            <div class="hc-name">The Warrior</div>
+                            <div class="hc-desc">Your hero. Fast and agile. Attack on frame 3-5 for max damage.</div>
+                            <div class="hc-stats"><span>❤ 180 HP</span><span>⚔ 20 DMG</span><span>⚡ Fast</span></div>
+                        </div>
+                        <div class="hc-card">
+                            <canvas class="hc-sprite" id="howto-enemy-canvas" width="96" height="96"></canvas>
+                            <div class="hc-name">The Guardian</div>
+                            <div class="hc-desc">Ancient stone guardian. Chases, feints and lunges. Hit 8 times to defeat.</div>
+                            <div class="hc-stats"><span>❤ 160 HP</span><span>⚔ 18 DMG</span><span>⚡ Smart</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="stone-btn secondary" style="margin-top:24px" onclick="showView('home-main')">
+                <div class="stone-btn-inner">← Back</div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div id="game-container">
-    <div id="ui-overlay">
-        <div>Distance: <span id="score">0</span>m</div>
-        <div>Coins: <span id="coin-count">0</span></div>
-    </div>
+    <!-- UI drawn on canvas -->
     <div id="controls-hint">AD / Arrows to Move | W / ↑ to Jump | Space or K to Attack</div>
-    <div id="hp-wrap">
-        <span id="hp-label">HP</span>
-        <div id="hp-bg"><div id="hp-fill"></div></div>
-    </div>
+    <!-- HP drawn on canvas -->
     <div id="game-over">
         <h1>YOU DIED</h1>
         <p id="go-score"></p>
         <button onclick="restartGame()">Try Again</button>
+    </div>
+    <div id="pause-menu" style="display:none;position:absolute;inset:0;z-index:25;display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,0.72);">
+        <div class="pause-box">
+            <div class="pause-title">PAUSED</div>
+            <button class="pause-btn" onclick="resumeGame()">▶ Resume</button>
+            <button class="pause-btn" onclick="goHome()">⌂ Home</button>
+        </div>
     </div>
     <div id="loading" class="loading-screen">
         <h2 style="font-family: 'AntiquityPrint'">Summoning Adventurer...</h2>
@@ -122,10 +461,8 @@
 <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
-    const scoreEl = document.getElementById('score');
-    const coinEl = document.getElementById('coin-count');
     const loadingEl = document.getElementById('loading');
-    const hpFill = document.getElementById('hp-fill');
+    let uiScore = 0; let uiCoins = 0; let uiHp = 180; let uiMaxHp = 180;
     const gameOverEl = document.getElementById('game-over');
     const goScore = document.getElementById('go-score');
 
@@ -163,7 +500,29 @@
         enemy_hurt:   'https://raw.githubusercontent.com/precidoboss/adventurer/main/HURT.png',
         trap_fire:    'https://raw.githubusercontent.com/precidoboss/adventurer/main/Fire.png',
         trap_arrow:   'https://raw.githubusercontent.com/precidoboss/adventurer/main/Shooter_Arrow_Trap.png',
-        trap_spike:   'https://raw.githubusercontent.com/precidoboss/adventurer/main/Trap_Spike.png'
+        trap_spike:   'https://raw.githubusercontent.com/precidoboss/adventurer/main/Trap_Spike.png',
+        // UI Sprites
+        ui_healthbar:   'https://raw.githubusercontent.com/precidoboss/adventurer/main/HealthBarPanel_160x41.png',
+        ui_valuered:    'https://raw.githubusercontent.com/precidoboss/adventurer/main/ValueRed_120x8.png',
+        ui_valuebar:    'https://raw.githubusercontent.com/precidoboss/adventurer/main/ValueBar_128x16.png',
+        ui_coinicon:    'https://raw.githubusercontent.com/precidoboss/adventurer/main/CoinIcon_16x18.png',
+        ui_titlebox:    'https://raw.githubusercontent.com/precidoboss/adventurer/main/TitleBox_64x16.png',
+        ui_topbg:       'https://raw.githubusercontent.com/precidoboss/adventurer/main/TopPatternBG_116x67.png',
+        ui_bottombg:    'https://raw.githubusercontent.com/precidoboss/adventurer/main/BottomPatternBG_128x112.png',
+        ui_button:      'https://raw.githubusercontent.com/precidoboss/adventurer/main/Button_52x14.png',
+        ui_hlbutton:    'https://raw.githubusercontent.com/precidoboss/adventurer/main/HighlightButton_60x23.png',
+        ui_cornerknot:  'https://raw.githubusercontent.com/precidoboss/adventurer/main/CornerKnot_14x14.png',
+        ui_hotkeybox:   'https://raw.githubusercontent.com/precidoboss/adventurer/main/HotkeyBox_34x34.png',
+        ui_charbox:     'https://raw.githubusercontent.com/precidoboss/adventurer/main/CharacterBox_56x57.png',
+        ui_pipe:        'https://raw.githubusercontent.com/precidoboss/adventurer/main/Pipe_36x11.png',
+        ui_attrbar:     'https://raw.githubusercontent.com/precidoboss/adventurer/main/AttributesBar_41x9.png',
+        ui_attricons:   'https://raw.githubusercontent.com/precidoboss/adventurer/main/AttributesIcons_17x17.png',
+        ui_hearticons:  'https://raw.githubusercontent.com/precidoboss/adventurer/main/HeartIcons_32x32.png',
+        ui_topmidBG:    'https://raw.githubusercontent.com/precidoboss/adventurer/main/PatternMiddleBottomBG_199x48.png',
+        ui_rectbox:     'https://raw.githubusercontent.com/precidoboss/adventurer/main/RectangleBox_96x96.png',
+        ui_topP1:       'https://raw.githubusercontent.com/precidoboss/adventurer/main/TopPatternPanel_01_33x15.png',
+        ui_topP2:       'https://raw.githubusercontent.com/precidoboss/adventurer/main/TopPatternPanel_02_33x15.png',
+        ui_quiticon:    'https://raw.githubusercontent.com/precidoboss/adventurer/main/QuitIcon.png'
     };
 
     // Sounds (loaded separately, not counted in asset load)
@@ -216,7 +575,7 @@
     const player = {
         x: 100, y: 300,
         width: 50, height: 70,
-        drawWidth: 170, drawHeight: 160,
+        drawWidth: 130, drawHeight: 120,
         vy: 0, vx: 0,
         speed: 6, jumpForce: -14, gravity: 0.7,
         grounded: false, wasGrounded: false,
@@ -225,8 +584,9 @@
         frame: 0,
         frameTimer: 0,
         isAttacking: false,
+        attackHit: false,
         coins: 0,
-        hp: 100, maxHp: 100,
+        hp: 180, maxHp: 180,
         invincible: 0,
         dead: false
     };
@@ -234,7 +594,7 @@
     const anims = {
         idle:   { frames: 8,  speed: 10 },
         run:    { frames: 8,  speed: 7  },
-        attack: { frames: 9,  speed: 5  }
+        attack: { frames: 8,  speed: 5  }
     };
 
     // Enemy anim data — sprite is 96px tall, facing always right (we flip via canvas transform)
@@ -251,6 +611,7 @@
     let dmgNumbers = []; // { x, y, val, life, color }
     let particles  = []; // death burst
     let shakeTimer = 0, shakeMag = 0;
+    let gamePaused = false;
 
     const keys = {};
     let scrollX = 0;
@@ -270,16 +631,31 @@
         CHEST: { sx: 16, sy: 560, sw: 32, sh: 32, val: 10 }
     };
 
+    // Canvas click — detect pause button press
+    canvas.addEventListener('click', e => {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = GAME_WIDTH / rect.width;
+        const scaleY = GAME_HEIGHT / rect.height;
+        const cx = (e.clientX - rect.left) * scaleX;
+        const cy = (e.clientY - rect.top)  * scaleY;
+        const pb = window._pauseBtnBounds;
+        if (pb && cx >= pb.x && cx <= pb.x + pb.w && cy >= pb.y && cy <= pb.y + pb.h) {
+            togglePause();
+        }
+    });
+
     window.addEventListener('keydown', e => {
         startMusic();
+        if (e.code === 'Escape' || e.code === 'KeyP') { e.preventDefault(); togglePause(); return; }
         keys[e.code] = true;
-        if ((e.code === 'KeyK' || e.code === 'Space') && !player.isAttacking) { e.preventDefault(); startAttack(); }
+        if ((e.code === 'KeyK' || e.code === 'Space') && !player.isAttacking && !gamePaused) { e.preventDefault(); startAttack(); }
     });
     window.addEventListener('keyup', e => keys[e.code] = false);
     window.addEventListener('mousedown', () => { startMusic(); if(!player.isAttacking) startAttack(); });
 
     function startAttack() {
         player.isAttacking = true;
+        player.attackHit = false;
         player.frame = 0;
         player.state = 'attack';
         playSound('sword');
@@ -290,12 +666,35 @@
         resetGame();
     }
 
+    function togglePause() {
+        gamePaused = !gamePaused;
+        document.getElementById('pause-menu').style.display = gamePaused ? 'flex' : 'none';
+    }
+    function resumeGame() {
+        gamePaused = false;
+        document.getElementById('pause-menu').style.display = 'none';
+    }
+    function goHome() {
+        gamePaused = false;
+        document.getElementById('pause-menu').style.display = 'none';
+        // Show home screen again
+        const homeEl = document.getElementById('home-screen');
+        homeEl.style.display = 'flex';
+        homeEl.classList.remove('fade-out');
+        homeEl.style.opacity = '1';
+        homeEl.style.animation = '';
+        // Reset game state silently
+        resetGame();
+        player.dead = false;
+        gameOverEl.style.display = 'none';
+    }
+
     function resetGame() {
         player.y = 100; player.x = 100; player.vy = 0; player.coins = 0;
         player.hp = player.maxHp; player.dead = false; player.invincible = 0;
         score = 0; scrollX = 0;
-        coinEl.innerText = '0';
-        hpFill.style.width = '100%';
+        uiCoins = 0;
+        uiHp = player.maxHp; uiMaxHp = player.maxHp;
         enemies = []; traps = []; dmgNumbers = []; particles = []; shakeTimer = 0;
         // Ground platform — long starter
         platforms = [{ x: -100, y: 440, w: 1400, h: 100, type: 1 }];
@@ -338,7 +737,7 @@
                 y: p.y - 70,
                 width: 50, height: 70,
                 drawWidth: 160, drawHeight: 160,
-                hp: 80, maxHp: 80,
+                hp: 160, maxHp: 160,
                 vx: 0, vy: 0,
                 grounded: true,
                 facing: 'left',
@@ -351,7 +750,7 @@
             });
         }
         // Traps — only on wide combat platforms, structured positions
-        if (p.x > 300 && p.w >= 380) {
+        if (p.x > 600 && p.w >= 420 && Math.random() > 0.35) {
             const ttype = Math.random() > 0.5 ? 'spike' : 'fire';
             // Spike/fire: 20% from entry edge (hazard to dodge on approach)
             traps.push({
@@ -362,7 +761,7 @@
                 type: ttype, frame: 0, frameTimer: 0
             });
             // Second trap at 65% — creates a zone to navigate through
-            if (p.w > 450 && Math.random() > 0.5) {
+            if (p.w > 500 && Math.random() > 0.75) {
                 const ttype2 = Math.random() > 0.5 ? 'spike' : 'fire';
                 traps.push({
                     x: p.x + p.w * 0.65,
@@ -374,19 +773,19 @@
             }
         }
         // Arrow trap at far right end of wide platforms — shoots left as player approaches
-        if (p.x > 400 && p.w >= 420 && Math.random() > 0.6) {
+        if (p.x > 700 && p.w >= 440 && Math.random() > 0.78) {
             traps.push({
                 x: p.x + p.w - 44,
                 y: p.y - 32,
                 w: 32, h: 32,
                 type: 'arrow', frame: 0, frameTimer: 0,
-                shootTimer: 45, arrows: [] // offset timer so first shot comes quickly
+                shootTimer: 100, arrows: [] // offset timer so first shot comes quickly
             });
         }
     }
 
     function update() {
-        if (player.dead) return;
+        if (player.dead || gamePaused) return;
 
         // ---- PLAYER ANIMATION ----
         if (!player.isAttacking) {
@@ -434,7 +833,7 @@
             });
             dmgNumbers.forEach(d => d.x -= diff);
             score = Math.floor(scrollX / 8);
-            scoreEl.innerText = score;
+            uiScore = score;
         }
 
         // ---- PLAYER PLATFORM COLLISION ----
@@ -456,7 +855,7 @@
                 player.y < c.y + c.h && player.y + player.height > c.y) {
                 c.collected = true;
                 player.coins += ITEM_TYPES[c.type].val;
-                coinEl.innerText = player.coins;
+                uiCoins = player.coins;
                 if (c.type === 'CHEST') playSound('chest');
             }
         });
@@ -499,7 +898,7 @@
                 const samePlatform = e.currentPlatform &&
                     player.x > e.currentPlatform.x && player.x < e.currentPlatform.x + e.currentPlatform.w;
 
-                if (dist < 350) {
+                if (dist < 450) {
                     e.facing = dx < 0 ? 'left' : 'right';
 
                     // Smarter: strafe/circle at medium range, attack at close range
@@ -512,7 +911,7 @@
                         }
                         if (!onEdge) {
                             e.state = 'run';
-                            e.vx = (dx > 0 ? 1 : -1) * 2.5;
+                            e.vx = (dx > 0 ? 1 : -1) * 3.5;
                         } else {
                             e.state = 'idle';
                             e.vx = 0;
@@ -521,9 +920,15 @@
                         // Circle/strafe — stop and wait for opening
                         e.vx *= 0.7;
                         e.state = e.attackCooldown > 20 ? 'idle' : 'run';
-                        // Occasionally step back to create space
-                        if (e.attackCooldown > 40 && Math.random() < 0.02) {
-                            e.vx = (dx > 0 ? -1 : 1) * 1.5; // step away
+                        // Feint: sometimes lunge in or step back
+                        if (e.attackCooldown > 50 && Math.random() < 0.015) {
+                            e.vx = (dx > 0 ? 1 : -1) * 3; // lunge toward player
+                        } else if (e.attackCooldown > 40 && Math.random() < 0.02) {
+                            e.vx = (dx > 0 ? -1 : 1) * 1.8; // step away
+                        }
+                        // Occasionally do quick dash attack
+                        if (e.attackCooldown <= 0 && dist < 100 && Math.random() < 0.008) {
+                            e.vx = (dx > 0 ? 1 : -1) * 6; // dash
                         }
                     } else {
                         // In range — attack
@@ -534,7 +939,7 @@
                             e.state = 'attack';
                             e.frame = 0;
                             e.frameTimer = 0;
-                            e.attackCooldown = 90;
+                            e.attackCooldown = 65;
                             playSound('sword');
                         }
                     }
@@ -557,8 +962,8 @@
                     if (e.isAttacking) {
                         const ddx = Math.abs(player.x - e.x);
                         const ddy = Math.abs((player.y + player.height) - (e.y + e.height));
-                        if (ddx < 120 && ddy < 50 && player.invincible === 0) {
-                            hurtPlayer(12);
+                        if (ddx < 130 && ddy < 55 && player.invincible === 0) {
+                            hurtPlayer(18);
                         }
                         e.isAttacking = false;
                         e.state = 'idle';
@@ -567,12 +972,13 @@
                 }
             }
 
-            // Player attack hits enemy
-            if (player.isAttacking) {
+            // Player attack hits enemy — only on swing frames 3-5, only once per attack
+            if (player.isAttacking && !player.attackHit && player.frame >= 3 && player.frame <= 5) {
                 const dx = e.x - player.x;
                 const dy = Math.abs((player.y + player.height) - (e.y + e.height));
                 const inFront = player.facing === 'right' ? (dx > -20 && dx < 150) : (dx < 20 && dx > -150);
                 if (inFront && dy < 60) {
+                    player.attackHit = true;
                     e.hp -= 20;
                     e.hurtTimer = 18;
                     e.state = 'hurt';
@@ -622,7 +1028,7 @@
             // Arrow trap shoots
             if (t.type === 'arrow') {
                 t.shootTimer = (t.shootTimer || 0) + 1;
-                if (t.shootTimer > 90) {
+                if (t.shootTimer > 150) {
                     t.shootTimer = 0;
                     t.arrows = t.arrows || [];
                     t.arrows.push({ x: t.x + 32, y: t.y + 14, vx: -5, w: 12, h: 6 });
@@ -633,7 +1039,7 @@
                     if (!player.dead && player.invincible === 0 &&
                         player.x < a.x + a.w && player.x + player.width > a.x &&
                         player.y < a.y + a.h && player.y + player.height > a.y) {
-                        hurtPlayer(10);
+                        hurtPlayer(7);
                         a.x = -999;
                     }
                 });
@@ -643,7 +1049,7 @@
             if ((t.type === 'spike' || t.type === 'fire') && player.invincible === 0) {
                 if (player.x < t.x + t.w && player.x + player.width > t.x &&
                     player.y < t.y + t.h && player.y + player.height > t.y) {
-                    hurtPlayer(8);
+                    hurtPlayer(5);
                 }
             }
         }
@@ -684,7 +1090,7 @@
         if (player.invincible > 0 || player.dead) return;
         player.hp = Math.max(0, player.hp - dmg);
         player.invincible = 60;
-        hpFill.style.width = (player.hp / player.maxHp * 100) + '%';
+        uiHp = player.hp; uiMaxHp = player.maxHp;
         dmgNumbers.push({ x: player.x + 10, y: player.y - 10, val: dmg, life: 55, color: '#ff4444' });
         shakeTimer = 10; shakeMag = 5;
         if (player.hp <= 0) {
@@ -823,16 +1229,343 @@
 
         ctx.restore(); // end shake transform
 
+        // ---- CANVAS UI ----
+        drawCanvasUI();
+
         requestAnimationFrame(() => {
             update();
             draw();
         });
     }
 
+    // ---- Sprite-based UI helpers ----
+    function drawUI_img(key, dx, dy, dw, dh) {
+        const img = images[key];
+        if (!img || !img.complete || !img.naturalWidth) return;
+        ctx.drawImage(img, dx, dy, dw || img.naturalWidth, dh || img.naturalHeight);
+    }
+    function drawUI_imgTiled(key, dx, dy, dw, dh) {
+        const img = images[key];
+        if (!img || !img.complete || !img.naturalWidth) return;
+        ctx.save();
+        ctx.beginPath(); ctx.rect(dx, dy, dw, dh);
+        const pat = ctx.createPattern(img, 'repeat');
+        if (!pat) { ctx.restore(); return; }
+        ctx.translate(dx, dy);
+        ctx.fillStyle = pat;
+        ctx.fillRect(0, 0, dw, dh);
+        ctx.restore();
+    }
+    function drawUI_text(txt, x, y, size, color, align) {
+        ctx.save();
+        ctx.font = (size||14) + 'px "AntiquityPrint", serif';
+        ctx.fillStyle = color || '#ffe8a0';
+        ctx.textAlign = align || 'left';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = 'rgba(0,0,0,0.9)';
+        ctx.shadowBlur = 4;
+        ctx.fillText(txt, x, y);
+        ctx.restore();
+    }
+
+    function drawCanvasUI() {
+        ctx.save();
+        ctx.imageSmoothingEnabled = false;
+
+        const S = 2;   // pixel-art scale (compact)
+        const PAD = 10;
+
+        // ==== BOTTOM-LEFT: HP PANEL (compact) ====
+        const hpPanelW = 160 * S, hpPanelH = 41 * S;
+        const hpPanelX = PAD, hpPanelY = GAME_HEIGHT - hpPanelH - PAD;
+        drawUI_img('ui_healthbar', hpPanelX, hpPanelY, hpPanelW, hpPanelH);
+
+        // Bar fill — offset tuned for 2x scale: ~16px from left, ~17px from top
+        const barX = hpPanelX + 16 * S;
+        const barY = hpPanelY + 17 * S;
+        const barMaxW = 104 * S;
+        const barH = 7 * S;
+        const hpRatio = Math.max(0, uiHp / uiMaxHp);
+        // Dark track
+        ctx.save(); ctx.globalAlpha = 0.4;
+        drawUI_img('ui_valuered', barX, barY, barMaxW, barH);
+        ctx.restore();
+        // Colored fill clipped to ratio
+        if (hpRatio > 0) {
+            ctx.save();
+            ctx.beginPath(); ctx.rect(barX, barY, barMaxW * hpRatio, barH); ctx.clip();
+            // Color shift: green→orange→red
+            const fillColor = hpRatio > 0.6 ? '#44dd66' : hpRatio > 0.3 ? '#f0a020' : '#e03030';
+            ctx.fillStyle = fillColor;
+            ctx.fillRect(barX, barY, barMaxW * hpRatio, barH);
+            ctx.restore();
+        }
+
+        // Heart sprite
+        const heartSrc = images['ui_hearticons'];
+        if (heartSrc && heartSrc.complete && heartSrc.naturalWidth) {
+            const hfW = 32, hfH = 32;
+            const heartFrame = hpRatio > 0.66 ? 0 : hpRatio > 0.33 ? 1 : 3;
+            ctx.drawImage(heartSrc, heartFrame * hfW, 0, hfW, hfH,
+                hpPanelX + 2, hpPanelY + 2, hfW * 1.4, hfH * 1.4);
+        }
+        // HP text
+        drawUI_text(Math.ceil(uiHp) + ' / ' + uiMaxHp,
+            barX + barMaxW / 2, barY + barH / 2 + 1, 11, '#fff0cc', 'center');
+
+        // ==== TOP-LEFT: DISTANCE ====
+        const titleW = 120, titleH = 28;
+        const titleX = PAD, titleY = PAD;
+        drawUI_img('ui_titlebox', titleX, titleY, titleW, titleH);
+        const knotSz = 20;
+        drawUI_img('ui_cornerknot', titleX - 3, titleY - 3, knotSz, knotSz);
+        drawUI_img('ui_cornerknot', titleX + titleW - knotSz + 3, titleY - 3, knotSz, knotSz);
+        drawUI_text('⚔ ' + uiScore + 'm', titleX + titleW / 2, titleY + titleH / 2, 13, '#ffe8a0', 'center');
+
+        // ==== TOP-RIGHT: COINS ====
+        const coinPanelW = 110, coinPanelH = 28;
+        const coinPanelX = GAME_WIDTH - coinPanelW - PAD, coinPanelY = PAD;
+        drawUI_img('ui_titlebox', coinPanelX, coinPanelY, coinPanelW, coinPanelH);
+        drawUI_img('ui_cornerknot', coinPanelX - 3, coinPanelY - 3, knotSz, knotSz);
+        drawUI_img('ui_cornerknot', coinPanelX + coinPanelW - knotSz + 3, coinPanelY - 3, knotSz, knotSz);
+        const coinImg = images['ui_coinicon'];
+        if (coinImg && coinImg.complete && coinImg.naturalWidth) {
+            ctx.drawImage(coinImg, coinPanelX + 8, coinPanelY + 5, 14, 16);
+        }
+        drawUI_text(uiCoins, coinPanelX + coinPanelW / 2 + 8, coinPanelY + coinPanelH / 2, 13, '#ffe066', 'center');
+
+        // ==== PAUSE BUTTON (top-center) ====
+        const pauseW = 60, pauseH = 28;
+        const pauseX = GAME_WIDTH / 2 - pauseW / 2, pauseY = PAD;
+        drawUI_img('ui_titlebox', pauseX, pauseY, pauseW, pauseH);
+        drawUI_text('⏸', pauseX + pauseW / 2, pauseY + pauseH / 2, 14, '#ffe8a0', 'center');
+        // Store pause button bounds for click detection
+        window._pauseBtnBounds = { x: pauseX, y: pauseY, w: pauseW, h: pauseH };
+
+        ctx.restore();
+    }
+
     loadAssets(() => {
         resetGame();
         draw();
     });
-</script>
+
+    // ===== HOME PAGE =====
+    function showView(id) {
+        document.querySelectorAll('.home-view').forEach(v => v.classList.remove('active'));
+        const el = document.getElementById(id);
+        if (el) el.classList.add('active');
+    }
+
+    (function() {
+        const homeCanvas = document.getElementById('home-canvas');
+        const homeCtx = homeCanvas.getContext('2d');
+
+        function resizeHome() {
+            homeCanvas.width = window.innerWidth;
+            homeCanvas.height = window.innerHeight;
+        }
+        resizeHome();
+        window.addEventListener('resize', resizeHome);
+
+        // ---- Animate character sprites on home screen ----
+        function animateSpriteOnCanvas(canvasId, imgKey, totalFrames, frameSpeed) {
+            const c = document.getElementById(canvasId);
+            if (!c) return;
+            const ctx2 = c.getContext('2d');
+            ctx2.imageSmoothingEnabled = false;
+            let frame = 0, timer = 0;
+            function loop() {
+                const img = images[imgKey];
+                if (!img || !img.complete || !img.naturalWidth) { requestAnimationFrame(loop); return; }
+                const fw = img.naturalWidth / totalFrames;
+                const fh = img.naturalHeight;
+                ctx2.clearRect(0, 0, c.width, c.height);
+                const scale = Math.min(c.width / fw, c.height / fh);
+                const dw = fw * scale, dh = fh * scale;
+                const dx = (c.width - dw) / 2, dy = (c.height - dh) / 2;
+                ctx2.drawImage(img, frame * fw, 0, fw, fh, dx, dy, dw, dh);
+                timer++;
+                if (timer >= frameSpeed) { timer = 0; frame = (frame + 1) % totalFrames; }
+                requestAnimationFrame(loop);
+            }
+            loop();
+        }
+        // Wait for assets then start sprite animations
+        function tryStartSprites() {
+            if (assetsLoaded < totalAssets) { setTimeout(tryStartSprites, 200); return; }
+            animateSpriteOnCanvas('hero-canvas',       'idle_right',  8,  10);
+            animateSpriteOnCanvas('enemy-canvas',      'enemy_idle',  10, 10);
+            animateSpriteOnCanvas('howto-hero-canvas',  'run_right',  8,  7);
+            animateSpriteOnCanvas('howto-enemy-canvas', 'enemy_run',  16, 5);
+        }
+        tryStartSprites();
+
+        // ---- Falling rock dust particles ----
+        const dustParts = [];
+        for (let i = 0; i < 55; i++) {
+            dustParts.push({
+                x: Math.random() * 2000,
+                y: Math.random() * 1200,
+                vx: (Math.random() - 0.5) * 0.3,
+                vy: 0.15 + Math.random() * 0.5,
+                size: 0.5 + Math.random() * 1.8,
+                alpha: 0.05 + Math.random() * 0.3,
+                color: ['#a09080','#c0b090','#807060','#d0c0a0'][Math.floor(Math.random()*4)]
+            });
+        }
+
+        // ---- Floating rune stones ----
+        const runeStones = [];
+        const stoneChars = ['ᚠ','ᚢ','ᚦ','ᚨ','ᚱ','ᚲ','ᚷ','ᚹ','ᚺ','ᚾ','ᛁ','ᛃ','ᛇ'];
+        for (let i = 0; i < 12; i++) {
+            runeStones.push({
+                x: Math.random() * 100,
+                y: Math.random() * 100,
+                char: stoneChars[Math.floor(Math.random() * stoneChars.length)],
+                size: 16 + Math.random() * 22,
+                speed: 6 + Math.random() * 14,
+                delay: Math.random() * -20,
+                drift: (Math.random() - 0.5) * 0.3
+            });
+        }
+
+        let homeAnimId;
+        function animateHome() {
+            homeAnimId = requestAnimationFrame(animateHome);
+            const W = homeCanvas.width, H = homeCanvas.height;
+            const t = Date.now() / 1000;
+            homeCtx.clearRect(0, 0, W, H);
+
+            // === STONE BACKGROUND ===
+            // Base — dark granite
+            const baseBg = homeCtx.createLinearGradient(0, 0, 0, H);
+            baseBg.addColorStop(0, '#0e0b08');
+            baseBg.addColorStop(0.4, '#120e0a');
+            baseBg.addColorStop(1, '#0a0806');
+            homeCtx.fillStyle = baseBg;
+            homeCtx.fillRect(0, 0, W, H);
+
+            // Stone texture — overlapping noise bands
+            for (let layer = 0; layer < 3; layer++) {
+                homeCtx.save();
+                homeCtx.globalAlpha = 0.03 + layer * 0.01;
+                for (let y = 0; y < H; y += 3 + layer * 2) {
+                    const lightness = Math.sin(y * 0.05 + layer * 2.1 + t * 0.05) * 0.5 + 0.5;
+                    homeCtx.fillStyle = `rgba(${80 + lightness*40},${70 + lightness*30},${50 + lightness*20},1)`;
+                    homeCtx.fillRect(0, y, W, 2 + layer);
+                }
+                homeCtx.restore();
+            }
+
+            // Crack lines — static but atmospheric
+            homeCtx.save();
+            homeCtx.strokeStyle = 'rgba(0,0,0,0.3)';
+            homeCtx.lineWidth = 1;
+            const cracks = [
+                [[W*0.1,0],[W*0.18,H*0.3],[W*0.12,H*0.6]],
+                [[W*0.9,0],[W*0.82,H*0.4],[W*0.88,H*0.8]],
+                [[W*0.45,H*0.05],[W*0.55,H*0.25]],
+                [[W*0.3,H],[W*0.35,H*0.7],[W*0.28,H*0.4]],
+                [[W*0.7,H],[W*0.65,H*0.6],[W*0.72,H*0.3]],
+            ];
+            cracks.forEach(pts => {
+                homeCtx.beginPath();
+                homeCtx.moveTo(pts[0][0], pts[0][1]);
+                pts.slice(1).forEach(p => homeCtx.lineTo(p[0], p[1]));
+                homeCtx.stroke();
+            });
+            homeCtx.restore();
+
+            // Ambient warm torchlight — orange/amber glow from bottom corners
+            [[W*0.08, H*0.92, '#6a2800'], [W*0.92, H*0.92, '#6a2800'], [W*0.5, H, '#4a1800']].forEach(([cx,cy,col]) => {
+                const pulse = 0.12 + 0.05 * Math.sin(t * 2.3 + cx);
+                const g = homeCtx.createRadialGradient(cx, cy, 0, cx, cy, 320);
+                g.addColorStop(0, col + Math.floor(pulse*255).toString(16).padStart(2,'0'));
+                g.addColorStop(1, 'transparent');
+                homeCtx.fillStyle = g; homeCtx.fillRect(0, 0, W, H);
+            });
+
+            // Central faint glow behind title (cool blue-grey stone)
+            const cg = homeCtx.createRadialGradient(W/2, H*0.38, 0, W/2, H*0.38, 280);
+            const cgP = 0.06 + 0.03*Math.sin(t*0.9);
+            cg.addColorStop(0, `rgba(80,70,60,${cgP})`);
+            cg.addColorStop(1, 'transparent');
+            homeCtx.fillStyle = cg; homeCtx.fillRect(0, 0, W, H);
+
+            // Falling dust particles
+            dustParts.forEach(p => {
+                p.x += p.vx; p.y += p.vy;
+                if (p.y > H + 5) { p.y = -5; p.x = Math.random() * W; }
+                if (p.x < 0 || p.x > W) { p.x = Math.random() * W; }
+                homeCtx.save();
+                homeCtx.globalAlpha = p.alpha * (0.5 + 0.5 * Math.sin(t * 1.2 + p.x * 0.01));
+                homeCtx.fillStyle = p.color;
+                homeCtx.beginPath(); homeCtx.arc(p.x, p.y, p.size, 0, Math.PI*2); homeCtx.fill();
+                homeCtx.restore();
+            });
+
+            // Floating rune characters (Nordic/runic)
+            runeStones.forEach((r, i) => {
+                const elapsed = (t + r.delay);
+                const progress = ((elapsed / r.speed) % 1 + 1) % 1;
+                const alpha = progress < 0.1 ? progress/0.1 : progress > 0.85 ? (1-progress)/0.15 : 0.15;
+                const px = (r.x / 100) * W + Math.sin(t * 0.4 + i) * 30;
+                const py = H - progress * (H + 100) - 50;
+                homeCtx.save();
+                homeCtx.globalAlpha = alpha;
+                homeCtx.font = `${r.size}px "Cinzel", serif`;
+                homeCtx.fillStyle = '#b0a080';
+                homeCtx.textAlign = 'center';
+                homeCtx.textBaseline = 'middle';
+                homeCtx.fillText(r.char, px, py);
+                homeCtx.restore();
+            });
+
+            // UI sprite borders (stone panels from game assets)
+            const SCALE = 2;
+            const topBG = images['ui_topbg'];
+            if (topBG && topBG.complete && topBG.naturalWidth) {
+                const tw = topBG.naturalWidth*SCALE, th = topBG.naturalHeight*SCALE;
+                homeCtx.save(); homeCtx.globalAlpha = 0.4;
+                for (let tx = 0; tx < W; tx += tw) homeCtx.drawImage(topBG, tx, 0, tw, th);
+                homeCtx.restore();
+            }
+            const botBG = images['ui_bottombg'];
+            if (botBG && botBG.complete && botBG.naturalWidth) {
+                const tw = botBG.naturalWidth*SCALE, th = botBG.naturalHeight*SCALE;
+                homeCtx.save(); homeCtx.globalAlpha = 0.35;
+                for (let tx = 0; tx < W; tx += tw) homeCtx.drawImage(botBG, tx, H-th, tw, th);
+                homeCtx.restore();
+            }
+            const knotImg = images['ui_cornerknot'];
+            if (knotImg && knotImg.complete && knotImg.naturalWidth) {
+                const ks = 14 * SCALE;
+                homeCtx.save(); homeCtx.globalAlpha = 0.55;
+                [[0,0],[W-ks,0],[0,H-ks],[W-ks,H-ks]].forEach(([kx,ky]) => {
+                    homeCtx.drawImage(knotImg, kx, ky, ks, ks);
+                });
+                homeCtx.restore();
+            }
+            const pipeImg = images['ui_pipe'];
+            if (pipeImg && pipeImg.complete && pipeImg.naturalWidth) {
+                const pw = 36*SCALE, ph = 11*SCALE;
+                homeCtx.save(); homeCtx.globalAlpha = 0.25;
+                for (let px = 0; px < W; px += pw + 4) homeCtx.drawImage(pipeImg, px, H-ph-4, pw, ph);
+                homeCtx.restore();
+            }
+        }
+        animateHome();
+
+        window.startGame = function() {
+            const homeEl = document.getElementById('home-screen');
+            homeEl.classList.add('fade-out');
+            startMusic();
+            cancelAnimationFrame(homeAnimId);
+            setTimeout(() => { homeEl.style.display = 'none'; }, 600);
+        };
+    })();
+
+        </script>
 </body>
 </html>
