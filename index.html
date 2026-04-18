@@ -356,8 +356,11 @@
             </div>
             <div class="stone-divider"><span></span><span class="diamond">◆</span><span></span></div>
             <div class="home-btns-row">
-                <div class="stone-btn primary" onclick="startGame()">
-                    <div class="stone-btn-inner">BEGIN QUEST</div>
+                <div class="stone-btn primary" onclick="startGame('endless')">
+                    <div class="stone-btn-inner">⚔ ENDLESS MODE</div>
+                </div>
+                <div class="stone-btn primary" style="background:linear-gradient(160deg,#1a0830,#0a0418);" onclick="startGame('story')">
+                    <div class="stone-btn-inner" style="color:#cc88ff;border-color:#8844cc;">✦ SHADOW CHRONICLE</div>
                 </div>
                 <div class="stone-btn secondary" onclick="showView('home-howto')">
                     <div class="stone-btn-inner">HOW TO PLAY</div>
@@ -408,13 +411,13 @@
                     </div>
                 </div>
                 <div class="howto-section">
-                    <div class="howto-section-title">Objectives</div>
+                    <div class="howto-section-title">Game Modes</div>
                     <div class="howto-tips">
-                        <div class="tip-row"><span class="tip-icon">🪙</span><span>Collect coins and open chests for score & artifacts</span></div>
-                        <div class="tip-row"><span class="tip-icon">⚔</span><span>Defeat enemies — attack up close for max damage</span></div>
-                        <div class="tip-row"><span class="tip-icon">🔥</span><span>Dodge fire traps and spike floors</span></div>
-                        <div class="tip-row"><span class="tip-icon">🏃</span><span>Run as far as you can to earn distance</span></div>
-                        <div class="tip-row"><span class="tip-icon">❤️</span><span>You have 180 HP — don't waste it</span></div>
+                        <div class="tip-row"><span class="tip-icon">⚔</span><span><b style="color:#e8c870">Endless Mode</b> — Survive as long as possible. No time limit. Fight until death.</span></div>
+                        <div class="tip-row"><span class="tip-icon">✦</span><span><b style="color:#cc88ff">Shadow Chronicle</b> — Complete 8 objectives in 3 mins. Speak to NPCs. Discover the password. Reach the boss.</span></div>
+                        <div class="tip-row"><span class="tip-icon">🗝</span><span>In Story Mode: Press <b>F</b> to interact with NPCs and enter the dimensional portal.</span></div>
+                        <div class="tip-row"><span class="tip-icon">📋</span><span>Press <b>TAB</b> in Story Mode to toggle the Objective Board.</span></div>
+                        <div class="tip-row"><span class="tip-icon">☠</span><span>Defeat the Void-Warden boss to earn a final rating based on performance.</span></div>
                     </div>
                 </div>
                 <div class="howto-section span2">
@@ -555,7 +558,18 @@
         ui_topP1:       'https://raw.githubusercontent.com/precidoboss/adventurer/main/TopPatternPanel_01_33x15.png',
         ui_topP2:       'https://raw.githubusercontent.com/precidoboss/adventurer/main/TopPatternPanel_02_33x15.png',
         ui_quiticon:    'https://raw.githubusercontent.com/precidoboss/adventurer/main/QuitIcon.png',
-        blood_sheet:    'https://raw.githubusercontent.com/precidoboss/adventurer/main/5_100x100px.png'
+        blood_sheet:    'https://raw.githubusercontent.com/precidoboss/adventurer/main/5_100x100px.png',
+        // Boss sprites (using uploaded sprite sheets via raw github)
+        boss_idle:      'https://raw.githubusercontent.com/precidoboss/adventurer/main/Idle.png',
+        boss_walk:      'https://raw.githubusercontent.com/precidoboss/adventurer/main/Walk.png',
+        boss_run:       'https://raw.githubusercontent.com/precidoboss/adventurer/main/Run.png',
+        boss_attack:    'https://raw.githubusercontent.com/precidoboss/adventurer/main/Attack.png',
+        boss_death:     'https://raw.githubusercontent.com/precidoboss/adventurer/main/Death.png',
+        boss_hurt:      'https://raw.githubusercontent.com/precidoboss/adventurer/main/Get%20hit.png',
+        boss_jump:      'https://raw.githubusercontent.com/precidoboss/adventurer/main/Jump.png',
+        boss_proj:      'https://raw.githubusercontent.com/precidoboss/adventurer/main/Moving.png',
+        npc_idle:       'https://raw.githubusercontent.com/precidoboss/adventurer/main/Idle2.png',
+        portal_sheet:   'https://raw.githubusercontent.com/precidoboss/adventurer/main/Dimensional_Portal.png'
     };
 
     // Sounds (loaded separately, not counted in asset load)
@@ -570,6 +584,70 @@
     loadSound('chest',  'https://raw.githubusercontent.com/precidoboss/adventurer/main/01_chest_open_3.wav');
 
     let bgMusic = null;
+    // ===== STORY MODE STATE =====
+    window._gameMode = 'endless';
+    const STORY_MODE = {
+        active: false,
+        timer: 0, // frames elapsed
+        timerLimit: 180 * 60, // 3 minutes at 60fps
+        objectives: [
+            { id:'kill5',    label:'Defeat 5 Enemies',       target:5,  current:0, done:false },
+            { id:'coins20',  label:'Collect 20 Coins',        target:20, current:0, done:false },
+            { id:'kill10',   label:'Defeat 10 Enemies',       target:10, current:0, done:false },
+            { id:'chests3',  label:'Open 3 Treasure Chests',  target:3,  current:0, done:false },
+            { id:'survive90',label:'Survive 90 Seconds',      target:90, current:0, done:false },
+            { id:'run500',   label:'Travel 500m',             target:500,current:0, done:false },
+            { id:'kill20',   label:'Defeat 20 Total Enemies', target:20, current:0, done:false },
+            { id:'artifacts2',label:'Collect 2 Artifacts',    target:2,  current:0, done:false },
+        ],
+        totalKills: 0,
+        totalChests: 0,
+        totalArtifacts: 0,
+        objectivePct: 0,
+        npc1Shown: false, npc1Talked: false,
+        npc2Shown: false, npc2Talked: false,
+        portalShown: false,
+        bossUnlocked: false,
+        bossWeaknessKnown: false,
+        password: 'UMBRA',   // hidden in NPC1's dialogue
+        npc1: null, npc2: null, portal: null,
+        // dialogue state
+        dialogue: null,
+        // cinematic state
+        cinematic: null,
+        // boss fight
+        bossArena: false,
+        boss: null,
+        bossDefeated: false,
+        gameEndStats: null,
+        // objective board
+        boardOpen: false,
+        // TTS
+        ttsSupported: 'speechSynthesis' in window
+    };
+
+    // NPC/BOSS frame configs
+    const NPC_FRAMES = { idle: 3 };
+    const BOSS_ANIMS = {
+        idle:   { frames: 9,  speed: 8 },
+        walk:   { frames: 8,  speed: 8 },
+        run:    { frames: 8,  speed: 6 },
+        attack: { frames: 13, speed: 5 },
+        hurt:   { frames: 3,  speed: 7 },
+        death:  { frames: 19, speed: 6 },
+        jump:   { frames: 9,  speed: 7 }
+    };
+
+    function tts(text, rate) {
+        if (!STORY_MODE.ttsSupported) return;
+        try {
+            const u = new SpeechSynthesisUtterance(text);
+            u.rate = rate || 0.85; u.pitch = 1;
+            speechSynthesis.cancel();
+            speechSynthesis.speak(u);
+        } catch(e){}
+    }
+
     function startMusic() {
         if (bgMusic) return;
         bgMusic = new Audio('https://raw.githubusercontent.com/precidoboss/adventurer/main/Goblins_Dance_(Battle).wav');
@@ -672,6 +750,901 @@
     }
     loadArtifactImages();
 
+    // ===== STORY MODE FUNCTIONS =====
+    function initStoryMode() {
+        STORY_MODE.active = true;
+        STORY_MODE.timer = 0;
+        STORY_MODE.totalKills = 0;
+        STORY_MODE.totalChests = 0;
+        STORY_MODE.totalArtifacts = 0;
+        STORY_MODE.objectivePct = 0;
+        STORY_MODE.npc1Shown = false; STORY_MODE.npc1Talked = false;
+        STORY_MODE.npc2Shown = false; STORY_MODE.npc2Talked = false;
+        STORY_MODE.portalShown = false;
+        STORY_MODE.bossUnlocked = false;
+        STORY_MODE.bossWeaknessKnown = false;
+        STORY_MODE.bossArena = false;
+        STORY_MODE.boss = null;
+        STORY_MODE.bossDefeated = false;
+        STORY_MODE.gameEndStats = null;
+        STORY_MODE.dialogue = null;
+        STORY_MODE.cinematic = null;
+        STORY_MODE.boardOpen = false;
+        STORY_MODE.npc1 = null; STORY_MODE.npc2 = null; STORY_MODE.portal = null;
+        STORY_MODE.objectives.forEach(o => { o.current = 0; o.done = false; });
+        resetGame();
+        // Show cinematic intro
+        startCinematic('intro');
+    }
+
+    function calcObjectivePct() {
+        const done = STORY_MODE.objectives.filter(o=>o.done).length;
+        return done / STORY_MODE.objectives.length;
+    }
+
+    function updateStoryObjectives() {
+        const SM = STORY_MODE;
+        const objs = SM.objectives;
+        // kill5
+        objs.find(o=>o.id==='kill5').current = Math.min(SM.totalKills, 5);
+        if(SM.totalKills>=5) objs.find(o=>o.id==='kill5').done=true;
+        // kill10
+        objs.find(o=>o.id==='kill10').current = Math.min(SM.totalKills, 10);
+        if(SM.totalKills>=10) objs.find(o=>o.id==='kill10').done=true;
+        // kill20
+        objs.find(o=>o.id==='kill20').current = Math.min(SM.totalKills, 20);
+        if(SM.totalKills>=20) objs.find(o=>o.id==='kill20').done=true;
+        // coins20
+        objs.find(o=>o.id==='coins20').current = Math.min(player.coins, 20);
+        if(player.coins>=20) objs.find(o=>o.id==='coins20').done=true;
+        // chests3
+        objs.find(o=>o.id==='chests3').current = Math.min(SM.totalChests, 3);
+        if(SM.totalChests>=3) objs.find(o=>o.id==='chests3').done=true;
+        // survive90
+        const secsSurvived = Math.floor(SM.timer / 60);
+        objs.find(o=>o.id==='survive90').current = Math.min(secsSurvived, 90);
+        if(secsSurvived>=90) objs.find(o=>o.id==='survive90').done=true;
+        // run500
+        objs.find(o=>o.id==='run500').current = Math.min(score, 500);
+        if(score>=500) objs.find(o=>o.id==='run500').done=true;
+        // artifacts2
+        objs.find(o=>o.id==='artifacts2').current = Math.min(SM.totalArtifacts, 2);
+        if(SM.totalArtifacts>=2) objs.find(o=>o.id==='artifacts2').done=true;
+
+        const pct = calcObjectivePct();
+        SM.objectivePct = pct;
+
+        // Spawn NPC1 at 50%
+        if(pct >= 0.5 && !SM.npc1Shown && !SM.npc1Talked) {
+            SM.npc1Shown = true;
+            spawnNPC(1);
+        }
+        // Spawn NPC2 at 75%
+        if(pct >= 0.75 && SM.npc1Talked && !SM.npc2Shown && !SM.npc2Talked) {
+            SM.npc2Shown = true;
+            spawnNPC(2);
+        }
+        // Spawn portal at 100%
+        if(pct >= 1.0 && SM.npc2Talked && !SM.portalShown) {
+            SM.portalShown = true;
+            spawnPortal();
+        }
+    }
+
+    function spawnNPC(which) {
+        const npcX = player.x + 400;
+        const npcY = platforms.length > 0 ? platforms[platforms.length-1].y - 64 : 360;
+        const npc = { x: npcX, y: npcY, which, frame:0, frameTimer:0, interactHint: true };
+        if(which===1) STORY_MODE.npc1 = npc;
+        else STORY_MODE.npc2 = npc;
+        dmgNumbers.push({ x: npcX, y: npcY-30, val: which===1?'A stranger approaches...':'Another figure awaits...', life:180, color:'#cc88ff', isText:true });
+    }
+
+    function spawnPortal() {
+        const lastP = platforms[platforms.length-1];
+        STORY_MODE.portal = {
+            x: lastP ? lastP.x + lastP.w/2 - 48 : player.x + 500,
+            y: lastP ? lastP.y - 110 : 280,
+            frame:0, frameTimer:0, pulseT:0
+        };
+        dmgNumbers.push({ x: STORY_MODE.portal.x, y: STORY_MODE.portal.y-40, val:'✦ A dimensional rift has opened!', life:240, color:'#ff88ff', isText:true });
+    }
+
+    function tryInteractNPC(which) {
+        const SM = STORY_MODE;
+        if(which===1 && !SM.npc1Talked) {
+            SM.npc1Talked = true;
+            openDialogue('npc1');
+        } else if(which===2 && !SM.npc2Talked) {
+            openDialogue('npc2_prompt');
+        }
+    }
+
+    function tryEnterPortal() {
+        startCinematic('portal');
+    }
+
+    // NPC1 Dialogues — password UMBRA is embedded
+    const DIALOGUES = {
+        npc1: [
+            { speaker:'Zephira the Wanderer', text:'Hold, warrior. The darkness ahead is not ordinary shadow...', voice:1.0 },
+            { speaker:'Zephira the Wanderer', text:'I have tracked the Void-Warden across three realms. It cannot be slain by ordinary means.', voice:0.9 },
+            { speaker:'Zephira the Wanderer', text:'But first — prove you are worthy of this knowledge. Remember one word: U-M-B-R-A.', voice:0.85 },
+            { speaker:'Zephira the Wanderer', text:'Under Moonless skies, Beneath Ruined Arches... UMBRA is the key to the next guardian\'s trust.', voice:0.85 },
+            { speaker:'Zephira the Wanderer', text:'Find the second sentinel. They hold the secret of the Void-Warden\'s weakness. Safe travels.', voice:0.9 },
+        ],
+        npc2_prompt: null, // handled specially (password input)
+        npc2_wrong: [
+            { speaker:'Sentinel Kael', text:'...That\'s not the word. The stranger told you. Think harder.', voice:0.8 },
+        ],
+        npc2_right: [
+            { speaker:'Sentinel Kael', text:'*eyes widen* You spoke with Zephira. Then you are truly prepared.', voice:0.8 },
+            { speaker:'Sentinel Kael', text:'The Void-Warden feeds on doubt. Its scales weaken at its LEFT side — strike there and deal double damage.', voice:0.8 },
+            { speaker:'Sentinel Kael', text:'And know this: the rift will open when all is ready. Step through it — but be prepared for the fight of your life.', voice:0.8 },
+            { speaker:'Sentinel Kael', text:'We believe in you. The realm does too. Go — and end this darkness.', voice:0.9 },
+        ],
+        boss_intro: [
+            { speaker:'THE VOID-WARDEN', text:'*a voice like grinding stone fills the air* So... another mortal crawls into my domain.', voice:0.6, bossLine:true },
+            { speaker:'THE VOID-WARDEN', text:'Every champion before you has become dust. What makes you any different?', voice:0.6, bossLine:true },
+            { speaker:'Player', text:'I know your secret. And I\'m not afraid of the dark.', voice:1.1, heroLine:true },
+            { speaker:'THE VOID-WARDEN', text:'*ROARS* Then you die KNOWING. Come, little warrior. COME!', voice:0.5, bossLine:true },
+        ]
+    };
+
+    let dialogueState = { lines:[], idx:0, type:'', inputMode:false, inputVal:'' };
+
+    function openDialogue(type) {
+        gamePaused = true;
+        if(type === 'npc2_prompt') {
+            dialogueState = { lines:[], idx:0, type:'npc2_prompt', inputMode:true, inputVal:'' };
+        } else {
+            const lines = DIALOGUES[type] || [];
+            dialogueState = { lines, idx:0, type, inputMode:false, inputVal:'' };
+            if(lines.length>0) tts(lines[0].text, lines[0].voice);
+        }
+        STORY_MODE.dialogue = dialogueState;
+    }
+
+    function advanceDialogue() {
+        const d = dialogueState;
+        if(d.inputMode) return; // handled separately
+        d.idx++;
+        if(d.idx < d.lines.length) {
+            tts(d.lines[d.idx].text, d.lines[d.idx].voice);
+        } else {
+            closeDialogue();
+            if(d.type==='npc2_right') {
+                STORY_MODE.bossWeaknessKnown = true;
+                STORY_MODE.npc2Talked = true;
+                if(calcObjectivePct()>=1.0) spawnPortal();
+                else STORY_MODE.portalShown = false; // will be set when pct hits 100
+            } else if(d.type==='boss_intro') {
+                startBossFight();
+            }
+        }
+    }
+
+    function submitNPC2Password(pwd) {
+        dialogueState.inputMode = false;
+        STORY_MODE.dialogue = null;
+        gamePaused = false;
+        if(pwd.trim().toUpperCase() === STORY_MODE.password) {
+            STORY_MODE.npc2Talked = true;
+            openDialogue('npc2_right');
+        } else {
+            openDialogue('npc2_wrong');
+        }
+    }
+
+    function closeDialogue() {
+        STORY_MODE.dialogue = null;
+        gamePaused = false;
+        speechSynthesis && speechSynthesis.cancel && speechSynthesis.cancel();
+    }
+
+    // ===== CINEMATICS =====
+    function startCinematic(type) {
+        gamePaused = true;
+        const c = { type, t:0, done:false, lines:[], lineIdx:0, phase:'fade_in' };
+        if(type==='intro') {
+            c.lines = [
+                'THE SHADOW CHRONICLE',
+                'The realm of Ardenmoor has fallen into darkness.',
+                'An ancient evil — the Void-Warden — devours all light.',
+                'You are the last hope. Survive. Complete your trials.',
+                'Seek the wanderers. Learn the secret. End this.',
+                '— BEGIN YOUR QUEST —'
+            ];
+        } else if(type==='portal') {
+            c.lines = [
+                '✦ DIMENSIONAL RIFT ✦',
+                'The portal shimmers with dark energy...',
+                'Beyond lies the arena of the Void-Warden.',
+                'All your training has led to this moment.',
+                'Step through — and claim victory or death.',
+            ];
+        }
+        STORY_MODE.cinematic = c;
+    }
+
+    function updateCinematic() {
+        const c = STORY_MODE.cinematic;
+        if(!c || c.done) return;
+        c.t++;
+        const lineDisplayTime = 180; // 3 sec per line
+        if(c.t % lineDisplayTime === 0) {
+            c.lineIdx++;
+            if(c.lineIdx < c.lines.length) {
+                if(c.lines[c.lineIdx]) tts(c.lines[c.lineIdx], 0.8);
+            } else {
+                c.done = true;
+                STORY_MODE.cinematic = null;
+                gamePaused = false;
+                if(c.type==='portal') {
+                    enterBossArena();
+                }
+            }
+        }
+        if(c.t===1 && c.lines[0]) tts(c.lines[0], 0.8);
+    }
+
+    // ===== BOSS ARENA =====
+    function enterBossArena() {
+        STORY_MODE.bossArena = true;
+        // Build arena platforms
+        platforms = [
+            { x:-200, y:430, w:1400, h:80, type:0 },
+            { x:100,  y:310, w:220,  h:40, type:1 },
+            { x:620,  y:290, w:200,  h:40, type:1 },
+        ];
+        collectables = []; traps = []; enemies = [];
+        scrollX = 0;
+        player.x = 80; player.y = 320;
+        player.vx = 0; player.vy = 0;
+        // Apply weakness bonus
+        const bossMaxHp = STORY_MODE.bossWeaknessKnown ? 750 : 1000;
+        STORY_MODE.boss = {
+            x: 700, y: 250,
+            width:70, height:90,
+            drawWidth:200, drawHeight:200,
+            hp: bossMaxHp, maxHp: bossMaxHp,
+            vx:0, vy:0, grounded:true,
+            facing:'left', state:'idle',
+            frame:0, frameTimer:0,
+            isAttacking:false, attackCooldown:0,
+            hurtTimer:0, dying:false, alpha:1,
+            projCooldown:0, projs:[],
+            phase:1, enrageTimer:0,
+            dashCooldown:0, jumpCooldown:0
+        };
+        // Boss intro dialogue
+        openDialogue('boss_intro');
+    }
+
+    function startBossFight() {
+        gamePaused = false;
+        STORY_MODE.bossUnlocked = true;
+    }
+
+    function updateBoss() {
+        const b = STORY_MODE.boss;
+        if(!b || !STORY_MODE.bossUnlocked) return;
+
+        // Dying
+        if(b.dying) {
+            b.frameTimer++;
+            if(b.frameTimer>=6){ b.frame++; b.frameTimer=0; }
+            b.alpha = Math.max(0, b.alpha - 0.012);
+            if(b.alpha<=0 && !STORY_MODE.bossDefeated) {
+                STORY_MODE.bossDefeated = true;
+                showEndScreen();
+            }
+            return;
+        }
+
+        // Gravity
+        b.vy = (b.vy||0) + 0.7;
+        b.y += b.vy;
+        b.grounded = false;
+        for(let p of platforms) {
+            if(b.x<p.x+p.w && b.x+b.width>p.x &&
+               b.y+b.height>p.y && b.y+b.height<p.y+p.h+20 && b.vy>=0) {
+                b.y = p.y - b.height; b.vy = 0; b.grounded = true;
+            }
+        }
+
+        // Phase 2 at 50% hp
+        if(b.hp <= b.maxHp*0.5) b.phase = 2;
+
+        if(b.hurtTimer>0){ b.hurtTimer--; }
+
+        const dx = player.x - b.x;
+        const dist = Math.abs(dx);
+        b.facing = dx<0 ? 'left' : 'right';
+
+        if(b.attackCooldown>0) b.attackCooldown--;
+        if(b.projCooldown>0) b.projCooldown--;
+        if(b.dashCooldown>0) b.dashCooldown--;
+        if(b.jumpCooldown>0) b.jumpCooldown--;
+
+        if(!b.isAttacking && b.hurtTimer===0) {
+            if(dist > 300) {
+                // Walk toward player
+                b.state = 'walk';
+                b.vx = (dx>0?1:-1) * (b.phase===2?3:2);
+                // Shoot projectile
+                if(b.projCooldown<=0) {
+                    b.projCooldown = b.phase===2 ? 80 : 140;
+                    const py = b.y + b.height*0.3;
+                    b.projs.push({ x:b.x+b.width/2, y:py, vx:(dx>0?1:-1)*6, frame:0, frameTimer:0 });
+                }
+            } else if(dist > 100) {
+                b.state = 'run';
+                b.vx = (dx>0?1:-1) * (b.phase===2?5:3.5);
+                // Shoot at med range too in phase 2
+                if(b.phase===2 && b.projCooldown<=0) {
+                    b.projCooldown = 70;
+                    b.projs.push({ x:b.x+b.width/2, y:b.y+b.height*0.3, vx:(dx>0?1:-1)*7, frame:0, frameTimer:0 });
+                }
+            } else {
+                // Melee
+                b.vx = 0;
+                if(b.attackCooldown<=0) {
+                    b.state='attack'; b.isAttacking=true; b.frame=0; b.frameTimer=0;
+                    b.attackCooldown = b.phase===2 ? 55 : 80;
+                    playSound('sword');
+                }
+            }
+            // Dash
+            if(b.phase===2 && b.dashCooldown<=0 && dist>150) {
+                b.vx = (dx>0?1:-1)*12;
+                b.dashCooldown = 180;
+            }
+            // Jump
+            if(b.grounded && b.jumpCooldown<=0 && Math.random()<0.005) {
+                b.vy = -13; b.state='jump'; b.jumpCooldown=120;
+            }
+        } else if(b.isAttacking) {
+            b.vx = 0;
+        }
+
+        b.x += (b.vx||0);
+        b.x = Math.max(0, Math.min(GAME_WIDTH-b.width, b.x));
+
+        // Boss animation
+        b.frameTimer++;
+        const ba = BOSS_ANIMS[b.state] || BOSS_ANIMS.idle;
+        if(b.frameTimer >= ba.speed) {
+            b.frame++; b.frameTimer=0;
+            if(b.frame >= ba.frames) {
+                if(b.isAttacking) {
+                    // Check hit
+                    const ddx = Math.abs(player.x-b.x);
+                    if(ddx<140 && Math.abs((player.y+player.height)-(b.y+b.height))<60 && player.invincible===0) {
+                        hurtPlayer(b.phase===2 ? 20 : 12);
+                    }
+                    b.isAttacking=false; b.state='idle';
+                }
+                b.frame=0;
+            }
+        }
+
+        // Update projectiles
+        b.projs.forEach(pr => {
+            pr.x += pr.vx;
+            pr.frameTimer++;
+            if(pr.frameTimer>=4){ pr.frame=(pr.frame+1)%4; pr.frameTimer=0; }
+            // Hit player
+            if(!player.dead && player.invincible===0 &&
+               Math.abs(pr.x-player.x)<30 && Math.abs(pr.y-player.y)<30) {
+                hurtPlayer(10);
+                pr.dead=true;
+            }
+        });
+        b.projs = b.projs.filter(pr=>!pr.dead && pr.x>-50 && pr.x<GAME_WIDTH+50);
+
+        // Player hits boss
+        if(player.isAttacking && !player.attackHit && player.frame>=3 && player.frame<=5) {
+            const bdx = b.x - player.x;
+            const bdy = Math.abs((player.y+player.height)-(b.y+b.height));
+            const inFront = player.facing==='right'?(bdx>-20&&bdx<160):(bdx<20&&bdx>-160);
+            if(inFront && bdy<70) {
+                player.attackHit = true;
+                let dmg = player.attackDmg||20;
+                // Weakness: left side means boss facing right (hitting from right)
+                if(STORY_MODE.bossWeaknessKnown && b.facing==='right' && player.facing==='left') {
+                    dmg *= 2;
+                    dmgNumbers.push({x:b.x+20,y:b.y-30,val:'WEAKNESS!',life:70,color:'#ff44ff',isText:true});
+                }
+                b.hp -= dmg;
+                b.hurtTimer = 20; b.state='hurt'; b.frame=0; b.frameTimer=0;
+                dmgNumbers.push({x:b.x+30,y:b.y-10,val:dmg,life:50,color:'#ff4444'});
+                shakeTimer=10; shakeMag=6;
+                // Burst particles
+                for(let i=0;i<8;i++){
+                    const ang=(Math.PI*2/8)*i;
+                    particles.push({x:b.x+b.width/2,y:b.y+b.height/2,
+                        vx:Math.cos(ang)*3,vy:Math.sin(ang)*3-1,life:25,color:'#ff3300'});
+                }
+                if(b.hp<=0 && !b.dying) {
+                    b.dying=true; b.state='death'; b.frame=0; b.frameTimer=0; b.alpha=1;
+                    shakeTimer=30; shakeMag=10;
+                    tts('IMPOSSIBLE... I cannot be... defeated!', 0.5);
+                }
+            }
+        }
+    }
+
+    function showEndScreen() {
+        const SM = STORY_MODE;
+        const mins = Math.floor(SM.timer/3600);
+        const secs = Math.floor((SM.timer%3600)/60);
+        const timeStr = `${mins}m ${secs < 10 ? '0'+secs : secs}s`;
+        const doneObjs = SM.objectives.filter(o=>o.done).length;
+        const rating = SM.totalKills>=15 && doneObjs===8 ? 'S' : SM.totalKills>=10 ? 'A' : SM.totalKills>=5 ? 'B' : 'C';
+        SM.gameEndStats = {
+            time: timeStr, kills: SM.totalKills, coins: player.coins,
+            chests: SM.totalChests, distance: score,
+            objectives: doneObjs + '/' + SM.objectives.length,
+            rating
+        };
+        gamePaused = true;
+        tts(`Victory! The Void-Warden has been defeated! Your rating: ${rating}`, 1.0);
+    }
+
+    // ===== DRAW STORY UI =====
+    function drawStoryUI() {
+        if(!STORY_MODE.active) return;
+        const SM = STORY_MODE;
+
+        // Cinematic overlay
+        if(SM.cinematic) {
+            drawCinematic(SM.cinematic);
+            return;
+        }
+
+        // End screen
+        if(SM.gameEndStats) {
+            drawEndScreen(SM.gameEndStats);
+            return;
+        }
+
+        // Dialogue
+        if(SM.dialogue) {
+            drawDialogueBox(SM.dialogue);
+        }
+
+        // NPC password prompt
+        if(SM.dialogue && SM.dialogue.inputMode) {
+            drawPasswordPrompt();
+            return;
+        }
+
+        // Timer (top center-right)
+        if(!SM.bossArena) {
+            const elapsed = Math.floor(SM.timer/60);
+            const mins = Math.floor(elapsed/60);
+            const secs = elapsed % 60;
+            const timeStr = `${mins}:${secs<10?'0'+secs:secs}`;
+            const limit = Math.floor(SM.timerLimit/60);
+            const lMins = Math.floor(limit/60), lSecs = limit%60;
+            const limitStr = `${lMins}:${lSecs<10?'0'+lSecs:lSecs}`;
+            ctx.save();
+            ctx.fillStyle='rgba(0,0,0,0.5)';
+            roundRect2(ctx, GAME_WIDTH-160, 10, 150, 26, 5);
+            ctx.fill();
+            ctx.fillStyle = SM.timer > SM.timerLimit*0.8 ? '#ff4444' : '#cc88ff';
+            ctx.font='bold 14px Arial';
+            ctx.textAlign='center';
+            ctx.textBaseline='middle';
+            ctx.fillText(`⏱ ${timeStr} / ${limitStr}`, GAME_WIDTH-85, 23);
+            ctx.restore();
+        }
+
+        // Objective progress bar (below timer)
+        const pct = SM.objectivePct;
+        const barX = GAME_WIDTH-160, barY=40, barW=150, barH=10;
+        ctx.save();
+        ctx.fillStyle='rgba(0,0,0,0.5)';
+        roundRect2(ctx, barX, barY, barW, barH+20, 4);
+        ctx.fill();
+        ctx.fillStyle='#333';
+        ctx.fillRect(barX+4, barY+4, barW-8, barH);
+        const grad = ctx.createLinearGradient(barX, 0, barX+barW, 0);
+        grad.addColorStop(0,'#8822cc'); grad.addColorStop(1,'#ff44ff');
+        ctx.fillStyle=grad;
+        ctx.fillRect(barX+4, barY+4, (barW-8)*pct, barH);
+        ctx.fillStyle='#cc88ff'; ctx.font='bold 10px Arial'; ctx.textAlign='center';
+        ctx.fillText(`Objectives: ${Math.round(pct*100)}%`, barX+barW/2, barY+barH+14);
+        ctx.restore();
+
+        // Board toggle hint
+        ctx.save();
+        ctx.fillStyle='rgba(0,0,0,0.45)';
+        roundRect2(ctx, GAME_WIDTH-160, 68, 150, 18, 4);
+        ctx.fill();
+        ctx.fillStyle='#aa77ff'; ctx.font='11px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText('[TAB] Objective Board', GAME_WIDTH-85, 77);
+        ctx.restore();
+
+        // Objective board overlay
+        if(SM.boardOpen) drawObjectiveBoard();
+
+        // NPC interact hints
+        if(SM.npc1 && !SM.npc1Talked) {
+            const nx = SM.npc1.x, ny = SM.npc1.y;
+            if(Math.abs(nx-player.x)<120) {
+                ctx.save();
+                ctx.fillStyle='rgba(0,0,0,0.6)';
+                ctx.fillRect(nx-40,ny-20,80,16);
+                ctx.fillStyle='#ffe066'; ctx.font='10px Arial'; ctx.textAlign='center';
+                ctx.fillText('Press F to talk', nx, ny-8);
+                ctx.restore();
+            }
+        }
+        if(SM.npc2 && !SM.npc2Talked) {
+            const nx = SM.npc2.x, ny = SM.npc2.y;
+            if(Math.abs(nx-player.x)<120) {
+                ctx.save();
+                ctx.fillStyle='rgba(0,0,0,0.6)';
+                ctx.fillRect(nx-40,ny-20,80,16);
+                ctx.fillStyle='#88ffcc'; ctx.font='10px Arial'; ctx.textAlign='center';
+                ctx.fillText('Press F to talk', nx, ny-8);
+                ctx.restore();
+            }
+        }
+        if(SM.portal) {
+            if(Math.abs(SM.portal.x+48-player.x)<120) {
+                ctx.save();
+                ctx.fillStyle='rgba(80,0,120,0.7)';
+                roundRect2(ctx, SM.portal.x, SM.portal.y-30, 96, 18, 4);
+                ctx.fill();
+                ctx.fillStyle='#ff88ff'; ctx.font='bold 10px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+                ctx.fillText('Press F to enter rift', SM.portal.x+48, SM.portal.y-21);
+                ctx.restore();
+            }
+        }
+
+        // Boss arena UI
+        if(SM.bossArena && SM.boss && !SM.boss.dying) {
+            drawBossHP();
+        }
+    }
+
+    function drawCinematic(c) {
+        const alpha = Math.min(1, (c.t % 180) < 20 ? (c.t%180)/20 : (c.t%180)>160 ? (180-(c.t%180))/20 : 1);
+        ctx.save();
+        ctx.fillStyle=`rgba(0,0,0,0.88)`;
+        ctx.fillRect(0,0,GAME_WIDTH,GAME_HEIGHT);
+        // Top/bottom bars
+        ctx.fillStyle='#000';
+        ctx.fillRect(0,0,GAME_WIDTH,80);
+        ctx.fillRect(0,GAME_HEIGHT-80,GAME_WIDTH,80);
+        const line = c.lines[c.lineIdx] || '';
+        const isTitle = c.lineIdx===0;
+        ctx.globalAlpha = alpha;
+        if(isTitle) {
+            ctx.font='bold 36px "Cinzel Decorative", serif';
+            ctx.fillStyle='#cc88ff';
+            ctx.textAlign='center'; ctx.textBaseline='middle';
+            ctx.shadowColor='#8800ff'; ctx.shadowBlur=30;
+            ctx.fillText(line, GAME_WIDTH/2, GAME_HEIGHT/2 - 20);
+        } else {
+            ctx.font='18px "Cinzel", serif';
+            ctx.fillStyle='#e8d8ff';
+            ctx.textAlign='center'; ctx.textBaseline='middle';
+            ctx.shadowColor='rgba(0,0,0,0.8)'; ctx.shadowBlur=8;
+            ctx.fillText(line, GAME_WIDTH/2, GAME_HEIGHT/2);
+        }
+        // Progress dots
+        for(let i=0;i<c.lines.length;i++){
+            ctx.globalAlpha=0.5;
+            ctx.fillStyle = i===c.lineIdx?'#cc88ff':'#444';
+            ctx.beginPath();
+            ctx.arc(GAME_WIDTH/2+(i-c.lines.length/2)*16, GAME_HEIGHT-50, 4, 0, Math.PI*2);
+            ctx.fill();
+        }
+        ctx.restore();
+    }
+
+    function drawDialogueBox(d) {
+        if(d.inputMode) return;
+        const line = d.lines[d.idx];
+        if(!line) return;
+        const bossStyle = line.bossLine;
+        const heroStyle = line.heroLine;
+        const boxH = 110, boxY = GAME_HEIGHT - boxH - 10;
+        ctx.save();
+        // Animated border glow
+        const t = Date.now()/1000;
+        const glowColor = bossStyle ? `rgba(200,0,50,${0.4+0.2*Math.sin(t*3)})` : heroStyle ? `rgba(80,200,255,${0.4+0.2*Math.sin(t*3)})` : `rgba(150,80,255,${0.4+0.2*Math.sin(t*2)})`;
+        ctx.fillStyle=`rgba(0,0,0,0.85)`;
+        roundRect2(ctx,20,boxY,GAME_WIDTH-40,boxH,8);
+        ctx.fill();
+        ctx.strokeStyle=glowColor; ctx.lineWidth=3;
+        roundRect2(ctx,20,boxY,GAME_WIDTH-40,boxH,8);
+        ctx.stroke();
+        // Speaker name
+        ctx.fillStyle=bossStyle?'#ff4444':heroStyle?'#44aaff':'#cc88ff';
+        ctx.font='bold 14px "Cinzel", serif'; ctx.textAlign='left'; ctx.textBaseline='top';
+        ctx.fillText(line.speaker, 36, boxY+12);
+        // Dialogue text — animated typewriter
+        const fullText = line.text;
+        const charsPerSec = 40;
+        const elapsed = Date.now() - (d._lineStart||Date.now());
+        if(!d._lineStart) d._lineStart = Date.now();
+        const charsShown = Math.min(fullText.length, Math.floor(elapsed/1000*charsPerSec));
+        if(charsShown>=fullText.length) d._lineComplete=true; else d._lineComplete=false;
+        const shown = fullText.substring(0, charsShown);
+        ctx.fillStyle='#f0e8ff'; ctx.font='15px "AntiquityPrint", serif';
+        wrapText(ctx, shown, 36, boxY+36, GAME_WIDTH-72, 22);
+        // Continue prompt
+        if(d._lineComplete) {
+            ctx.fillStyle=`rgba(255,220,100,${0.5+0.5*Math.sin(t*4)})`;
+            ctx.textAlign='right'; ctx.font='12px Arial';
+            ctx.fillText('▶ Click or Space to continue', GAME_WIDTH-36, boxY+boxH-16);
+        }
+        // Line counter
+        ctx.fillStyle='#666'; ctx.textAlign='right'; ctx.font='10px Arial';
+        ctx.fillText(`${d.idx+1}/${d.lines.length}`, GAME_WIDTH-36, boxY+12);
+        ctx.restore();
+    }
+
+    function drawPasswordPrompt() {
+        const boxH=140, boxY=GAME_HEIGHT/2-boxH/2;
+        ctx.save();
+        ctx.fillStyle='rgba(0,0,0,0.9)';
+        roundRect2(ctx, GAME_WIDTH/2-200, boxY, 400, boxH, 10);
+        ctx.fill();
+        ctx.strokeStyle='#cc88ff'; ctx.lineWidth=3;
+        roundRect2(ctx, GAME_WIDTH/2-200, boxY, 400, boxH, 10);
+        ctx.stroke();
+        ctx.fillStyle='#cc88ff'; ctx.font='bold 16px "Cinzel", serif';
+        ctx.textAlign='center'; ctx.textBaseline='top';
+        ctx.fillText('Sentinel Kael', GAME_WIDTH/2, boxY+14);
+        ctx.fillStyle='#e8d8ff'; ctx.font='13px Arial';
+        ctx.fillText('"Speak the word Zephira gave you..."', GAME_WIDTH/2, boxY+38);
+        // Input box
+        ctx.fillStyle='rgba(50,20,80,0.9)';
+        ctx.fillRect(GAME_WIDTH/2-120, boxY+64, 240, 34);
+        ctx.strokeStyle='#aa66ff'; ctx.lineWidth=2;
+        ctx.strokeRect(GAME_WIDTH/2-120, boxY+64, 240, 34);
+        ctx.fillStyle='#ffffff'; ctx.font='bold 18px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+        const t = Date.now()/1000;
+        const cursor = Math.floor(t*2)%2===0 ? '|' : '';
+        ctx.fillText((dialogueState.inputVal||'').toUpperCase() + cursor, GAME_WIDTH/2, boxY+81);
+        ctx.fillStyle='#888'; ctx.font='11px Arial';
+        ctx.fillText('Type the password & press Enter', GAME_WIDTH/2, boxY+112);
+        ctx.restore();
+    }
+
+    function drawObjectiveBoard() {
+        const SM = STORY_MODE;
+        const bw=360, bh=SM.objectives.length*32+60, bx=GAME_WIDTH/2-bw/2, by=GAME_HEIGHT/2-bh/2;
+        ctx.save();
+        ctx.fillStyle='rgba(0,0,0,0.92)';
+        roundRect2(ctx, bx, by, bw, bh, 10);
+        ctx.fill();
+        ctx.strokeStyle='#aa66ff'; ctx.lineWidth=3;
+        roundRect2(ctx, bx, by, bw, bh, 10);
+        ctx.stroke();
+        ctx.fillStyle='#cc88ff'; ctx.font='bold 16px "Cinzel", serif';
+        ctx.textAlign='center'; ctx.textBaseline='top';
+        ctx.fillText('✦ SHADOW CHRONICLE — OBJECTIVES ✦', bx+bw/2, by+12);
+        SM.objectives.forEach((obj, i) => {
+            const oy = by+44+i*32;
+            const done = obj.done;
+            ctx.fillStyle = done ? 'rgba(80,200,80,0.2)' : 'rgba(40,20,60,0.5)';
+            ctx.fillRect(bx+10, oy, bw-20, 26);
+            ctx.fillStyle = done ? '#44ff88' : '#ccaaff';
+            ctx.font=`${done?'bold ':' '}13px Arial`; ctx.textAlign='left'; ctx.textBaseline='middle';
+            ctx.fillText((done?'✔ ':'○ ') + obj.label, bx+18, oy+13);
+            // Mini progress bar
+            const prog = Math.min(1, obj.current/obj.target);
+            ctx.fillStyle='#222'; ctx.fillRect(bx+bw-82, oy+6, 70, 12);
+            ctx.fillStyle = done ? '#44ff88' : '#8844cc';
+            ctx.fillRect(bx+bw-82, oy+6, 70*prog, 12);
+            ctx.fillStyle='#fff'; ctx.font='9px Arial'; ctx.textAlign='center';
+            ctx.fillText(`${obj.current}/${obj.target}`, bx+bw-47, oy+13);
+        });
+        ctx.fillStyle='#666'; ctx.font='11px Arial'; ctx.textAlign='center'; ctx.textBaseline='bottom';
+        ctx.fillText(`[TAB] to close — Progress: ${Math.round(SM.objectivePct*100)}%`, bx+bw/2, by+bh-6);
+        ctx.restore();
+    }
+
+    function drawBossHP() {
+        const b = STORY_MODE.boss;
+        const bw=400, bh=40, bx=GAME_WIDTH/2-bw/2, by=10;
+        ctx.save();
+        ctx.fillStyle='rgba(0,0,0,0.7)';
+        roundRect2(ctx, bx-10, by-5, bw+20, bh+10, 6);
+        ctx.fill();
+        // HP bar
+        const t=Date.now()/1000;
+        const pct = Math.max(0,b.hp/b.maxHp);
+        ctx.fillStyle='#111'; ctx.fillRect(bx, by+16, bw, 14);
+        const hpGrad=ctx.createLinearGradient(bx,0,bx+bw*pct,0);
+        hpGrad.addColorStop(0,'#cc0022'); hpGrad.addColorStop(1,'#ff3366');
+        ctx.fillStyle=hpGrad;
+        ctx.fillRect(bx, by+16, bw*pct, 14);
+        // Enrage flash phase 2
+        if(b.phase===2) {
+            ctx.strokeStyle=`rgba(255,100,0,${0.5+0.5*Math.sin(t*8)})`;
+            ctx.lineWidth=2; ctx.strokeRect(bx, by+16, bw, 14);
+        }
+        ctx.fillStyle='#ff8888'; ctx.font='bold 13px "Cinzel", serif';
+        ctx.textAlign='center'; ctx.textBaseline='top';
+        ctx.fillText(`☠ VOID-WARDEN  ${Math.ceil(b.hp)} / ${b.maxHp}${b.phase===2?' ⚡ ENRAGED':''}`, bx+bw/2, by+2);
+        if(STORY_MODE.bossWeaknessKnown) {
+            ctx.fillStyle='#ff44ff'; ctx.font='10px Arial';
+            ctx.fillText('★ Weakness known: Strike from the RIGHT', bx+bw/2, by+32);
+        }
+        ctx.restore();
+    }
+
+    function drawEndScreen(stats) {
+        ctx.save();
+        ctx.fillStyle='rgba(0,0,0,0.92)';
+        ctx.fillRect(0,0,GAME_WIDTH,GAME_HEIGHT);
+        const cx=GAME_WIDTH/2;
+        // Animated glow
+        const t=Date.now()/1000;
+        ctx.shadowColor='#aa44ff'; ctx.shadowBlur=40+20*Math.sin(t);
+        ctx.fillStyle='#cc88ff'; ctx.font='bold 42px "Cinzel Decorative", cursive';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText('VOID-WARDEN DEFEATED', cx, 100);
+        ctx.shadowBlur=0;
+        const ratingColors = {S:'#ffd700',A:'#ff8800',B:'#88ff44',C:'#aaaaaa'};
+        ctx.font='bold 90px "Cinzel Decorative", cursive';
+        ctx.fillStyle=ratingColors[stats.rating]||'#fff';
+        ctx.fillText(stats.rating, cx, 220);
+        ctx.font='14px "Cinzel", serif'; ctx.fillStyle='#e8d8ff';
+        const rows=[
+            [`⏱ Time`, stats.time],
+            [`💀 Enemies Slain`, stats.kills],
+            [`🪙 Coins Collected`, stats.coins],
+            [`📦 Chests Opened`, stats.chests],
+            [`🏃 Distance Traveled`, stats.distance+'m'],
+            [`✔ Objectives`, stats.objectives],
+        ];
+        rows.forEach((r, i) => {
+            const ry = 290+i*32;
+            ctx.fillStyle='rgba(100,50,150,0.4)';
+            ctx.fillRect(cx-160, ry-10, 320, 26);
+            ctx.fillStyle='#cc88ff'; ctx.textAlign='left';
+            ctx.fillText(r[0], cx-148, ry+3);
+            ctx.fillStyle='#ffffff'; ctx.textAlign='right';
+            ctx.fillText(r[1], cx+148, ry+3);
+        });
+        // Replay button area
+        ctx.fillStyle='rgba(100,40,160,0.8)';
+        roundRect2(ctx, cx-120, 500, 240, 36, 8);
+        ctx.fill();
+        ctx.strokeStyle='#cc88ff'; ctx.lineWidth=2;
+        roundRect2(ctx, cx-120, 500, 240, 36, 8);
+        ctx.stroke();
+        ctx.fillStyle='#fff'; ctx.font='bold 14px "Cinzel",serif';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText('Click to Return to Menu', cx, 518);
+        window._endScreenActive = true;
+        ctx.restore();
+    }
+
+    function drawNPCs() {
+        const SM = STORY_MODE;
+        const npcImg = images['npc_idle'];
+        if(!npcImg||!npcImg.complete||!npcImg.naturalWidth) return;
+        const frameW = npcImg.naturalWidth/3; // 192x128 canvas, 64x64 sprites, 3 cols
+        const frameH = npcImg.naturalHeight;   // 128 total (2 rows? use top row)
+        function drawNPC(npc, tint) {
+            if(!npc) return;
+            // Animate
+            npc.frameTimer = (npc.frameTimer||0)+1;
+            if(npc.frameTimer>=12){ npc.frame=(npc.frame+1)%3; npc.frameTimer=0; }
+            ctx.save();
+            if(tint) { ctx.filter='hue-rotate(120deg) brightness(1.2)'; }
+            // Draw NPC sprite (64x64 per frame)
+            ctx.imageSmoothingEnabled=false;
+            ctx.drawImage(npcImg, npc.frame*frameW, 0, frameW, Math.min(frameH,64), npc.x-32, npc.y-30, 64, 80);
+            ctx.restore();
+        }
+        drawNPC(SM.npc1, false);
+        drawNPC(SM.npc2, true);
+    }
+
+    function drawBossSprites() {
+        const b = STORY_MODE.boss;
+        if(!b) return;
+        const stateMap = { idle:'boss_idle',walk:'boss_walk',run:'boss_run',attack:'boss_attack',hurt:'boss_hurt',death:'boss_death',jump:'boss_jump' };
+        const framesMap = { idle:9,walk:8,run:8,attack:13,hurt:3,death:19,jump:9 };
+        const key = stateMap[b.state]||'boss_idle';
+        const totalF = framesMap[b.state]||9;
+        const img = images[key];
+        const destX = b.x - (b.drawWidth-b.width)/2;
+        const destY = b.y + b.height - b.drawHeight;
+        ctx.save();
+        ctx.globalAlpha = b.dying ? b.alpha : 1;
+        if(b.hurtTimer>0&&!b.dying) ctx.filter='brightness(3) saturate(0)';
+        if(b.phase===2 && !b.dying) {
+            // Red glow aura
+            const t=Date.now()/1000;
+            ctx.shadowColor=`rgba(255,0,50,${0.5+0.3*Math.sin(t*4)})`;
+            ctx.shadowBlur=20+10*Math.sin(t*4);
+        }
+        drawSprite(img, totalF, b.frame, b.facing==='left', destX, destY, b.drawWidth, b.drawHeight);
+        ctx.filter='none'; ctx.restore();
+
+        // Draw projectiles using Moving.png (boss_proj)
+        const projImg = images['boss_proj'];
+        if(projImg&&projImg.complete&&projImg.naturalWidth) {
+            const pfw = projImg.naturalWidth/4; // ~4 frames
+            const pfh = projImg.naturalHeight;
+            b.projs.forEach(pr => {
+                ctx.save();
+                ctx.imageSmoothingEnabled=false;
+                ctx.drawImage(projImg, pr.frame*pfw, 0, pfw, pfh, pr.x-16, pr.y-8, 32, 16);
+                ctx.restore();
+            });
+        }
+    }
+
+    function drawPortal() {
+        const p = STORY_MODE.portal;
+        if(!p) return;
+        const img = images['portal_sheet'];
+        p.frameTimer=(p.frameTimer||0)+1;
+        if(p.frameTimer>=5){ p.frame=(p.frame+1); p.frameTimer=0; }
+        // Try to get total frames from image width (assume 8 frames or fallback)
+        const totalF = img&&img.naturalWidth ? Math.max(1,Math.round(img.naturalWidth/96)) : 8;
+        const frame = p.frame % totalF;
+        if(img&&img.complete&&img.naturalWidth){
+            const fw=img.naturalWidth/totalF;
+            ctx.save();
+            ctx.imageSmoothingEnabled=false;
+            // Pulsing glow
+            const t=Date.now()/1000;
+            ctx.shadowColor=`rgba(180,50,255,${0.6+0.3*Math.sin(t*3)})`;
+            ctx.shadowBlur=30+10*Math.sin(t*2);
+            ctx.drawImage(img, frame*fw, 0, fw, img.naturalHeight, p.x, p.y, 96, 110);
+            ctx.restore();
+        } else {
+            // Fallback: draw glowing oval
+            const t=Date.now()/1000;
+            ctx.save();
+            ctx.shadowColor='#aa00ff'; ctx.shadowBlur=30+15*Math.sin(t*2);
+            const grad=ctx.createRadialGradient(p.x+48,p.y+55,5,p.x+48,p.y+55,50);
+            grad.addColorStop(0,'rgba(180,50,255,0.9)');
+            grad.addColorStop(1,'rgba(80,0,140,0.1)');
+            ctx.fillStyle=grad;
+            ctx.beginPath(); ctx.ellipse(p.x+48,p.y+55,40,60,0,0,Math.PI*2); ctx.fill();
+            ctx.restore();
+        }
+    }
+
+    // Helper: rounded rect path
+    function roundRect2(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x+r, y);
+        ctx.lineTo(x+w-r, y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+        ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+        ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+        ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y);
+        ctx.closePath();
+    }
+    function wrapText(ctx, text, x, y, maxW, lineH) {
+        const words = text.split(' ');
+        let line='';
+        let ly=y;
+        words.forEach(w => {
+            const test = line ? line+' '+w : w;
+            if(ctx.measureText(test).width > maxW && line) {
+                ctx.fillText(line, x, ly); ly+=lineH; line=w;
+            } else { line=test; }
+        });
+        if(line) ctx.fillText(line, x, ly);
+    }
+
+
     // Chest open animations — artifacts float up from chest position
     let chestAnims = []; // { x, y, artifactId, t, maxT, collected }
 
@@ -709,6 +1682,18 @@
         const scaleY = GAME_HEIGHT / rect.height;
         const cx = (e.clientX - rect.left) * scaleX;
         const cy = (e.clientY - rect.top)  * scaleY;
+        // End screen click
+        if(window._endScreenActive) {
+            window._endScreenActive=false;
+            STORY_MODE.active=false; STORY_MODE.bossArena=false;
+            goHome(); return;
+        }
+        // Dialogue advance
+        if(STORY_MODE.dialogue && !STORY_MODE.dialogue.inputMode) {
+            if(dialogueState._lineComplete) { advanceDialogue(); dialogueState._lineStart=null; }
+            else dialogueState._lineStart=Date.now()-99999;
+            return;
+        }
         const pb = window._pauseBtnBounds;
         if (pb && cx >= pb.x && cx <= pb.x + pb.w && cy >= pb.y && cy <= pb.y + pb.h) {
             togglePause();
@@ -718,6 +1703,32 @@
     window.addEventListener('keydown', e => {
         startMusic();
         if (e.code === 'Escape' || e.code === 'KeyP') { e.preventDefault(); togglePause(); return; }
+        // Story mode: TAB for objective board
+        if(STORY_MODE.active && e.code==='Tab') { e.preventDefault(); STORY_MODE.boardOpen=!STORY_MODE.boardOpen; return; }
+        // Story mode: F key to interact
+        if(STORY_MODE.active && e.code==='KeyF' && !gamePaused) {
+            const SM=STORY_MODE;
+            if(SM.npc1&&!SM.npc1Talked&&Math.abs(SM.npc1.x-player.x)<120) { tryInteractNPC(1); return; }
+            if(SM.npc2&&!SM.npc2Talked&&Math.abs(SM.npc2.x-player.x)<120) { tryInteractNPC(2); return; }
+            if(SM.portal&&Math.abs(SM.portal.x+48-player.x)<130) { tryEnterPortal(); return; }
+        }
+        // Story dialogue advance
+        if(STORY_MODE.dialogue && !STORY_MODE.dialogue.inputMode) {
+            if(e.code==='Space'||e.code==='Enter'||e.code==='KeyF') {
+                e.preventDefault();
+                if(dialogueState._lineComplete) { advanceDialogue(); dialogueState._lineStart=null; }
+                else dialogueState._lineStart = Date.now()-99999; // skip to end
+                return;
+            }
+        }
+        // Password input
+        if(STORY_MODE.dialogue && STORY_MODE.dialogue.inputMode) {
+            e.preventDefault();
+            if(e.code==='Enter') { submitNPC2Password(dialogueState.inputVal||''); return; }
+            if(e.code==='Backspace') { dialogueState.inputVal=(dialogueState.inputVal||'').slice(0,-1); return; }
+            if(e.key.length===1 && /[a-zA-Z]/.test(e.key)) { dialogueState.inputVal=((dialogueState.inputVal||'')+e.key).slice(0,10); return; }
+            return;
+        }
         // Artifact activation keys 1-5
         if (['Digit1','Digit2','Digit3','Digit4','Digit5'].includes(e.code) && !gamePaused && !player.dead) {
             const idx = parseInt(e.code.replace('Digit','')) - 1;
@@ -772,6 +1783,11 @@
     function goHome() {
         gamePaused = false;
         document.getElementById('pause-menu').style.display = 'none';
+        // Fully reset story mode
+        STORY_MODE.active = false; STORY_MODE.bossArena = false; STORY_MODE.boss = null;
+        STORY_MODE.dialogue = null; STORY_MODE.cinematic = null;
+        window._endScreenActive = false; window._gameMode = 'endless';
+        speechSynthesis && speechSynthesis.cancel && speechSynthesis.cancel();
         // Show home screen again
         const homeEl = document.getElementById('home-screen');
         homeEl.style.display = 'flex';
@@ -797,6 +1813,11 @@
         platforms = [{ x: -100, y: 440, w: 1400, h: 100, type: 1 }];
         collectables = [];
         spawnItemsOnPlatform(platforms[0]);
+        // Reset story mode if not active
+        if(!STORY_MODE.active) {
+            STORY_MODE.bossArena=false; STORY_MODE.boss=null; STORY_MODE.dialogue=null;
+            STORY_MODE.cinematic=null; window._endScreenActive=false;
+        }
     }
 
     function getNextPlatformY(lastY) {
@@ -884,6 +1905,17 @@
     function update() {
         if (player.dead || gamePaused) return;
 
+        // ===== STORY MODE TICK =====
+        if(STORY_MODE.active && !STORY_MODE.bossArena) {
+            STORY_MODE.timer++;
+            updateCinematic();
+            updateStoryObjectives();
+        }
+        if(STORY_MODE.active && STORY_MODE.bossArena) {
+            STORY_MODE.timer++;
+            updateBoss();
+        }
+        // Story mode kill tracking
         // ---- PLAYER ANIMATION ----
         if (!player.isAttacking) {
             if (Math.abs(player.vx) > 0.5) player.state = 'run';
@@ -955,6 +1987,8 @@
                 uiCoins = player.coins;
                 if (c.type === 'CHEST') {
                     playSound('chest');
+                    // Story tracking
+                    if(STORY_MODE.active) STORY_MODE.totalChests++;
                     // Pick a random artifact to spawn from this chest
                     const artifactPool = ['helm','berries','crystal','feather','core'];
                     const pick = artifactPool[Math.floor(Math.random() * artifactPool.length)];
@@ -971,7 +2005,7 @@
                 const def = ARTIFACT_DEFS.find(d => d.id === ca.artifactId);
                 if (def) {
                     // ALL artifacts go into inventory (shown in hotbar)
-                    if (player.artifacts.length < 5) player.artifacts.push(ca.artifactId);
+                    if (player.artifacts.length < 5) { player.artifacts.push(ca.artifactId); if(STORY_MODE.active) STORY_MODE.totalArtifacts++; }
                     // Passive effects apply immediately on pickup
                     if (def.effect === 'maxhp') {
                         player.maxHp = Math.min(181, player.maxHp + 1);
@@ -1136,6 +2170,8 @@
                         e.alpha = 1;
                         e.frame = 0;
                         e.frameTimer = 0;
+                        // Story mode kill tracking
+                        if(STORY_MODE.active) STORY_MODE.totalKills++;
                         // Burst particles
                         for (let i = 0; i < 12; i++) {
                             const angle = (Math.PI * 2 / 12) * i;
@@ -1210,7 +2246,8 @@
             }
         }
 
-        // ---- PROCEDURAL GEN ----
+        // ---- PROCEDURAL GEN ---- (skip in boss arena)
+        if(!STORY_MODE.bossArena) {
         const lastPlatform = platforms[platforms.length - 1];
         if (lastPlatform.x + lastPlatform.w < GAME_WIDTH + 400) {
             const gap = 100 + Math.random() * 60; // 100–160px — always jumpable
@@ -1232,6 +2269,7 @@
         collectables = collectables.filter(c => !c.collected && c.x > -100);
         traps = traps.filter(t => t.x > -200);
         enemies = enemies.filter(e => e.x > -200);
+        } // end !bossArena
 
         // Tick damage numbers
         dmgNumbers.forEach(d => { d.y -= 1.2; d.life--; });
@@ -1253,7 +2291,11 @@
         shakeTimer = 10; shakeMag = 5;
         if (player.hp <= 0) {
             player.dead = true;
-            goScore.textContent = `Distance: ${score}m  |  Coins: ${player.coins}`;
+            if(STORY_MODE.active && STORY_MODE.bossArena) {
+                goScore.textContent = `Slain by the Void-Warden. Kills: ${STORY_MODE.totalKills}  |  Distance: ${score}m`;
+            } else {
+                goScore.textContent = `Distance: ${score}m  |  Coins: ${player.coins}`;
+            }
             gameOverEl.style.display = 'flex';
         }
     }
@@ -1487,8 +2529,21 @@
 
         ctx.restore(); // end shake transform
 
+        // ===== STORY MODE RENDERING =====
+        if(STORY_MODE.active) {
+            // Draw portal
+            if(STORY_MODE.portal) drawPortal();
+            // Draw NPCs
+            drawNPCs();
+            // Draw boss
+            if(STORY_MODE.bossArena && STORY_MODE.boss) drawBossSprites();
+        }
+
         // ---- CANVAS UI ----
         drawCanvasUI();
+
+        // ===== STORY UI (drawn on top of everything) =====
+        if(STORY_MODE.active) drawStoryUI();
 
         requestAnimationFrame(() => {
             update();
@@ -1868,12 +2923,13 @@
         }
         animateHome();
 
-        window.startGame = function() {
+        window.startGame = function(mode) {
+            window._gameMode = mode || 'endless';
             const homeEl = document.getElementById('home-screen');
             homeEl.classList.add('fade-out');
             startMusic();
             cancelAnimationFrame(homeAnimId);
-            setTimeout(() => { homeEl.style.display = 'none'; }, 600);
+            setTimeout(() => { homeEl.style.display = 'none'; if(window._gameMode==='story') initStoryMode(); }, 600);
         };
     })();
 
