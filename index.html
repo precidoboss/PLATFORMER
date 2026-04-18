@@ -391,7 +391,13 @@
                             <div class="ctrl-keys">
                                 <img src="https://raw.githubusercontent.com/precidoboss/adventurer/main/HotkeyBox_34x34.png" class="ctrl-key-img"><span class="ctrl-key-lbl">K / Space</span>
                             </div>
-                            <span class="ctrl-desc">Attack</span>
+                            <span class="ctrl-desc">Attack (closer = more damage)</span>
+                        </div>
+                        <div class="ctrl-row">
+                            <div class="ctrl-keys">
+                                <img src="https://raw.githubusercontent.com/precidoboss/adventurer/main/HotkeyBox_34x34.png" class="ctrl-key-img"><span class="ctrl-key-lbl">1–5</span>
+                            </div>
+                            <span class="ctrl-desc">Use Artifact (if owned)</span>
                         </div>
                         <div class="ctrl-row">
                             <div class="ctrl-keys">
@@ -404,12 +410,23 @@
                 <div class="howto-section">
                     <div class="howto-section-title">Objectives</div>
                     <div class="howto-tips">
-                        <div class="tip-row"><span class="tip-icon">🪙</span><span>Collect coins and open chests for score</span></div>
-                        <div class="tip-row"><span class="tip-icon">⚔</span><span>Defeat enemies blocking your path</span></div>
+                        <div class="tip-row"><span class="tip-icon">🪙</span><span>Collect coins and open chests for score & artifacts</span></div>
+                        <div class="tip-row"><span class="tip-icon">⚔</span><span>Defeat enemies — attack up close for max damage</span></div>
                         <div class="tip-row"><span class="tip-icon">🔥</span><span>Dodge fire traps and spike floors</span></div>
                         <div class="tip-row"><span class="tip-icon">🏃</span><span>Run as far as you can to earn distance</span></div>
                         <div class="tip-row"><span class="tip-icon">❤️</span><span>You have 180 HP — don't waste it</span></div>
                     </div>
+                </div>
+                <div class="howto-section span2">
+                    <div class="howto-section-title">✨ Artifacts — Found in Chests</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                        <div class="tip-row"><span class="tip-icon">🪖</span><span><b style="color:#ffd700">[1] Iron Helm</b> — Reduces max HP range (180→161) and grants +1 Max HP per pickup</span></div>
+                        <div class="tip-row"><span class="tip-icon">🍇</span><span><b style="color:#ffd700">[2] Shadow Berries</b> — Instantly restores 5 HP on pickup. Passive, no key needed</span></div>
+                        <div class="tip-row"><span class="tip-icon">💎</span><span><b style="color:#ffd700">[3] Mana Crystal</b> — Permanently increases your sword damage by +1</span></div>
+                        <div class="tip-row"><span class="tip-icon">🔥</span><span><b style="color:#ffd700">[4] Fire Feather</b> — Press <b>4</b> to activate a fire shield that blocks traps for 10 seconds</span></div>
+                        <div class="tip-row"><span class="tip-icon">⚙️</span><span><b style="color:#ffd700">[5] Ancient Core</b> — A mysterious relic... reserved for the Boss encounter ahead</span></div>
+                    </div>
+                    <div style="margin-top:10px;font-family:'Cinzel',serif;font-size:10px;color:#6a4820;">Artifacts appear as glowing icons rising from opened chests. Passive ones apply instantly. Active ones (🔥 Fire Feather) go to your hotbar — press the matching number key to activate.</div>
                 </div>
                 <div class="howto-section span2">
                     <div class="howto-section-title">Characters</div>
@@ -417,14 +434,14 @@
                         <div class="hc-card">
                             <canvas class="hc-sprite" id="howto-hero-canvas" width="96" height="80"></canvas>
                             <div class="hc-name">The Warrior</div>
-                            <div class="hc-desc">Your hero. Fast and agile. Attack on frame 3-5 for max damage.</div>
-                            <div class="hc-stats"><span>❤ 180 HP</span><span>⚔ 20 DMG</span><span>⚡ Fast</span></div>
+                            <div class="hc-desc">Your hero. Fast and agile. Attack up close for max damage — distance weakens the blade.</div>
+                            <div class="hc-stats"><span>❤ 180 HP</span><span>⚔ 8–20 DMG</span><span>⚡ Fast</span></div>
                         </div>
                         <div class="hc-card">
                             <canvas class="hc-sprite" id="howto-enemy-canvas" width="96" height="96"></canvas>
                             <div class="hc-name">The Guardian</div>
-                            <div class="hc-desc">Ancient stone guardian. Chases, feints and lunges. Hit 8 times to defeat.</div>
-                            <div class="hc-stats"><span>❤ 160 HP</span><span>⚔ 18 DMG</span><span>⚡ Smart</span></div>
+                            <div class="hc-desc">Ancient stone guardian. Chases, feints and lunges. 3 hits to defeat.</div>
+                            <div class="hc-stats"><span>❤ 50 HP</span><span>⚔ 5 DMG</span><span>⚡ Smart</span></div>
                         </div>
                     </div>
                 </div>
@@ -438,7 +455,7 @@
 
 <div id="game-container">
     <!-- UI drawn on canvas -->
-    <div id="controls-hint">AD / Arrows to Move | W / ↑ to Jump | Space or K to Attack</div>
+    <div id="controls-hint">AD / Arrows to Move | W / ↑ to Jump | Space or K to Attack | 1–5 Use Artifact</div>
     <!-- HP drawn on canvas -->
     <div id="game-over">
         <h1>YOU DIED</h1>
@@ -588,7 +605,11 @@
         coins: 0,
         hp: 180, maxHp: 180,
         invincible: 0,
-        dead: false
+        dead: false,
+        attackDmg: 20,
+        artifacts: [],       // collected artifacts in inventory [type strings]
+        fireShield: 0,       // countdown timer for fire shield (frames)
+        fireShieldKey: false // to detect key press edge
     };
 
     const anims = {
@@ -605,6 +626,39 @@
         attack: { frames: 7,  speed: 6  },
         hurt:   { frames: 4,  speed: 7  }
     };
+
+    // Artifact images — loaded from uploaded local files via blob URLs
+    const ARTIFACT_DEFS = [
+        { id: 'helm',    key: '1', file: 'Icon4.png', effect: 'maxhp',     label: 'Iron Helm',     desc: '+1 Max HP per pickup' },
+        { id: 'berries', key: '2', file: 'Icon2.png', effect: 'heal',      label: 'Shadow Berries', desc: 'Restores 5 HP instantly' },
+        { id: 'crystal', key: '3', file: 'Icon3.png', effect: 'atk',       label: 'Mana Crystal',  desc: '+1 Attack Damage' },
+        { id: 'feather', key: '4', file: 'Icon4.png', effect: 'fireshield',label: 'Fire Feather',   desc: 'Fire Shield for 10 sec (press 4)' },
+        { id: 'core',    key: '5', file: 'Icon5.png', effect: 'boss',      label: 'Ancient Core',   desc: 'BOSS KEY — reserved' },
+    ];
+    // Map effect => icon index from uploads
+    const ARTIFACT_ICONS = {};
+    // We'll load them after DOM ready — using object URLs from the uploaded paths
+    const artifactImgSrcs = {
+        'helm':    'https://raw.githubusercontent.com/precidoboss/adventurer/main/Icon4.png',
+        'berries': 'https://raw.githubusercontent.com/precidoboss/adventurer/main/Icon2.png',
+        'crystal': 'https://raw.githubusercontent.com/precidoboss/adventurer/main/Icon3.png',
+        'feather': 'https://raw.githubusercontent.com/precidoboss/adventurer/main/Icon1.png',
+        'core':    'https://raw.githubusercontent.com/precidoboss/adventurer/main/Icon5.png',
+    };
+    // Load artifact images
+    function loadArtifactImages() {
+        ARTIFACT_DEFS.forEach(def => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.src = artifactImgSrcs[def.id];
+            ARTIFACT_ICONS[def.id] = img;
+        });
+    }
+    loadArtifactImages();
+
+    // Chest open animations — artifacts float up from chest position
+    let chestAnims = []; // { x, y, artifactId, t, maxT, collected }
+
 
     let enemies = [];
     let traps   = [];
@@ -647,6 +701,13 @@
     window.addEventListener('keydown', e => {
         startMusic();
         if (e.code === 'Escape' || e.code === 'KeyP') { e.preventDefault(); togglePause(); return; }
+        // Artifact activation keys 1-5
+        if (['Digit1','Digit2','Digit3','Digit4','Digit5'].includes(e.code) && !gamePaused && !player.dead) {
+            const idx = parseInt(e.code.replace('Digit','')) - 1;
+            const def = ARTIFACT_DEFS[idx];
+            if (def) activateArtifact(def.id);
+            return;
+        }
         keys[e.code] = true;
         if ((e.code === 'KeyK' || e.code === 'Space') && !player.isAttacking && !gamePaused) { e.preventDefault(); startAttack(); }
     });
@@ -660,6 +721,23 @@
         player.state = 'attack';
         playSound('sword');
     }
+
+    function activateArtifact(id) {
+        const inv = player.artifacts;
+        const idx = inv.indexOf(id);
+        if (idx === -1) return; // not in inventory
+        const def = ARTIFACT_DEFS.find(d => d.id === id);
+        if (!def) return;
+        if (def.effect === 'fireshield') {
+            // Activate fire shield — consumes the artifact
+            player.fireShield = 600; // 10 seconds at 60fps
+            inv.splice(idx, 1);
+            dmgNumbers.push({ x: player.x + 10, y: player.y - 20, val: '🔥 SHIELD', life: 80, color: '#ff6600', isText: true });
+        }
+        // heal, maxhp, atk are passive on pickup — no activation needed, but if somehow still in inv:
+        // (passive effects applied on collection; key press is a no-op for those)
+    }
+
 
     function restartGame() {
         gameOverEl.style.display = 'none';
@@ -692,10 +770,12 @@
     function resetGame() {
         player.y = 100; player.x = 100; player.vy = 0; player.coins = 0;
         player.hp = player.maxHp; player.dead = false; player.invincible = 0;
+        player.attackDmg = 20; player.artifacts = []; player.fireShield = 0;
+        player.maxHp = 180;
         score = 0; scrollX = 0;
         uiCoins = 0;
         uiHp = player.maxHp; uiMaxHp = player.maxHp;
-        enemies = []; traps = []; dmgNumbers = []; particles = []; shakeTimer = 0;
+        enemies = []; traps = []; dmgNumbers = []; particles = []; chestAnims = []; shakeTimer = 0;
         // Ground platform — long starter
         platforms = [{ x: -100, y: 440, w: 1400, h: 100, type: 1 }];
         collectables = [];
@@ -737,7 +817,7 @@
                 y: p.y - 70,
                 width: 50, height: 70,
                 drawWidth: 160, drawHeight: 160,
-                hp: 160, maxHp: 160,
+                hp: 50, maxHp: 50,
                 vx: 0, vy: 0,
                 grounded: true,
                 facing: 'left',
@@ -856,12 +936,46 @@
                 c.collected = true;
                 player.coins += ITEM_TYPES[c.type].val;
                 uiCoins = player.coins;
-                if (c.type === 'CHEST') playSound('chest');
+                if (c.type === 'CHEST') {
+                    playSound('chest');
+                    // Pick a random artifact to spawn from this chest
+                    const artifactPool = ['helm','berries','crystal','feather','core'];
+                    const pick = artifactPool[Math.floor(Math.random() * artifactPool.length)];
+                    chestAnims.push({ x: c.x, y: c.y, artifactId: pick, t: 0, maxT: 90 });
+                }
             }
         });
 
+        // ---- CHEST ARTIFACT ANIMATIONS ----
+        chestAnims.forEach(ca => {
+            ca.t++;
+            // When animation reaches halfway, apply the artifact effect and add to inventory
+            if (ca.t === 45 && !ca.applied) {
+                ca.applied = true;
+                const def = ARTIFACT_DEFS.find(d => d.id === ca.artifactId);
+                if (def) {
+                    if (def.effect === 'maxhp') {
+                        // Reduce maxHp from 180 toward 161: each pickup gives +1 maxHp (starting effect is −19 total possible)
+                        player.maxHp = Math.max(161, player.maxHp - 19 + 1);
+                        player.hp = Math.min(player.hp + 1, player.maxHp);
+                        uiHp = player.hp; uiMaxHp = player.maxHp;
+                    } else if (def.effect === 'heal') {
+                        player.hp = Math.min(player.maxHp, player.hp + 5);
+                        uiHp = player.hp;
+                    } else if (def.effect === 'atk') {
+                        player.attackDmg = (player.attackDmg || 20) + 1;
+                    } else if (def.effect === 'fireshield' || def.effect === 'boss') {
+                        // Add to inventory for key activation
+                        if (player.artifacts.length < 5) player.artifacts.push(ca.artifactId);
+                    }
+                }
+            }
+        });
+        chestAnims = chestAnims.filter(ca => ca.t < ca.maxT);
+
         // ---- ENEMIES ----
         if (player.invincible > 0) player.invincible--;
+        if (player.fireShield > 0) player.fireShield--;
         if (shakeTimer > 0) shakeTimer--;
 
         for (let e of enemies) {
@@ -963,7 +1077,7 @@
                         const ddx = Math.abs(player.x - e.x);
                         const ddy = Math.abs((player.y + player.height) - (e.y + e.height));
                         if (ddx < 130 && ddy < 55 && player.invincible === 0) {
-                            hurtPlayer(18);
+                            hurtPlayer(5);
                         }
                         e.isAttacking = false;
                         e.state = 'idle';
@@ -979,12 +1093,17 @@
                 const inFront = player.facing === 'right' ? (dx > -20 && dx < 150) : (dx < 20 && dx > -150);
                 if (inFront && dy < 60) {
                     player.attackHit = true;
-                    e.hp -= 20;
+                    // Distance-based damage: closer = more damage (max 20 at point-blank, min 8 at range)
+                    const dist = Math.abs(dx);
+                    const baseDmg = player.attackDmg || 20;
+                    const distFactor = Math.max(0.4, 1 - (dist / 150) * 0.6);
+                    const dmg = Math.round(baseDmg * distFactor);
+                    e.hp -= dmg;
                     e.hurtTimer = 18;
                     e.state = 'hurt';
                     e.frame = 0;
                     e.frameTimer = 0;
-                    dmgNumbers.push({ x: e.x + 20, y: e.y - 10, val: 20, life: 50, color: '#ffe066' });
+                    dmgNumbers.push({ x: e.x + 20, y: e.y - 10, val: dmg, life: 50, color: '#ffe066' });
                     // Trigger dying
                     if (e.hp <= 0 && !e.dying) {
                         e.dying = true;
@@ -1088,6 +1207,8 @@
 
     function hurtPlayer(dmg) {
         if (player.invincible > 0 || player.dead) return;
+        // Fire shield blocks fire/spike damage entirely
+        if (player.fireShield > 0 && typeof dmg === 'number' && dmg <= 7) return; // blocks trap damage
         player.hp = Math.max(0, player.hp - dmg);
         player.invincible = 60;
         uiHp = player.hp; uiMaxHp = player.maxHp;
@@ -1162,6 +1283,40 @@
             ctx.drawImage(images.items, it.sx, it.sy, it.sw, it.sh, c.x, c.y, c.w, c.h);
         });
 
+        // Chest artifact animations — artifact rises from chest position
+        chestAnims.forEach(ca => {
+            const progress = ca.t / ca.maxT; // 0→1
+            const img = ARTIFACT_ICONS[ca.artifactId];
+            if (!img || !img.complete || !img.naturalWidth) return;
+            // Rise up from ground
+            const rise = progress * 60; // rises 60px up
+            const drawY = ca.y - rise;
+            // Scale in then fade out
+            const scale = progress < 0.3 ? progress / 0.3 : progress > 0.75 ? 1 - (progress - 0.75) / 0.25 : 1;
+            const alpha = scale;
+            const sz = 28 * scale;
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            // Glow effect
+            ctx.shadowColor = '#ffdd44';
+            ctx.shadowBlur = 12 * scale;
+            ctx.drawImage(img, ca.x + 6 - sz/2, drawY + 6 - sz/2, sz, sz);
+            ctx.restore();
+            // Sparkle particles around it
+            if (ca.t % 6 === 0 && progress < 0.8) {
+                for (let i = 0; i < 3; i++) {
+                    particles.push({
+                        x: ca.x + 14 + (Math.random()-0.5)*20,
+                        y: drawY + 14 + (Math.random()-0.5)*10,
+                        vx: (Math.random()-0.5)*2,
+                        vy: -1 - Math.random()*1.5,
+                        life: 20,
+                        color: ['#ffdd44','#ff8800','#ffffff'][i % 3]
+                    });
+                }
+            }
+        });
+
         // Death particles
         particles.forEach(p => {
             ctx.save();
@@ -1210,6 +1365,19 @@
             const totalFrames = anims[player.state].frames;
             const destX = player.x - (player.drawWidth - player.width) / 2;
             const destY = player.y + player.height - player.drawHeight;
+            // Fire shield glow
+            if (player.fireShield > 0) {
+                ctx.save();
+                const pulse = 0.6 + 0.4 * Math.sin(Date.now() / 80);
+                ctx.globalAlpha = 0.35 * pulse;
+                ctx.fillStyle = '#ff6600';
+                ctx.shadowColor = '#ff4400';
+                ctx.shadowBlur = 20;
+                ctx.beginPath();
+                ctx.ellipse(player.x + player.width/2, player.y + player.height/2, player.drawWidth/2, player.drawHeight/2, 0, 0, Math.PI*2);
+                ctx.fill();
+                ctx.restore();
+            }
             drawSprite(spriteImg, totalFrames, player.frame, false, destX, destY, player.drawWidth, player.drawHeight);
         }
 
@@ -1218,12 +1386,21 @@
             const alpha = Math.min(1, d.life / 20);
             ctx.save();
             ctx.globalAlpha = alpha;
-            ctx.font = 'bold 22px Arial';
-            ctx.strokeStyle = '#000';
-            ctx.lineWidth = 4;
-            ctx.strokeText('-' + d.val, d.x, d.y);
-            ctx.fillStyle = d.color;
-            ctx.fillText('-' + d.val, d.x, d.y);
+            if (d.isText) {
+                ctx.font = 'bold 14px Arial';
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 3;
+                ctx.strokeText(d.val, d.x, d.y);
+                ctx.fillStyle = d.color;
+                ctx.fillText(d.val, d.x, d.y);
+            } else {
+                ctx.font = 'bold 22px Arial';
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 4;
+                ctx.strokeText('-' + d.val, d.x, d.y);
+                ctx.fillStyle = d.color;
+                ctx.fillText('-' + d.val, d.x, d.y);
+            }
             ctx.restore();
         });
 
@@ -1341,6 +1518,59 @@
         drawUI_text('⏸', pauseX + pauseW / 2, pauseY + pauseH / 2, 14, '#ffe8a0', 'center');
         // Store pause button bounds for click detection
         window._pauseBtnBounds = { x: pauseX, y: pauseY, w: pauseW, h: pauseH };
+
+        // ==== ARTIFACT INVENTORY BAR (bottom center) ====
+        const slotSize = 38, slotGap = 6, slotCount = 5;
+        const barTotalW = slotCount * (slotSize + slotGap) - slotGap;
+        const barStartX = GAME_WIDTH / 2 - barTotalW / 2;
+        const barY2 = GAME_HEIGHT - slotSize - PAD - 2;
+        ARTIFACT_DEFS.forEach((def, i) => {
+            const sx = barStartX + i * (slotSize + slotGap);
+            const inInv = player.artifacts.includes(def.id);
+            // Slot background
+            ctx.save();
+            ctx.globalAlpha = 0.75;
+            ctx.fillStyle = '#1a0c04';
+            ctx.strokeStyle = inInv ? '#ffd700' : '#5a3e18';
+            ctx.lineWidth = inInv ? 2 : 1;
+            ctx.beginPath();
+            ctx.roundRect(sx, barY2, slotSize, slotSize, 4);
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+            // Faint icon always visible
+            const iconImg = ARTIFACT_ICONS[def.id];
+            if (iconImg && iconImg.complete && iconImg.naturalWidth) {
+                ctx.save();
+                ctx.globalAlpha = inInv ? 1.0 : 0.15;
+                ctx.drawImage(iconImg, sx + 4, barY2 + 4, slotSize - 8, slotSize - 8);
+                ctx.restore();
+            }
+            // Fire shield timer arc overlay
+            if (def.effect === 'fireshield' && player.fireShield > 0) {
+                ctx.save();
+                ctx.globalAlpha = 0.85;
+                ctx.strokeStyle = '#ff6600';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(sx + slotSize/2, barY2 + slotSize/2, slotSize/2 - 3, -Math.PI/2, -Math.PI/2 + (player.fireShield/600)*Math.PI*2);
+                ctx.stroke();
+                ctx.restore();
+            }
+            // Key label
+            ctx.save();
+            ctx.font = 'bold 9px Arial';
+            ctx.fillStyle = '#ffe8a0';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillText(def.key, sx + slotSize/2, barY2 + 1);
+            ctx.restore();
+        });
+        // Fire shield active label
+        if (player.fireShield > 0) {
+            const secsLeft = Math.ceil(player.fireShield / 60);
+            drawUI_text(`🔥 SHIELD ${secsLeft}s`, GAME_WIDTH/2, barY2 - 14, 11, '#ff8800', 'center');
+        }
 
         ctx.restore();
     }
