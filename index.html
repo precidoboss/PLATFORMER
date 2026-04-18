@@ -943,49 +943,655 @@
     }
 
     // ===== CINEMATICS =====
+    // ===== SELF-CONTAINED CINEMATIC SYSTEM =====
+    // Runs its own rAF loop completely independently — does NOT pause the game loop.
+    // Uses its own canvas overlay drawn on top via a dedicated <canvas> injected into DOM.
+
+    let _cinCanvas = null, _cinCtx = null, _cinAnimId = null;
+
     function startCinematic(type) {
-        gamePaused = true;
-        const c = { type, t:0, done:false, lines:[], lineIdx:0, phase:'fade_in' };
+        // Build slides
+        let slides = [];
         if(type==='intro') {
-            c.lines = [
-                'THE SHADOW CHRONICLE',
-                'The realm of Ardenmoor has fallen into darkness.',
-                'An ancient evil — the Void-Warden — devours all light.',
-                'You are the last hope. Survive. Complete your trials.',
-                'Seek the wanderers. Learn the secret. End this.',
-                '— BEGIN YOUR QUEST —'
+            slides = [
+                { duration:220, scene:'title' },
+                { duration:240, scene:'realm',    caption:'The realm of Ardenmoor has fallen into darkness.' },
+                { duration:240, scene:'hero',     caption:'A lone warrior stands against the tide of shadow.' },
+                { duration:240, scene:'enemy',    caption:'Ancient guardians swarm the ruined paths ahead.' },
+                { duration:240, scene:'artifacts',caption:'Powerful relics lie hidden — find them. Use them.' },
+                { duration:240, scene:'boss',     caption:'The Void-Warden waits. Seek the wanderers. Learn the secret.' },
+                { duration:200, scene:'begin',    caption:'Your chronicle begins NOW.' },
             ];
         } else if(type==='portal') {
-            c.lines = [
-                '✦ DIMENSIONAL RIFT ✦',
-                'The portal shimmers with dark energy...',
-                'Beyond lies the arena of the Void-Warden.',
-                'All your training has led to this moment.',
-                'Step through — and claim victory or death.',
+            slides = [
+                { duration:180, scene:'rift_title', caption:'✦ DIMENSIONAL RIFT ✦' },
+                { duration:200, scene:'rift_enter', caption:'Beyond lies the arena of the Void-Warden.' },
+                { duration:200, scene:'boss',       caption:'All your training has led to this moment.' },
+                { duration:180, scene:'rift_go',    caption:'Step through — and claim victory or death.' },
             ];
         }
-        STORY_MODE.cinematic = c;
+
+        // Inject overlay canvas if needed
+        if(!_cinCanvas) {
+            _cinCanvas = document.createElement('canvas');
+            _cinCanvas.style.cssText='position:absolute;inset:0;width:100%;height:100%;z-index:999;pointer-events:auto;image-rendering:pixelated;';
+            document.getElementById('game-container').appendChild(_cinCanvas);
+        }
+        // Match exact game canvas pixel dimensions and position
+        const gameRect = canvas.getBoundingClientRect();
+        _cinCanvas.width  = GAME_WIDTH;
+        _cinCanvas.height = GAME_HEIGHT;
+        _cinCanvas.style.width  = gameRect.width  + 'px';
+        _cinCanvas.style.height = gameRect.height + 'px';
+        _cinCanvas.style.left   = gameRect.left   + 'px';
+        _cinCanvas.style.top    = gameRect.top    + 'px';
+        _cinCanvas.style.position = 'fixed';
+        _cinCanvas.style.display = 'block';
+        _cinCtx = _cinCanvas.getContext('2d');
+
+        const state = {
+            type, slides,
+            slideIdx: 0,
+            t: 0,           // frames within current slide
+            globalT: 0,     // total frames
+            done: false,
+            heroFrame: 0, heroFrameTimer: 0,
+            enemyFrame: 0, enemyFrameTimer: 0,
+            npcFrame: 0, npcFrameTimer: 0,
+            bossFrame: 0, bossFrameTimer: 0,
+            particles: [],
+            stars: Array.from({length:80}, ()=>({
+                x: Math.random()*GAME_WIDTH, y: Math.random()*GAME_HEIGHT*0.7,
+                size: 0.5+Math.random()*2, speed: 0.2+Math.random()*0.5,
+                alpha: 0.2+Math.random()*0.8
+            }))
+        };
+        STORY_MODE.cinematic = state;
+
+        // Skip on click or Space
+        const skipHandler = (e) => {
+            if(e.type==='keydown' && e.code!=='Space' && e.code!=='Enter') return;
+            e.preventDefault();
+            finishCinematic(state);
+            window.removeEventListener('keydown', skipHandler);
+            _cinCanvas.removeEventListener('click', skipHandler);
+        };
+        window.addEventListener('keydown', skipHandler);
+        _cinCanvas.addEventListener('click', skipHandler);
+        state._skipHandler = skipHandler;
+
+        if(_cinAnimId) cancelAnimationFrame(_cinAnimId);
+        tts(type==='intro' ? 'The Shadow Chronicle' : 'Dimensional Rift', 0.8);
+
+        function cinLoop() {
+            if(state.done) return;
+            _cinAnimId = requestAnimationFrame(cinLoop);
+            renderCinematic(state);
+            tickCinematic(state);
+        }
+        cinLoop();
+    }
+
+    function tickCinematic(state) {
+        state.t++;
+        state.globalT++;
+        const slide = state.slides[state.slideIdx];
+        if(!slide) { finishCinematic(state); return; }
+
+        // Animate sprites
+        state.heroFrameTimer++;
+        if(state.heroFrameTimer>=10){ state.heroFrame=(state.heroFrame+1)%8; state.heroFrameTimer=0; }
+        state.enemyFrameTimer++;
+        if(state.enemyFrameTimer>=10){ state.enemyFrame=(state.enemyFrame+1)%10; state.enemyFrameTimer=0; }
+        state.npcFrameTimer++;
+        if(state.npcFrameTimer>=12){ state.npcFrame=(state.npcFrame+1)%3; state.npcFrameTimer=0; }
+        state.bossFrameTimer++;
+        if(state.bossFrameTimer>=8){ state.bossFrame=(state.bossFrame+1)%9; state.bossFrameTimer=0; }
+
+        // Spawn ambient particles
+        if(state.t%8===0) {
+            state.particles.push({
+                x: Math.random()*GAME_WIDTH, y: GAME_HEIGHT*0.5+Math.random()*GAME_HEIGHT*0.4,
+                vx:(Math.random()-0.5)*0.8, vy:-0.5-Math.random()*1.5,
+                life:80+Math.random()*60, maxLife:140,
+                color:['#6600cc','#aa44ff','#ff44aa','#4444ff','#cc2288'][Math.floor(Math.random()*5)],
+                size:1+Math.random()*3
+            });
+        }
+        state.particles.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.life--; });
+        state.particles=state.particles.filter(p=>p.life>0);
+
+        if(state.t >= slide.duration) {
+            state.t = 0;
+            state.slideIdx++;
+            if(state.slideIdx >= state.slides.length) {
+                finishCinematic(state);
+            } else {
+                const newSlide = state.slides[state.slideIdx];
+                if(newSlide && newSlide.caption) tts(newSlide.caption, 0.85);
+            }
+        }
+    }
+
+    function finishCinematic(state) {
+        if(state.done) return;
+        state.done = true;
+        STORY_MODE.cinematic = null;
+        if(_cinAnimId) cancelAnimationFrame(_cinAnimId);
+        if(_cinCanvas) _cinCanvas.style.display='none';
+        if(state._skipHandler) {
+            window.removeEventListener('keydown', state._skipHandler);
+            if(_cinCanvas) _cinCanvas.removeEventListener('click', state._skipHandler);
+        }
+        speechSynthesis && speechSynthesis.cancel && speechSynthesis.cancel();
+        if(state.type==='portal') {
+            enterBossArena();
+        }
+        // Game is already running — no need to unpause
+    }
+
+    function renderCinematic(state) {
+        const C = _cinCtx;
+        const W = GAME_WIDTH, H = GAME_HEIGHT;
+        const slide = state.slides[state.slideIdx];
+        if(!slide) return;
+        const t = Date.now()/1000;
+        const slideProgress = state.t / (slide.duration||200);
+        // Fade in/out alpha
+        const fadeIn  = Math.min(1, state.t/25);
+        const fadeOut = state.t > (slide.duration-25) ? Math.max(0,((slide.duration-state.t)/25)) : 1;
+        const slideAlpha = Math.min(fadeIn, fadeOut);
+
+        // === BACKGROUND ===
+        C.clearRect(0,0,W,H);
+        // Deep space/void gradient per scene
+        const sceneColors = {
+            title:      ['#0a0010','#1a0030','#0d0020'],
+            realm:      ['#050008','#120018','#000010'],
+            hero:       ['#000508','#001520','#000008'],
+            enemy:      ['#080000','#200005','#050000'],
+            artifacts:  ['#000808','#001818','#000505'],
+            boss:       ['#100000','#2a0005','#080000'],
+            begin:      ['#030008','#0d0020','#020005'],
+            rift_title: ['#0a0015','#1a0035','#050010'],
+            rift_enter: ['#050010','#100025','#030008'],
+            rift_go:    ['#0a0005','#1a0010','#050003'],
+        };
+        const cols = sceneColors[slide.scene] || ['#050005','#100010','#030003'];
+        const bgGrad = C.createRadialGradient(W/2, H*0.4, 0, W/2, H*0.4, W*0.7);
+        bgGrad.addColorStop(0, cols[1]);
+        bgGrad.addColorStop(0.5, cols[0]);
+        bgGrad.addColorStop(1, cols[2]);
+        C.fillStyle = bgGrad;
+        C.fillRect(0,0,W,H);
+
+        // Stars
+        state.stars.forEach(s => {
+            s.x -= s.speed*0.3;
+            if(s.x<0) s.x=W;
+            C.save();
+            C.globalAlpha = s.alpha * (0.5+0.5*Math.sin(t*2+s.x*0.1));
+            C.fillStyle = '#ffffff';
+            C.beginPath(); C.arc(s.x,s.y,s.size,0,Math.PI*2); C.fill();
+            C.restore();
+        });
+
+        // Ambient particles
+        state.particles.forEach(p=>{
+            C.save();
+            C.globalAlpha = (p.life/p.maxLife)*0.7;
+            C.fillStyle = p.color;
+            C.shadowColor = p.color; C.shadowBlur = 6;
+            C.beginPath(); C.arc(p.x,p.y,p.size,0,Math.PI*2); C.fill();
+            C.restore();
+        });
+
+        // Cinematic bars
+        const barH = 70;
+        C.fillStyle = '#000';
+        C.fillRect(0,0,W,barH);
+        C.fillRect(0,H-barH,W,barH);
+
+        C.save();
+        C.globalAlpha = slideAlpha;
+
+        // === SCENE-SPECIFIC CONTENT ===
+        if(slide.scene==='title') {
+            _cinDrawTitle(C, W, H, t, state.t, slide.duration);
+        } else if(slide.scene==='realm') {
+            _cinDrawRealm(C, W, H, t);
+        } else if(slide.scene==='hero') {
+            _cinDrawHero(C, W, H, t, state);
+        } else if(slide.scene==='enemy') {
+            _cinDrawEnemy(C, W, H, t, state);
+        } else if(slide.scene==='artifacts') {
+            _cinDrawArtifacts(C, W, H, t);
+        } else if(slide.scene==='boss') {
+            _cinDrawBoss(C, W, H, t, state);
+        } else if(slide.scene==='begin') {
+            _cinDrawBegin(C, W, H, t, state);
+        } else if(slide.scene==='rift_title'||slide.scene==='rift_enter'||slide.scene==='rift_go') {
+            _cinDrawRift(C, W, H, t, slide.scene, state);
+        }
+
+        // Caption at bottom
+        if(slide.caption && slide.scene!=='title') {
+            _cinDrawCaption(C, W, H, t, slide.caption, state.t, slide.duration);
+        }
+
+        C.restore();
+
+        // Skip hint
+        C.save();
+        C.globalAlpha = 0.4+0.2*Math.sin(t*2);
+        C.fillStyle='#888';
+        C.font='12px Arial'; C.textAlign='right'; C.textBaseline='bottom';
+        C.fillText('SPACE / CLICK to skip', W-20, H-10);
+        C.restore();
+    }
+
+    function _cinDrawTitle(C, W, H, t, st, dur) {
+        const prog = st/dur;
+        // Pulsing void portal background
+        for(let r=5;r>=1;r--) {
+            const rad = 80+r*40+Math.sin(t*2+r)*15;
+            C.save();
+            C.globalAlpha = 0.04*r*(0.5+0.5*Math.sin(t*1.5+r));
+            const g=C.createRadialGradient(W/2,H/2,0,W/2,H/2,rad);
+            g.addColorStop(0,'#cc44ff'); g.addColorStop(1,'transparent');
+            C.fillStyle=g; C.beginPath(); C.arc(W/2,H/2,rad,0,Math.PI*2); C.fill();
+            C.restore();
+        }
+        // Rotating rune ring
+        for(let i=0;i<12;i++) {
+            const ang = (i/12)*Math.PI*2 + t*0.3;
+            const rx = W/2 + Math.cos(ang)*160;
+            const ry = H/2 + Math.sin(ang)*80;
+            C.save();
+            C.globalAlpha = 0.3+0.2*Math.sin(t+i);
+            C.font=`${16+Math.sin(t*2+i)*4}px "Cinzel",serif`;
+            C.fillStyle='#9944cc'; C.textAlign='center'; C.textBaseline='middle';
+            const runes='ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃ';
+            C.fillText(runes[i%runes.length], rx, ry);
+            C.restore();
+        }
+        // Game logo — "THE SHADOW CHRONICLE"
+        const titleAlpha = Math.min(1, st/40);
+        C.save();
+        C.globalAlpha = titleAlpha;
+        // Glow layers
+        for(let g=3;g>=0;g--) {
+            C.shadowColor='#8800ff'; C.shadowBlur=40-g*8;
+            C.font=`bold ${36+g*2}px "Cinzel Decorative",cursive`;
+            C.fillStyle=`rgba(${150+g*20},${50+g*10},${200+g*10},${0.3+g*0.2})`;
+            C.textAlign='center'; C.textBaseline='middle';
+            C.fillText('THE SHADOW', W/2, H/2-36);
+            C.fillText('CHRONICLE', W/2, H/2+14);
+        }
+        C.shadowColor='#aa44ff'; C.shadowBlur=20;
+        C.font='bold 46px "Cinzel Decorative",cursive';
+        const cg=C.createLinearGradient(W/2-200,0,W/2+200,0);
+        cg.addColorStop(0,'#aa44ff'); cg.addColorStop(0.5,'#ffffff'); cg.addColorStop(1,'#ff44dd');
+        C.fillStyle=cg;
+        C.fillText('THE SHADOW', W/2, H/2-36);
+        C.fillText('CHRONICLE', W/2, H/2+14);
+        // Subtitle
+        C.shadowBlur=0; C.font='14px "Cinzel",serif';
+        C.fillStyle='rgba(180,150,220,'+titleAlpha+')';
+        C.letterSpacing='8px';
+        C.fillText('A N C I E N T  E V I L  A W A K E N S', W/2, H/2+60);
+        C.restore();
+        // Bottom decorative line
+        C.save();
+        C.globalAlpha=titleAlpha*0.6;
+        const lineGrad=C.createLinearGradient(W/2-180,0,W/2+180,0);
+        lineGrad.addColorStop(0,'transparent'); lineGrad.addColorStop(0.5,'#8844cc'); lineGrad.addColorStop(1,'transparent');
+        C.strokeStyle=lineGrad; C.lineWidth=1.5;
+        C.beginPath(); C.moveTo(W/2-180,H/2+80); C.lineTo(W/2+180,H/2+80); C.stroke();
+        C.restore();
+    }
+
+    function _cinDrawRealm(C, W, H, t) {
+        // Draw background image from game assets
+        const bg = images['background'];
+        if(bg&&bg.complete&&bg.naturalWidth) {
+            C.save(); C.globalAlpha=0.5;
+            C.drawImage(bg, 0, H*0.1, W, H*0.8);
+            C.restore();
+        }
+        // Dark overlay
+        const fog=C.createLinearGradient(0,0,0,H);
+        fog.addColorStop(0,'rgba(0,0,0,0.7)');
+        fog.addColorStop(0.5,'rgba(10,0,20,0.3)');
+        fog.addColorStop(1,'rgba(0,0,0,0.9)');
+        C.fillStyle=fog; C.fillRect(0,0,W,H);
+        // Blood moon
+        C.save();
+        C.shadowColor='#cc0000'; C.shadowBlur=40+20*Math.sin(t*0.8);
+        C.globalAlpha=0.85;
+        const mg=C.createRadialGradient(W*0.75,H*0.25,0,W*0.75,H*0.25,60);
+        mg.addColorStop(0,'#cc2200'); mg.addColorStop(0.6,'#880000'); mg.addColorStop(1,'transparent');
+        C.fillStyle=mg; C.beginPath(); C.arc(W*0.75,H*0.25,55,0,Math.PI*2); C.fill();
+        C.restore();
+        // Crack lines across screen
+        C.save(); C.strokeStyle='rgba(100,0,0,0.4)'; C.lineWidth=1.5;
+        [[0.1,0,0.2,0.6],[0.8,0,0.7,0.5],[0.45,0.3,0.55,0.7]].forEach(([x1,y1,x2,y2])=>{
+            C.beginPath(); C.moveTo(x1*W,y1*H); C.lineTo(x2*W,y2*H); C.stroke();
+        });
+        C.restore();
+    }
+
+    function _cinDrawHero(C, W, H, t, state) {
+        // Platform silhouette
+        C.save(); C.globalAlpha=0.5;
+        const platGrad=C.createLinearGradient(0,H*0.65,0,H*0.72);
+        platGrad.addColorStop(0,'#2a1a0a'); platGrad.addColorStop(1,'#1a0a00');
+        C.fillStyle=platGrad; C.fillRect(W*0.1,H*0.65,W*0.8,H*0.08);
+        C.restore();
+        // Atmosphere glow under hero
+        C.save(); C.globalAlpha=0.3;
+        const hg=C.createRadialGradient(W*0.35,H*0.7,0,W*0.35,H*0.7,120);
+        hg.addColorStop(0,'#0088ff'); hg.addColorStop(1,'transparent');
+        C.fillStyle=hg; C.fillRect(0,0,W,H);
+        C.restore();
+        // Hero sprite (large, centered-left)
+        const heroImg = images['idle_right'];
+        if(heroImg&&heroImg.complete&&heroImg.naturalWidth) {
+            const fw=heroImg.naturalWidth/8;
+            const scale=3.5;
+            const dw=fw*scale, dh=heroImg.naturalHeight*scale;
+            const hx=W*0.28-dw/2, hy=H*0.65-dh+10;
+            C.save();
+            // Heroic blue glow
+            C.shadowColor='#0088ff'; C.shadowBlur=30+10*Math.sin(t*2);
+            C.imageSmoothingEnabled=false;
+            C.drawImage(heroImg, state.heroFrame*fw,0,fw,heroImg.naturalHeight, hx,hy,dw,dh);
+            C.restore();
+        }
+        // Attack sprite (slightly offset, action pose feel)
+        const atkImg = images['attack_right'];
+        if(atkImg&&atkImg.complete&&atkImg.naturalWidth) {
+            const fw=atkImg.naturalWidth/8;
+            const scale=2.0;
+            const dw=fw*scale, dh=atkImg.naturalHeight*scale;
+            C.save(); C.globalAlpha=0.35+0.15*Math.sin(t*3);
+            C.shadowColor='#4488ff'; C.shadowBlur=15;
+            C.imageSmoothingEnabled=false;
+            C.drawImage(atkImg, Math.floor(t*2)%8*fw,0,fw,atkImg.naturalHeight, W*0.38,H*0.55-dh,dw,dh);
+            C.restore();
+        }
+        // Stat cards on right
+        const stats=[['❤','180 HP','#ff4444'],['⚔','20 ATK','#ffaa00'],['⚡','Fast','#44aaff']];
+        stats.forEach((s,i)=>{
+            const sx=W*0.62, sy=H*0.32+i*60;
+            C.save();
+            C.globalAlpha=0.85;
+            C.fillStyle='rgba(0,20,60,0.7)';
+            roundRect2(C,sx,sy,180,44,6); C.fill();
+            C.strokeStyle='#2244aa'; C.lineWidth=1.5;
+            roundRect2(C,sx,sy,180,44,6); C.stroke();
+            C.font='bold 22px Arial'; C.fillStyle=s[2];
+            C.textAlign='left'; C.textBaseline='middle'; C.fillText(s[0],sx+12,sy+22);
+            C.font='bold 16px "Cinzel",serif'; C.fillStyle='#cceeff';
+            C.fillText(s[1],sx+46,sy+22);
+            C.restore();
+        });
+    }
+
+    function _cinDrawEnemy(C, W, H, t, state) {
+        // Eerie red platform glow
+        C.save(); C.globalAlpha=0.4;
+        const eg=C.createRadialGradient(W*0.65,H*0.68,0,W*0.65,H*0.68,150);
+        eg.addColorStop(0,'#cc0000'); eg.addColorStop(1,'transparent');
+        C.fillStyle=eg; C.fillRect(0,0,W,H);
+        C.restore();
+        // Platform
+        C.save(); C.globalAlpha=0.5;
+        C.fillStyle='#2a0808'; C.fillRect(W*0.1,H*0.65,W*0.8,H*0.07);
+        C.restore();
+        // 3 enemy sprites spread across, different sizes for depth
+        const enemyImg = images['enemy_idle'];
+        if(enemyImg&&enemyImg.complete&&enemyImg.naturalWidth) {
+            const fw=enemyImg.naturalWidth/10;
+            [[0.3,2.5,0.65],[0.55,3.2,0.62],[0.72,2.0,0.67]].forEach(([xp,scale,yp],i)=>{
+                const dw=fw*scale, dh=enemyImg.naturalHeight*scale;
+                const ex=W*xp-dw/2, ey=H*yp-dh;
+                C.save();
+                C.imageSmoothingEnabled=false;
+                C.shadowColor='#ff2200'; C.shadowBlur=20+8*Math.sin(t*3+i);
+                C.globalAlpha=0.9;
+                C.drawImage(enemyImg,(state.enemyFrame+i*3)%10*fw,0,fw,enemyImg.naturalHeight,ex,ey,dw,dh);
+                C.restore();
+            });
+        }
+        // Enemy stats
+        C.save(); C.globalAlpha=0.8;
+        C.fillStyle='rgba(40,0,0,0.8)';
+        roundRect2(C,W*0.06,H*0.32,200,90,6); C.fill();
+        C.strokeStyle='#660000'; C.lineWidth=1.5;
+        roundRect2(C,W*0.06,H*0.32,200,90,6); C.stroke();
+        C.font='bold 14px "Cinzel",serif'; C.fillStyle='#ff6666';
+        C.textAlign='left'; C.textBaseline='top';
+        C.fillText('THE GUARDIANS', W*0.06+14, H*0.32+12);
+        C.font='12px Arial'; C.fillStyle='#ffaaaa';
+        ['❤ 50 HP each','⚔ Chase & feint','⚡ Attack in packs'].forEach((s,i)=>{
+            C.fillText(s, W*0.06+14, H*0.32+36+i*18);
+        });
+        C.restore();
+    }
+
+    function _cinDrawArtifacts(C, W, H, t) {
+        // Center glow
+        C.save(); C.globalAlpha=0.3;
+        const ag=C.createRadialGradient(W/2,H/2,0,W/2,H/2,200);
+        ag.addColorStop(0,'#004444'); ag.addColorStop(1,'transparent');
+        C.fillStyle=ag; C.fillRect(0,0,W,H);
+        C.restore();
+        // Draw the 5 artifact icons in an arc
+        const artifactIds=['helm','berries','crystal','feather','core'];
+        const artifactLabels=['Iron Helm','Shadow Berries','Mana Crystal','Fire Feather','Ancient Core'];
+        const artifactDescs=['+Max HP','Instant Heal','+Attack','Fire Shield','Boss Key'];
+        artifactIds.forEach((id,i)=>{
+            const ang = (i/4)*Math.PI*0.85 + Math.PI*0.07;
+            const radius=160;
+            const ax=W/2+Math.cos(ang-Math.PI/2)*radius;
+            const ay=H*0.42+Math.sin(ang-Math.PI/2)*radius*0.55;
+            const bob=Math.sin(t*2+i*1.2)*6;
+            const img=ARTIFACT_ICONS[id];
+            C.save();
+            // Glow plate
+            const colors=['#ffaa00','#44ff88','#4488ff','#ff4400','#aa44ff'];
+            C.shadowColor=colors[i]; C.shadowBlur=20+10*Math.sin(t*2+i);
+            C.globalAlpha=0.85;
+            C.fillStyle=`rgba(0,0,0,0.5)`;
+            C.beginPath(); C.arc(ax,ay+bob,36,0,Math.PI*2); C.fill();
+            // Pulsing ring
+            C.strokeStyle=colors[i]; C.lineWidth=2;
+            C.globalAlpha=0.4+0.3*Math.sin(t*3+i);
+            C.beginPath(); C.arc(ax,ay+bob,40,0,Math.PI*2); C.stroke();
+            C.globalAlpha=0.95;
+            if(img&&img.complete&&img.naturalWidth) {
+                C.imageSmoothingEnabled=false;
+                C.drawImage(img,ax-26,ay+bob-26,52,52);
+            } else {
+                C.font='28px Arial'; C.textAlign='center'; C.textBaseline='middle';
+                C.fillStyle=colors[i];
+                C.fillText(['⛑','🫐','💎','🪶','🔮'][i], ax, ay+bob);
+            }
+            // Label below
+            C.shadowBlur=0; C.globalAlpha=0.9;
+            C.font='bold 11px "Cinzel",serif'; C.fillStyle=colors[i];
+            C.textAlign='center'; C.textBaseline='top'; C.fillText(artifactLabels[i], ax, ay+bob+42);
+            C.font='10px Arial'; C.fillStyle='#aaaaaa';
+            C.fillText(artifactDescs[i], ax, ay+bob+56);
+            C.restore();
+        });
+        // Center title
+        C.save();
+        C.font='bold 22px "Cinzel Decorative",cursive';
+        C.fillStyle='#88ffcc'; C.textAlign='center'; C.textBaseline='middle';
+        C.shadowColor='#00ffaa'; C.shadowBlur=20;
+        C.fillText('RELICS OF POWER', W/2, H*0.18);
+        C.restore();
+    }
+
+    function _cinDrawBoss(C, W, H, t, state) {
+        // Boss arena atmosphere — dark red
+        const bg=images['background'];
+        if(bg&&bg.complete&&bg.naturalWidth) {
+            C.save(); C.globalAlpha=0.25;
+            C.drawImage(bg,-100,0,W+200,H);
+            C.restore();
+        }
+        // Crimson fog at bottom
+        const fog=C.createLinearGradient(0,H*0.5,0,H);
+        fog.addColorStop(0,'transparent'); fog.addColorStop(1,'rgba(80,0,0,0.7)');
+        C.fillStyle=fog; C.fillRect(0,0,W,H);
+        // Boss sprite (large, center-right)
+        const bossImg=images['boss_idle'];
+        if(bossImg&&bossImg.complete&&bossImg.naturalWidth) {
+            const totalF=9, fw=bossImg.naturalWidth/totalF;
+            const scale=4.5;
+            const dw=fw*scale, dh=bossImg.naturalHeight*scale;
+            C.save();
+            C.shadowColor='#cc0033'; C.shadowBlur=50+20*Math.sin(t*2);
+            C.imageSmoothingEnabled=false;
+            C.globalAlpha=0.92;
+            C.drawImage(bossImg,state.bossFrame*fw,0,fw,bossImg.naturalHeight,W*0.55-dw/2,H*0.65-dh,dw,dh);
+            C.restore();
+        } else {
+            // Fallback: silhouette
+            C.save();
+            C.globalAlpha=0.7; C.fillStyle='#440011';
+            C.shadowColor='#cc0033'; C.shadowBlur=40;
+            C.beginPath(); C.ellipse(W*0.65,H*0.48,70,120,0,0,Math.PI*2); C.fill();
+            C.restore();
+        }
+        // Boss HP bar preview
+        C.save(); C.globalAlpha=0.8;
+        C.fillStyle='rgba(0,0,0,0.7)';
+        roundRect2(C,W*0.1,H*0.18,W*0.8,50,6); C.fill();
+        C.strokeStyle='#660000'; C.lineWidth=2;
+        roundRect2(C,W*0.1,H*0.18,W*0.8,50,6); C.stroke();
+        C.font='bold 16px "Cinzel",serif'; C.fillStyle='#ff4444';
+        C.textAlign='center'; C.textBaseline='middle';
+        C.fillText('☠  THE VOID-WARDEN  ☠', W/2, H*0.18+15);
+        // Animated HP bar
+        const bpct=0.5+0.5*Math.sin(t*0.5);
+        C.fillStyle='#220000'; C.fillRect(W*0.12,H*0.18+28,W*0.76,12);
+        const bhg=C.createLinearGradient(W*0.12,0,W*0.88,0);
+        bhg.addColorStop(0,'#cc0022'); bhg.addColorStop(1,'#ff3366');
+        C.fillStyle=bhg; C.fillRect(W*0.12,H*0.18+28,W*0.76*bpct,12);
+        C.restore();
+        // Warning text
+        C.save();
+        C.globalAlpha=0.5+0.5*Math.sin(t*4);
+        C.font='bold 13px Arial'; C.fillStyle='#ff2222';
+        C.textAlign='center'; C.textBaseline='top';
+        C.fillText('⚠  FIND ITS WEAKNESS BEFORE YOU FACE IT  ⚠', W/2, H*0.75);
+        C.restore();
+    }
+
+    function _cinDrawBegin(C, W, H, t, state) {
+        // Hero on left, enemies silhouetted on right
+        const heroImg=images['run_right'];
+        if(heroImg&&heroImg.complete&&heroImg.naturalWidth) {
+            const fw=heroImg.naturalWidth/8, scale=4;
+            const dw=fw*scale, dh=heroImg.naturalHeight*scale;
+            C.save();
+            C.shadowColor='#ffffff'; C.shadowBlur=30;
+            C.imageSmoothingEnabled=false;
+            C.drawImage(heroImg,state.heroFrame*fw,0,fw,heroImg.naturalHeight, W*0.2-dw/2,H*0.62-dh,dw,dh);
+            C.restore();
+        }
+        // Bright light ray from hero direction
+        C.save(); C.globalAlpha=0.15+0.1*Math.sin(t*3);
+        const ray=C.createLinearGradient(W*0.2,H*0.5,W,H*0.5);
+        ray.addColorStop(0,'#ffffff'); ray.addColorStop(1,'transparent');
+        C.fillStyle=ray; C.fillRect(W*0.2,H*0.2,W*0.8,H*0.6);
+        C.restore();
+        // "BEGIN YOUR QUEST" text — dramatic
+        C.save();
+        C.font='bold 48px "Cinzel Decorative",cursive';
+        C.textAlign='center'; C.textBaseline='middle';
+        for(let g=4;g>=0;g--) {
+            C.shadowColor='#aa44ff'; C.shadowBlur=30+g*15;
+            C.fillStyle=g===0?'#ffffff':`rgba(180,100,255,${0.15+g*0.1})`;
+            C.fillText('YOUR QUEST', W/2, H/2-10);
+            C.fillText('BEGINS NOW', W/2, H/2+50);
+        }
+        C.restore();
+    }
+
+    function _cinDrawRift(C, W, H, t, scene, state) {
+        // Portal glow
+        for(let r=6;r>=1;r--) {
+            const rad=60+r*35+Math.sin(t*3+r)*20;
+            C.save(); C.globalAlpha=0.05*r;
+            const g=C.createRadialGradient(W/2,H/2,0,W/2,H/2,rad);
+            g.addColorStop(0,'#ff44ff'); g.addColorStop(0.5,'#8800ff'); g.addColorStop(1,'transparent');
+            C.fillStyle=g; C.beginPath(); C.arc(W/2,H/2,rad,0,Math.PI*2); C.fill();
+            C.restore();
+        }
+        // Portal sprite
+        const portalImg=images['portal_sheet'];
+        if(portalImg&&portalImg.complete&&portalImg.naturalWidth) {
+            const totalF=Math.max(1,Math.round(portalImg.naturalWidth/96));
+            const pframe=Math.floor(t*8)%totalF;
+            const fw=portalImg.naturalWidth/totalF;
+            C.save(); C.imageSmoothingEnabled=false;
+            C.shadowColor='#aa00ff'; C.shadowBlur=40;
+            C.drawImage(portalImg,pframe*fw,0,fw,portalImg.naturalHeight, W/2-96,H/2-110,192,220);
+            C.restore();
+        } else {
+            // Fallback animated ellipse portal
+            C.save();
+            C.shadowColor='#aa00ff'; C.shadowBlur=60+20*Math.sin(t*2);
+            const pg=C.createRadialGradient(W/2,H/2,10,W/2,H/2,100);
+            pg.addColorStop(0,'rgba(200,50,255,0.9)');
+            pg.addColorStop(0.6,'rgba(100,0,200,0.5)');
+            pg.addColorStop(1,'transparent');
+            C.fillStyle=pg;
+            C.beginPath(); C.ellipse(W/2,H/2,90,110,0,0,Math.PI*2); C.fill();
+            C.restore();
+        }
+        // Hero running toward portal
+        if(scene==='rift_go') {
+            const heroImg=images['run_right'];
+            if(heroImg&&heroImg.complete&&heroImg.naturalWidth) {
+                const fw=heroImg.naturalWidth/8, scale=3;
+                const dw=fw*scale, dh=heroImg.naturalHeight*scale;
+                C.save(); C.imageSmoothingEnabled=false;
+                C.shadowColor='#88aaff'; C.shadowBlur=15;
+                C.drawImage(heroImg,state.heroFrame*fw,0,fw,heroImg.naturalHeight, W*0.15,H*0.62-dh,dw,dh);
+                C.restore();
+            }
+        }
+    }
+
+    function _cinDrawCaption(C, W, H, t, caption, st, dur) {
+        // Typewriter effect
+        const charsPerFrame = 1.2;
+        const charsShown = Math.min(caption.length, Math.floor(st * charsPerFrame));
+        const shown = caption.substring(0, charsShown);
+        const cursor = charsShown < caption.length ? '' : (Math.floor(t*3)%2===0?'|':'');
+        C.save();
+        // Caption box
+        const boxW=Math.min(700, W-80), boxH=52, boxX=W/2-boxW/2, boxY=H-140;
+        C.fillStyle='rgba(0,0,0,0.7)';
+        roundRect2(C,boxX,boxY,boxW,boxH,6); C.fill();
+        C.strokeStyle='rgba(150,80,220,0.5)'; C.lineWidth=1.5;
+        roundRect2(C,boxX,boxY,boxW,boxH,6); C.stroke();
+        C.font='17px "AntiquityPrint",serif';
+        C.fillStyle='#f0e8ff';
+        C.textAlign='center'; C.textBaseline='middle';
+        C.shadowColor='rgba(0,0,0,0.8)'; C.shadowBlur=6;
+        C.fillText(shown+cursor, W/2, boxY+boxH/2);
+        C.restore();
     }
 
     function updateCinematic() {
-        const c = STORY_MODE.cinematic;
-        if(!c || c.done) return;
-        c.t++;
-        const lineDisplayTime = 180; // 3 sec per line
-        if(c.t % lineDisplayTime === 0) {
-            c.lineIdx++;
-            if(c.lineIdx < c.lines.length) {
-                if(c.lines[c.lineIdx]) tts(c.lines[c.lineIdx], 0.8);
-            } else {
-                c.done = true;
-                STORY_MODE.cinematic = null;
-                gamePaused = false;
-                if(c.type==='portal') {
-                    enterBossArena();
-                }
-            }
-        }
-        if(c.t===1 && c.lines[0]) tts(c.lines[0], 0.8);
+        // Cinematic now runs its own rAF loop — updateCinematic is a no-op kept for compatibility
     }
 
     // ===== BOSS ARENA =====
@@ -1197,11 +1803,8 @@
         if(!STORY_MODE.active) return;
         const SM = STORY_MODE;
 
-        // Cinematic overlay
-        if(SM.cinematic) {
-            drawCinematic(SM.cinematic);
-            return;
-        }
+        // Cinematic is drawn on its own overlay canvas — skip here
+        if(SM.cinematic) return;
 
         // End screen
         if(SM.gameEndStats) {
@@ -1309,42 +1912,6 @@
         if(SM.bossArena && SM.boss && !SM.boss.dying) {
             drawBossHP();
         }
-    }
-
-    function drawCinematic(c) {
-        const alpha = Math.min(1, (c.t % 180) < 20 ? (c.t%180)/20 : (c.t%180)>160 ? (180-(c.t%180))/20 : 1);
-        ctx.save();
-        ctx.fillStyle=`rgba(0,0,0,0.88)`;
-        ctx.fillRect(0,0,GAME_WIDTH,GAME_HEIGHT);
-        // Top/bottom bars
-        ctx.fillStyle='#000';
-        ctx.fillRect(0,0,GAME_WIDTH,80);
-        ctx.fillRect(0,GAME_HEIGHT-80,GAME_WIDTH,80);
-        const line = c.lines[c.lineIdx] || '';
-        const isTitle = c.lineIdx===0;
-        ctx.globalAlpha = alpha;
-        if(isTitle) {
-            ctx.font='bold 36px "Cinzel Decorative", serif';
-            ctx.fillStyle='#cc88ff';
-            ctx.textAlign='center'; ctx.textBaseline='middle';
-            ctx.shadowColor='#8800ff'; ctx.shadowBlur=30;
-            ctx.fillText(line, GAME_WIDTH/2, GAME_HEIGHT/2 - 20);
-        } else {
-            ctx.font='18px "Cinzel", serif';
-            ctx.fillStyle='#e8d8ff';
-            ctx.textAlign='center'; ctx.textBaseline='middle';
-            ctx.shadowColor='rgba(0,0,0,0.8)'; ctx.shadowBlur=8;
-            ctx.fillText(line, GAME_WIDTH/2, GAME_HEIGHT/2);
-        }
-        // Progress dots
-        for(let i=0;i<c.lines.length;i++){
-            ctx.globalAlpha=0.5;
-            ctx.fillStyle = i===c.lineIdx?'#cc88ff':'#444';
-            ctx.beginPath();
-            ctx.arc(GAME_WIDTH/2+(i-c.lines.length/2)*16, GAME_HEIGHT-50, 4, 0, Math.PI*2);
-            ctx.fill();
-        }
-        ctx.restore();
     }
 
     function drawDialogueBox(d) {
