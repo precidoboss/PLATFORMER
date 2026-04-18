@@ -767,6 +767,7 @@
         STORY_MODE.boss = null;
         STORY_MODE.bossDefeated = false;
         STORY_MODE.gameEndStats = null;
+        STORY_MODE.showingEndStats = false;
         STORY_MODE.dialogue = null;
         STORY_MODE.cinematic = null;
         STORY_MODE.boardOpen = false;
@@ -832,12 +833,27 @@
     }
 
     function spawnNPC(which) {
-        const npcX = player.x + 400;
-        const npcY = platforms.length > 0 ? platforms[platforms.length-1].y - 64 : 360;
-        const npc = { x: npcX, y: npcY, which, frame:0, frameTimer:0, interactHint: true };
-        if(which===1) STORY_MODE.npc1 = npc;
+        // Find a good platform ahead of the player to place the NPC on
+        let targetPlat = null;
+        for (let i = platforms.length - 1; i >= 0; i--) {
+            const p = platforms[i];
+            if (p.x > player.x + 200 && p.x < player.x + 700 && p.w > 100) {
+                targetPlat = p; break;
+            }
+        }
+        if (!targetPlat) targetPlat = platforms[platforms.length - 1];
+        const npcX = targetPlat ? targetPlat.x + targetPlat.w * 0.5 : player.x + 400;
+        const npcY = targetPlat ? targetPlat.y - 80 : 360;
+        const npc = {
+            x: npcX, y: npcY,
+            width: 40, height: 70,
+            vy: 0, grounded: false,
+            which, frame: 0, frameTimer: 0,
+            platformRef: targetPlat
+        };
+        if (which === 1) STORY_MODE.npc1 = npc;
         else STORY_MODE.npc2 = npc;
-        dmgNumbers.push({ x: npcX, y: npcY-30, val: which===1?'A stranger approaches...':'Another figure awaits...', life:180, color:'#cc88ff', isText:true });
+        dmgNumbers.push({ x: npcX, y: npcY - 30, val: which === 1 ? '✦ A stranger approaches...' : '✦ Another figure awaits...', life: 200, color: '#cc88ff', isText: true });
     }
 
     function spawnPortal() {
@@ -949,7 +965,7 @@
 
     let _cinCanvas = null, _cinCtx = null, _cinAnimId = null;
 
-    function startCinematic(type) {
+    function startCinematic(type, statsPayload) {
         // Build slides
         let slides = [];
         if(type==='intro') {
@@ -968,6 +984,14 @@
                 { duration:200, scene:'rift_enter', caption:'Beyond lies the arena of the Void-Warden.' },
                 { duration:200, scene:'boss',       caption:'All your training has led to this moment.' },
                 { duration:180, scene:'rift_go',    caption:'Step through — and claim victory or death.' },
+            ];
+        } else if(type==='victory') {
+            slides = [
+                { duration:200, scene:'victory_flash',  caption:'' },
+                { duration:260, scene:'victory_hero',   caption:'The Void-Warden crumbles into shadow and ash...' },
+                { duration:240, scene:'victory_realm',  caption:'Ardenmoor breathes again. Light returns to the ruins.' },
+                { duration:240, scene:'victory_tribute',caption:'The wanderers Zephira and Kael bow in gratitude.' },
+                { duration:260, scene:'victory_stats',  caption:'', stats: statsPayload },
             ];
         }
 
@@ -1021,7 +1045,8 @@
         state._skipHandler = skipHandler;
 
         if(_cinAnimId) cancelAnimationFrame(_cinAnimId);
-        tts(type==='intro' ? 'The Shadow Chronicle' : 'Dimensional Rift', 0.8);
+        const ttsTexts = { intro: 'The Shadow Chronicle', portal: 'Dimensional Rift', victory: 'Victory! The realm is saved.' };
+        tts(ttsTexts[type] || '', 0.8);
 
         function cinLoop() {
             if(state.done) return;
@@ -1044,7 +1069,7 @@
         state.enemyFrameTimer++;
         if(state.enemyFrameTimer>=10){ state.enemyFrame=(state.enemyFrame+1)%10; state.enemyFrameTimer=0; }
         state.npcFrameTimer++;
-        if(state.npcFrameTimer>=12){ state.npcFrame=(state.npcFrame+1)%3; state.npcFrameTimer=0; }
+        if(state.npcFrameTimer>=12){ state.npcFrame=(state.npcFrame+1)%9; state.npcFrameTimer=0; }
         state.bossFrameTimer++;
         if(state.bossFrameTimer>=8){ state.bossFrame=(state.bossFrame+1)%9; state.bossFrameTimer=0; }
 
@@ -1086,6 +1111,10 @@
         speechSynthesis && speechSynthesis.cancel && speechSynthesis.cancel();
         if(state.type==='portal') {
             enterBossArena();
+        } else if(state.type==='victory') {
+            // After victory cinematic, show the in-canvas stat screen
+            STORY_MODE.showingEndStats = true;
+            window._endScreenActive = true;
         }
         // Game is already running — no need to unpause
     }
@@ -1172,6 +1201,16 @@
             _cinDrawBegin(C, W, H, t, state);
         } else if(slide.scene==='rift_title'||slide.scene==='rift_enter'||slide.scene==='rift_go') {
             _cinDrawRift(C, W, H, t, slide.scene, state);
+        } else if(slide.scene==='victory_flash') {
+            _cinDrawVictoryFlash(C, W, H, t, state.t, slide.duration);
+        } else if(slide.scene==='victory_hero') {
+            _cinDrawVictoryHero(C, W, H, t, state);
+        } else if(slide.scene==='victory_realm') {
+            _cinDrawVictoryRealm(C, W, H, t);
+        } else if(slide.scene==='victory_tribute') {
+            _cinDrawVictoryTribute(C, W, H, t, state);
+        } else if(slide.scene==='victory_stats') {
+            _cinDrawVictoryStats(C, W, H, t, slide.stats, state.t, slide.duration);
         }
 
         // Caption at bottom
@@ -1569,6 +1608,284 @@
         }
     }
 
+    function _cinDrawVictoryFlash(C, W, H, t, st, dur) {
+        // Blinding white flash that fades into gold — the killing blow moment
+        const flashPct = 1 - (st / dur);
+        C.save();
+        // White flash
+        C.globalAlpha = Math.max(0, flashPct * 0.95);
+        C.fillStyle = '#ffffff';
+        C.fillRect(0, 0, W, H);
+        C.restore();
+        // Gold radial burst from center
+        for (let r = 6; r >= 1; r--) {
+            const rad = 80 + r * 60 + st * 2;
+            const alpha = Math.max(0, (1 - st / dur) * 0.15 * r);
+            C.save();
+            C.globalAlpha = alpha;
+            const g = C.createRadialGradient(W/2, H/2, 0, W/2, H/2, rad);
+            g.addColorStop(0, '#ffffff'); g.addColorStop(0.4, '#ffd700'); g.addColorStop(1, 'transparent');
+            C.fillStyle = g; C.beginPath(); C.arc(W/2, H/2, rad, 0, Math.PI*2); C.fill();
+            C.restore();
+        }
+        // "VOID-WARDEN DEFEATED" text appears as flash fades
+        if (st > 60) {
+            const txtAlpha = Math.min(1, (st - 60) / 40);
+            C.save(); C.globalAlpha = txtAlpha;
+            C.font = 'bold 42px "Cinzel Decorative",cursive';
+            C.textAlign = 'center'; C.textBaseline = 'middle';
+            C.shadowColor = '#ffd700'; C.shadowBlur = 40;
+            const tg = C.createLinearGradient(W/2-220, 0, W/2+220, 0);
+            tg.addColorStop(0, '#ffd700'); tg.addColorStop(0.5, '#ffffff'); tg.addColorStop(1, '#ffd700');
+            C.fillStyle = tg;
+            C.fillText('VOID-WARDEN', W/2, H/2 - 28);
+            C.fillText('DEFEATED', W/2, H/2 + 28);
+            C.restore();
+        }
+        // Particle sparks radiating outward
+        if (st > 20) {
+            for (let i = 0; i < 12; i++) {
+                const ang = (i / 12) * Math.PI * 2 + t * 0.5;
+                const rad2 = 60 + st * 1.5;
+                const px = W/2 + Math.cos(ang) * rad2;
+                const py = H/2 + Math.sin(ang) * rad2 * 0.5;
+                C.save();
+                C.globalAlpha = Math.max(0, 0.8 - st/dur);
+                C.fillStyle = i % 2 === 0 ? '#ffd700' : '#ffffff';
+                C.shadowColor = '#ffd700'; C.shadowBlur = 15;
+                C.beginPath(); C.arc(px, py, 3 + Math.sin(t*4+i)*2, 0, Math.PI*2); C.fill();
+                C.restore();
+            }
+        }
+    }
+
+    function _cinDrawVictoryHero(C, W, H, t, state) {
+        // Hero standing triumphant on a glowing platform, boss ash fading behind
+        // Background — dawn breaking (deep purple to gold)
+        const bgG = C.createLinearGradient(0, 0, 0, H);
+        bgG.addColorStop(0, '#0a0015'); bgG.addColorStop(0.5, '#2a1008'); bgG.addColorStop(1, '#1a0800');
+        C.fillStyle = bgG; C.fillRect(0, 0, W, H);
+        // Rising golden sun glow at horizon
+        const sunG = C.createRadialGradient(W/2, H*0.7, 0, W/2, H*0.7, 300);
+        sunG.addColorStop(0, 'rgba(255,200,50,0.3)'); sunG.addColorStop(1, 'transparent');
+        C.fillStyle = sunG; C.fillRect(0, 0, W, H);
+        // Ash/smoke particles rising from where boss stood
+        for (let i = 0; i < 8; i++) {
+            const ax = W * 0.65 + Math.sin(t * 0.7 + i) * 40;
+            const ay = H * 0.5 - Math.sin(t * 0.4 + i * 0.8) * 60 - i * 15;
+            C.save(); C.globalAlpha = 0.12 + 0.08 * Math.sin(t + i);
+            C.fillStyle = '#888888';
+            C.beginPath(); C.arc(ax, ay, 20 + i * 8, 0, Math.PI*2); C.fill();
+            C.restore();
+        }
+        // Platform glow under hero
+        C.save(); C.globalAlpha = 0.5;
+        const platG = C.createLinearGradient(W*0.05, H*0.68, W*0.45, H*0.72);
+        platG.addColorStop(0, '#3a2808'); platG.addColorStop(1, '#1a1000');
+        C.fillStyle = platG; C.fillRect(W*0.05, H*0.68, W*0.4, H*0.06);
+        C.shadowColor = '#ffd700'; C.shadowBlur = 20;
+        C.strokeStyle = 'rgba(255,200,50,0.3)'; C.lineWidth = 2;
+        C.strokeRect(W*0.05, H*0.68, W*0.4, H*0.06);
+        C.restore();
+        // Hero idle sprite — large and centred left, victory pose
+        const heroImg = images['idle_right'];
+        if (heroImg && heroImg.complete && heroImg.naturalWidth) {
+            const fw = heroImg.naturalWidth / 8, scale = 4;
+            const dw = fw * scale, dh = heroImg.naturalHeight * scale;
+            C.save();
+            C.shadowColor = '#ffd700'; C.shadowBlur = 40 + 10 * Math.sin(t * 1.5);
+            C.imageSmoothingEnabled = false;
+            C.drawImage(heroImg, state.heroFrame * fw, 0, fw, heroImg.naturalHeight, W*0.22 - dw/2, H*0.68 - dh, dw, dh);
+            C.restore();
+        }
+        // Victory text overlay
+        C.save();
+        C.globalAlpha = 0.9;
+        C.font = 'bold 28px "Cinzel Decorative",cursive';
+        C.fillStyle = '#ffd700'; C.textAlign = 'center'; C.textBaseline = 'middle';
+        C.shadowColor = '#ff8800'; C.shadowBlur = 25;
+        C.fillText('CHRONICLE COMPLETE', W/2 + 80, H * 0.28);
+        C.font = '14px "Cinzel",serif'; C.fillStyle = '#ffe8a0'; C.shadowBlur = 8;
+        C.fillText('Ardenmoor is saved', W/2 + 80, H * 0.36);
+        C.restore();
+    }
+
+    function _cinDrawVictoryRealm(C, W, H, t) {
+        // The realm restored — warm light, background image with golden tint
+        const bg = images['background'];
+        if (bg && bg.complete && bg.naturalWidth) {
+            C.save(); C.globalAlpha = 0.65;
+            C.drawImage(bg, 0, H * 0.05, W, H * 0.9);
+            C.restore();
+        }
+        // Golden overlay wash
+        const goldG = C.createLinearGradient(0, 0, 0, H);
+        goldG.addColorStop(0, 'rgba(30,15,0,0.7)');
+        goldG.addColorStop(0.4, 'rgba(80,50,0,0.3)');
+        goldG.addColorStop(1, 'rgba(10,5,0,0.8)');
+        C.fillStyle = goldG; C.fillRect(0, 0, W, H);
+        // Warm sun rays from top-centre
+        for (let r = 0; r < 8; r++) {
+            const ang = -Math.PI/2 + (r - 4) * 0.18 + Math.sin(t * 0.3 + r) * 0.04;
+            C.save(); C.globalAlpha = 0.06 + 0.03 * Math.sin(t + r);
+            C.fillStyle = '#ffd700';
+            C.beginPath();
+            C.moveTo(W/2, -20);
+            C.lineTo(W/2 + Math.cos(ang - 0.06) * H * 1.5, H * 1.2);
+            C.lineTo(W/2 + Math.cos(ang + 0.06) * H * 1.5, H * 1.2);
+            C.closePath(); C.fill();
+            C.restore();
+        }
+        // Floating light motes
+        for (let i = 0; i < 20; i++) {
+            const mx = (W * 0.1 + i * W * 0.042) % W;
+            const my = H * 0.3 + Math.sin(t * 0.8 + i) * H * 0.15;
+            C.save(); C.globalAlpha = 0.3 + 0.2 * Math.sin(t * 2 + i);
+            C.fillStyle = '#ffe066'; C.shadowColor = '#ffd700'; C.shadowBlur = 8;
+            C.beginPath(); C.arc(mx, my, 2 + Math.sin(t + i) * 1, 0, Math.PI*2); C.fill();
+            C.restore();
+        }
+        C.save();
+        C.font = 'bold 24px "Cinzel",serif';
+        C.fillStyle = '#ffd700'; C.textAlign = 'center'; C.textBaseline = 'middle';
+        C.shadowColor = '#ff8800'; C.shadowBlur = 20;
+        C.fillText('The darkness lifts from Ardenmoor...', W/2, H * 0.2);
+        C.restore();
+    }
+
+    function _cinDrawVictoryTribute(C, W, H, t, state) {
+        // Both NPCs bowing, hero between them
+        const bgG = C.createLinearGradient(0, 0, 0, H);
+        bgG.addColorStop(0, '#060010'); bgG.addColorStop(1, '#120808');
+        C.fillStyle = bgG; C.fillRect(0, 0, W, H);
+        // Subtle stars
+        for (let i = 0; i < 40; i++) {
+            C.save(); C.globalAlpha = 0.3 + 0.2 * Math.sin(t * 1.5 + i);
+            C.fillStyle = '#ffffff';
+            C.beginPath(); C.arc((i * 197 % W), (i * 113 % (H * 0.6)), 1, 0, Math.PI*2); C.fill();
+            C.restore();
+        }
+        // Platform
+        C.save(); C.globalAlpha = 0.6;
+        C.fillStyle = '#1a1000';
+        C.fillRect(W * 0.05, H * 0.67, W * 0.9, H * 0.06);
+        C.strokeStyle = '#ffd700'; C.lineWidth = 1; C.globalAlpha = 0.3;
+        C.strokeRect(W * 0.05, H * 0.67, W * 0.9, H * 0.06);
+        C.restore();
+        // NPC1 (Zephira) — left, bowing (flipped horizontal to face right)
+        const npcImg = images['npc_idle'];
+        if (npcImg && npcImg.complete && npcImg.naturalWidth) {
+            const fw = npcImg.naturalWidth / 9, fh = npcImg.naturalHeight;
+            const sc = 2.8, dw = fw * sc, dh = fh * sc;
+            // NPC1 left
+            C.save(); C.imageSmoothingEnabled = false;
+            C.shadowColor = '#aa44ff'; C.shadowBlur = 15;
+            C.drawImage(npcImg, state.npcFrame * fw, 0, fw, fh, W*0.18 - dw/2, H*0.67 - dh, dw, dh);
+            C.restore();
+            // NPC2 right (tinted blue, flipped)
+            C.save(); C.imageSmoothingEnabled = false;
+            C.shadowColor = '#44ffcc'; C.shadowBlur = 15;
+            C.filter = 'hue-rotate(160deg) brightness(1.3)';
+            C.translate(W*0.82 + dw/2, 0);
+            C.scale(-1, 1);
+            C.drawImage(npcImg, state.npcFrame * fw, 0, fw, fh, 0, H*0.67 - dh, dw, dh);
+            C.filter = 'none';
+            C.restore();
+        }
+        // Hero in centre
+        const heroImg = images['idle_right'];
+        if (heroImg && heroImg.complete && heroImg.naturalWidth) {
+            const fw = heroImg.naturalWidth / 8, sc = 3.5;
+            const dw = fw * sc, dh = heroImg.naturalHeight * sc;
+            C.save(); C.imageSmoothingEnabled = false;
+            C.shadowColor = '#ffffff'; C.shadowBlur = 30 + 10 * Math.sin(t * 2);
+            C.drawImage(heroImg, state.heroFrame * fw, 0, fw, heroImg.naturalHeight, W/2 - dw/2, H*0.67 - dh, dw, dh);
+            C.restore();
+        }
+        // Name labels
+        [['Zephira', W*0.18, '#cc88ff'], ['The Warrior', W/2, '#ffffff'], ['Sentinel Kael', W*0.82, '#44ffcc']].forEach(([name, nx, col]) => {
+            C.save();
+            C.font = '12px "Cinzel",serif'; C.fillStyle = col;
+            C.textAlign = 'center'; C.textBaseline = 'top';
+            C.shadowColor = col; C.shadowBlur = 8;
+            C.fillText(name, nx, H * 0.72);
+            C.restore();
+        });
+        C.save();
+        C.font = 'bold 22px "Cinzel Decorative",cursive';
+        C.fillStyle = '#ffd700'; C.textAlign = 'center'; C.textBaseline = 'middle';
+        C.shadowColor = '#ff8800'; C.shadowBlur = 20;
+        C.fillText('"The realm owes you its breath."', W/2, H * 0.22);
+        C.font = '13px "Cinzel",serif'; C.fillStyle = '#ffe8a0'; C.shadowBlur = 0;
+        C.fillText('— Zephira the Wanderer', W/2, H * 0.3);
+        C.restore();
+    }
+
+    function _cinDrawVictoryStats(C, W, H, t, stats, st, dur) {
+        // Final stats — cinematic results screen
+        if (!stats) return;
+        const bgG = C.createLinearGradient(0, 0, 0, H);
+        bgG.addColorStop(0, '#050010'); bgG.addColorStop(1, '#100808');
+        C.fillStyle = bgG; C.fillRect(0, 0, W, H);
+        // Background particle field
+        for (let i = 0; i < 30; i++) {
+            C.save(); C.globalAlpha = 0.15 + 0.1 * Math.sin(t * 1.5 + i);
+            C.fillStyle = ['#ffd700','#cc88ff','#44ffcc'][i%3];
+            C.beginPath();
+            C.arc((i * 199 % W), H * 0.1 + (i * 113 % (H * 0.8)), 1.5, 0, Math.PI*2); C.fill();
+            C.restore();
+        }
+        // Rating — big centre
+        const ratingColors = { S:'#ffd700', A:'#ff8800', B:'#88ff44', C:'#aaaaaa' };
+        const rc = ratingColors[stats.rating] || '#fff';
+        C.save();
+        C.font = 'bold 80px "Cinzel Decorative",cursive';
+        C.textAlign = 'center'; C.textBaseline = 'middle';
+        C.shadowColor = rc; C.shadowBlur = 50 + 20 * Math.sin(t * 2);
+        C.fillStyle = rc; C.fillText(stats.rating, W/2, H * 0.22);
+        C.restore();
+        // Title
+        C.save();
+        C.font = 'bold 20px "Cinzel Decorative",cursive';
+        C.fillStyle = '#ffe8a0'; C.textAlign = 'center'; C.textBaseline = 'middle';
+        C.shadowColor = '#ffd700'; C.shadowBlur = 10;
+        C.fillText('SHADOW CHRONICLE — COMPLETE', W/2, H * 0.1);
+        C.restore();
+        // Stats rows with staggered reveal
+        const rows = [
+            ['⏱  Time', stats.time],
+            ['💀  Enemies Slain', '' + stats.kills],
+            ['🪙  Coins Collected', '' + stats.coins],
+            ['📦  Chests Opened', '' + stats.chests],
+            ['🏃  Distance', stats.distance + 'm'],
+            ['✔  Objectives', stats.objectives],
+        ];
+        rows.forEach((r, i) => {
+            const revealAt = i * 18;
+            if (st < revealAt) return;
+            const rowAlpha = Math.min(1, (st - revealAt) / 15);
+            const ry = H * 0.35 + i * 32;
+            C.save(); C.globalAlpha = rowAlpha;
+            C.fillStyle = 'rgba(80,40,120,0.4)';
+            C.fillRect(W/2 - 200, ry - 10, 400, 26);
+            C.font = '14px "Cinzel",serif';
+            C.fillStyle = '#cc88ff'; C.textAlign = 'left'; C.textBaseline = 'middle';
+            C.fillText(r[0], W/2 - 188, ry + 3);
+            C.fillStyle = '#ffffff'; C.textAlign = 'right';
+            C.fillText(r[1], W/2 + 188, ry + 3);
+            C.restore();
+        });
+        // "Continue" pulse
+        if (st > 120) {
+            C.save();
+            C.globalAlpha = 0.5 + 0.5 * Math.sin(t * 3);
+            C.font = '13px Arial'; C.fillStyle = '#ffe066';
+            C.textAlign = 'center'; C.textBaseline = 'bottom';
+            C.fillText('SPACE / CLICK to continue', W/2, H - 15);
+            C.restore();
+        }
+    }
+
     function _cinDrawCaption(C, W, H, t, caption, st, dur) {
         // Typewriter effect
         const charsPerFrame = 1.2;
@@ -1727,7 +2044,8 @@
                     // Check hit
                     const ddx = Math.abs(player.x-b.x);
                     if(ddx<140 && Math.abs((player.y+player.height)-(b.y+b.height))<60 && player.invincible===0) {
-                        hurtPlayer(b.phase===2 ? 20 : 12);
+                        const bossDmg = Math.round((b.phase===2 ? 20 : 12) * (b._coreUsed ? 0.5 : 1));
+                        hurtPlayer(bossDmg);
                     }
                     b.isAttacking=false; b.state='idle';
                 }
@@ -1743,7 +2061,7 @@
             // Hit player
             if(!player.dead && player.invincible===0 &&
                Math.abs(pr.x-player.x)<30 && Math.abs(pr.y-player.y)<30) {
-                hurtPlayer(10);
+                hurtPlayer(Math.round(10 * (b._coreUsed ? 0.5 : 1)));
                 pr.dead=true;
             }
         });
@@ -1794,8 +2112,8 @@
             objectives: doneObjs + '/' + SM.objectives.length,
             rating
         };
-        gamePaused = true;
-        tts(`Victory! The Void-Warden has been defeated! Your rating: ${rating}`, 1.0);
+        // Play victory cinematic FIRST, then show stats after it finishes
+        startCinematic('victory', SM.gameEndStats);
     }
 
     // ===== DRAW STORY UI =====
@@ -1806,11 +2124,13 @@
         // Cinematic is drawn on its own overlay canvas — skip here
         if(SM.cinematic) return;
 
-        // End screen
-        if(SM.gameEndStats) {
+        // End screen — only show after victory cinematic completes
+        if(SM.gameEndStats && SM.showingEndStats) {
             drawEndScreen(SM.gameEndStats);
             return;
         }
+        // While victory cinematic is playing, gameEndStats is set but cinematic handles display — skip
+        if(SM.gameEndStats && !SM.showingEndStats) return;
 
         // Dialogue
         if(SM.dialogue) {
@@ -1823,52 +2143,35 @@
             return;
         }
 
-        // Timer (top center-right)
+        // Timer — show as elapsed stopwatch (not countdown)
         if(!SM.bossArena) {
             const elapsed = Math.floor(SM.timer/60);
             const mins = Math.floor(elapsed/60);
             const secs = elapsed % 60;
             const timeStr = `${mins}:${secs<10?'0'+secs:secs}`;
-            const limit = Math.floor(SM.timerLimit/60);
-            const lMins = Math.floor(limit/60), lSecs = limit%60;
-            const limitStr = `${lMins}:${lSecs<10?'0'+lSecs:lSecs}`;
-            ctx.save();
-            ctx.fillStyle='rgba(0,0,0,0.5)';
-            roundRect2(ctx, GAME_WIDTH-160, 10, 150, 26, 5);
-            ctx.fill();
-            ctx.fillStyle = SM.timer > SM.timerLimit*0.8 ? '#ff4444' : '#cc88ff';
-            ctx.font='bold 14px Arial';
-            ctx.textAlign='center';
-            ctx.textBaseline='middle';
-            ctx.fillText(`⏱ ${timeStr} / ${limitStr}`, GAME_WIDTH-85, 23);
-            ctx.restore();
+            // Place timer below distance panel (top-left area, below ⚔ panel)
+            const tmW = 120, tmH = 28, tmX = PAD, tmY = PAD + 36;
+            drawUI_img('ui_titlebox', tmX, tmY, tmW, tmH);
+            const knotSz2 = 20;
+            drawUI_img('ui_cornerknot', tmX - 3, tmY - 3, knotSz2, knotSz2);
+            drawUI_img('ui_cornerknot', tmX + tmW - knotSz2 + 3, tmY - 3, knotSz2, knotSz2);
+            drawUI_text('⏱ ' + timeStr, tmX + tmW / 2, tmY + tmH / 2, 12, '#cc88ff', 'center');
         }
 
-        // Objective progress bar (below timer)
+        // Objective progress panel — below timer, using UI assets
         const pct = SM.objectivePct;
-        const barX = GAME_WIDTH-160, barY=40, barW=150, barH=10;
+        const objW = 120, objH = 28, objX = PAD, objY = PAD + 72;
+        drawUI_img('ui_titlebox', objX, objY, objW, objH);
+        // Progress fill inside box
         ctx.save();
-        ctx.fillStyle='rgba(0,0,0,0.5)';
-        roundRect2(ctx, barX, barY, barW, barH+20, 4);
-        ctx.fill();
-        ctx.fillStyle='#333';
-        ctx.fillRect(barX+4, barY+4, barW-8, barH);
-        const grad = ctx.createLinearGradient(barX, 0, barX+barW, 0);
-        grad.addColorStop(0,'#8822cc'); grad.addColorStop(1,'#ff44ff');
-        ctx.fillStyle=grad;
-        ctx.fillRect(barX+4, barY+4, (barW-8)*pct, barH);
-        ctx.fillStyle='#cc88ff'; ctx.font='bold 10px Arial'; ctx.textAlign='center';
-        ctx.fillText(`Objectives: ${Math.round(pct*100)}%`, barX+barW/2, barY+barH+14);
+        ctx.globalAlpha = 0.7;
+        const objGrad = ctx.createLinearGradient(objX + 8, 0, objX + objW - 8, 0);
+        objGrad.addColorStop(0, '#8822cc'); objGrad.addColorStop(1, '#ff44ff');
+        ctx.fillStyle = objGrad;
+        ctx.fillRect(objX + 8, objY + objH - 8, (objW - 16) * pct, 5);
         ctx.restore();
-
-        // Board toggle hint
-        ctx.save();
-        ctx.fillStyle='rgba(0,0,0,0.45)';
-        roundRect2(ctx, GAME_WIDTH-160, 68, 150, 18, 4);
-        ctx.fill();
-        ctx.fillStyle='#aa77ff'; ctx.font='11px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
-        ctx.fillText('[TAB] Objective Board', GAME_WIDTH-85, 77);
-        ctx.restore();
+        drawUI_text(`✦ ${Math.round(pct * 100)}%`, objX + objW / 2, objY + 11, 11, '#cc88ff', 'center');
+        drawUI_text('[TAB] Objectives', objX + objW / 2, objY + 22, 9, '#aa77cc', 'center');
 
         // Objective board overlay
         if(SM.boardOpen) drawObjectiveBoard();
@@ -2100,23 +2403,86 @@
     function drawNPCs() {
         const SM = STORY_MODE;
         const npcImg = images['npc_idle'];
-        if(!npcImg||!npcImg.complete||!npcImg.naturalWidth) return;
-        const frameW = npcImg.naturalWidth/3; // 192x128 canvas, 64x64 sprites, 3 cols
-        const frameH = npcImg.naturalHeight;   // 128 total (2 rows? use top row)
-        function drawNPC(npc, tint) {
-            if(!npc) return;
-            // Animate
-            npc.frameTimer = (npc.frameTimer||0)+1;
-            if(npc.frameTimer>=12){ npc.frame=(npc.frame+1)%3; npc.frameTimer=0; }
+        // Sprite sheet: 9 frames in a single row (confirmed from uploaded image)
+        const NPC_TOTAL_FRAMES = 9;
+
+        function drawNPC(npc, npcNum) {
+            if (!npc) return;
+            const img = npcImg;
+            if (!img || !img.complete || !img.naturalWidth) return;
+
+            const fw = img.naturalWidth / NPC_TOTAL_FRAMES;
+            const fh = img.naturalHeight;
+            // Draw at 2.5x scale, ground-anchored like enemies
+            const drawScale = 2.5;
+            const dw = fw * drawScale;
+            const dh = fh * drawScale;
+            const drawX = npc.x - dw / 2;
+            const drawY = npc.y + npc.height - dh;
+
+            const t = Date.now() / 1000;
+            const nearPlayer = Math.abs(npc.x - player.x) < 120;
+            const talked = npcNum === 1 ? SM.npc1Talked : SM.npc2Talked;
+
             ctx.save();
-            if(tint) { ctx.filter='hue-rotate(120deg) brightness(1.2)'; }
-            // Draw NPC sprite (64x64 per frame)
-            ctx.imageSmoothingEnabled=false;
-            ctx.drawImage(npcImg, npc.frame*frameW, 0, frameW, Math.min(frameH,64), npc.x-32, npc.y-30, 64, 80);
+            ctx.imageSmoothingEnabled = false;
+
+            // NPC aura glow — purple for NPC1, teal for NPC2
+            const glowColor = npcNum === 1 ? '#aa44ff' : '#44ffcc';
+            ctx.shadowColor = glowColor;
+            ctx.shadowBlur = nearPlayer ? 20 + 8 * Math.sin(t * 3) : 10;
+
+            // NPC2 gets a blue-tint filter to visually differentiate
+            if (npcNum === 2) ctx.filter = 'hue-rotate(160deg) brightness(1.3) saturate(1.4)';
+
+            // Draw sprite frame
+            ctx.drawImage(img, npc.frame * fw, 0, fw, fh, drawX, drawY, dw, dh);
+            ctx.filter = 'none';
             ctx.restore();
+
+            // Floating name tag
+            const nameY = drawY - 6;
+            const name = npcNum === 1 ? 'Zephira' : 'Sentinel Kael';
+            ctx.save();
+            ctx.font = 'bold 11px "Cinzel",serif';
+            const tw = ctx.measureText(name).width + 16;
+            ctx.fillStyle = 'rgba(0,0,0,0.65)';
+            roundRect2(ctx, npc.x - tw / 2, nameY - 16, tw, 18, 4);
+            ctx.fill();
+            ctx.fillStyle = glowColor;
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.shadowColor = glowColor; ctx.shadowBlur = 6;
+            ctx.fillText(name, npc.x, nameY - 7);
+            ctx.restore();
+
+            // Bobbing "!" interact marker when player is nearby and NPC not talked
+            if (nearPlayer && !talked) {
+                const bob = Math.sin(t * 4) * 4;
+                ctx.save();
+                ctx.font = 'bold 18px Arial';
+                ctx.fillStyle = '#ffff00';
+                ctx.shadowColor = '#ff8800'; ctx.shadowBlur = 10;
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText('!', npc.x, drawY - 22 + bob);
+                ctx.font = '10px Arial';
+                ctx.fillStyle = '#ffe066'; ctx.shadowBlur = 0;
+                ctx.fillText('[F] Talk', npc.x, drawY - 36 + bob);
+                ctx.restore();
+            }
+
+            // Checkmark if already talked
+            if (talked) {
+                ctx.save();
+                ctx.font = '14px Arial';
+                ctx.fillStyle = '#44ff88';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText('✔', npc.x, drawY - 22);
+                ctx.restore();
+            }
         }
-        drawNPC(SM.npc1, false);
-        drawNPC(SM.npc2, true);
+
+        drawNPC(SM.npc1, 1);
+        drawNPC(SM.npc2, 2);
     }
 
     function drawBossSprites() {
@@ -2320,23 +2686,36 @@
     function activateArtifact(id) {
         const inv = player.artifacts;
         const idx = inv.indexOf(id);
-        if (idx === -1) return; // not in inventory
+        if (idx === -1) return;
         const def = ARTIFACT_DEFS.find(d => d.id === id);
         if (!def) return;
         if (def.effect === 'fireshield') {
-            // Activate fire shield — consumes the artifact
             player.fireShield = 600; // 10 seconds at 60fps
             inv.splice(idx, 1);
-            dmgNumbers.push({ x: player.x + 10, y: player.y - 20, val: '🔥 SHIELD', life: 80, color: '#ff6600', isText: true });
+            dmgNumbers.push({ x: player.x + 10, y: player.y - 20, val: '🔥 SHIELD ACTIVE', life: 80, color: '#ff6600', isText: true });
         }
-        // heal, maxhp, atk are passive on pickup — no activation needed, but if somehow still in inv:
-        // (passive effects applied on collection; key press is a no-op for those)
+        if (def.effect === 'boss' && STORY_MODE.active && STORY_MODE.boss && !STORY_MODE.boss.dying) {
+            // Ancient Core: reduces boss attack damage by 50% permanently and shows visual
+            if (!STORY_MODE.boss._coreUsed) {
+                STORY_MODE.boss._coreUsed = true;
+                STORY_MODE.boss.attackDmgMult = 0.5;
+                inv.splice(idx, 1);
+                shakeTimer = 15; shakeMag = 5;
+                dmgNumbers.push({ x: STORY_MODE.boss.x, y: STORY_MODE.boss.y - 20, val: '⚡ CORE WEAKENS BOSS -50% ATK!', life: 120, color: '#aa44ff', isText: true });
+            }
+        }
     }
 
 
     function restartGame() {
         gameOverEl.style.display = 'none';
-        resetGame();
+        if (STORY_MODE.active) {
+            // Story mode death = full fresh restart of story mode
+            speechSynthesis && speechSynthesis.cancel && speechSynthesis.cancel();
+            initStoryMode();
+        } else {
+            resetGame();
+        }
     }
 
     function togglePause() {
@@ -2353,6 +2732,7 @@
         // Fully reset story mode
         STORY_MODE.active = false; STORY_MODE.bossArena = false; STORY_MODE.boss = null;
         STORY_MODE.dialogue = null; STORY_MODE.cinematic = null;
+        STORY_MODE.showingEndStats = false;
         window._endScreenActive = false; window._gameMode = 'endless';
         speechSynthesis && speechSynthesis.cancel && speechSynthesis.cancel();
         // Show home screen again
@@ -2470,7 +2850,10 @@
     }
 
     function update() {
+        // Freeze everything during cinematics and NPC dialogue
         if (player.dead || gamePaused) return;
+        if (STORY_MODE.cinematic) return;   // cinematic = full game freeze
+        if (STORY_MODE.dialogue) return;    // dialogue = full game freeze
 
         // ===== STORY MODE TICK =====
         if(STORY_MODE.active && !STORY_MODE.bossArena) {
@@ -2528,6 +2911,10 @@
                 if (t.arrows) t.arrows.forEach(a => a.x -= diff);
             });
             dmgNumbers.forEach(d => d.x -= diff);
+            // Scroll NPCs and portal with camera
+            if (STORY_MODE.npc1) STORY_MODE.npc1.x -= diff;
+            if (STORY_MODE.npc2) STORY_MODE.npc2.x -= diff;
+            if (STORY_MODE.portal) STORY_MODE.portal.x -= diff;
             score = Math.floor(scrollX / 8);
             uiScore = score;
         }
@@ -2757,6 +3144,27 @@
 
         // Remove fully faded dying enemies
         enemies = enemies.filter(e => !(e.dying && (e.alpha || 1) <= 0));
+
+        // ---- NPC PHYSICS (gravity + platform landing) ----
+        if (STORY_MODE.active) {
+            [STORY_MODE.npc1, STORY_MODE.npc2].forEach(npc => {
+                if (!npc) return;
+                npc.vy = (npc.vy || 0) + 0.7;
+                npc.y += npc.vy;
+                npc.grounded = false;
+                for (let p of platforms) {
+                    if (npc.x < p.x + p.w && npc.x + npc.width > p.x &&
+                        npc.y + npc.height > p.y && npc.y + npc.height < p.y + p.h + 20 && npc.vy >= 0) {
+                        npc.y = p.y - npc.height;
+                        npc.vy = 0;
+                        npc.grounded = true;
+                    }
+                }
+                // Animate sprite
+                npc.frameTimer = (npc.frameTimer || 0) + 1;
+                if (npc.frameTimer >= 8) { npc.frame = (npc.frame + 1) % 9; npc.frameTimer = 0; }
+            });
+        }
 
         // Update particles
         particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += 0.2; p.life--; });
@@ -3229,7 +3637,9 @@
         const barY2 = GAME_HEIGHT - slotSize - PAD - 2;
         ARTIFACT_DEFS.forEach((def, i) => {
             const sx = barStartX + i * (slotSize + slotGap);
-            const inInv = player.artifacts.includes(def.id);
+            // Count how many of this artifact are in inventory
+            const count = player.artifacts.filter(a => a === def.id).length;
+            const inInv = count > 0;
             // Slot background
             ctx.save();
             ctx.globalAlpha = 0.75;
@@ -3260,14 +3670,39 @@
                 ctx.stroke();
                 ctx.restore();
             }
-            // Key label
+            // Key label (top-left of slot)
             ctx.save();
             ctx.font = 'bold 9px Arial';
             ctx.fillStyle = '#ffe8a0';
-            ctx.textAlign = 'center';
+            ctx.textAlign = 'left';
             ctx.textBaseline = 'top';
-            ctx.fillText(def.key, sx + slotSize/2, barY2 + 1);
+            ctx.fillText(def.key, sx + 3, barY2 + 2);
             ctx.restore();
+            // Quantity badge for stackable active artifacts (fireshield=4, boss=5)
+            if ((def.effect === 'fireshield' || def.effect === 'boss') && inInv) {
+                ctx.save();
+                ctx.fillStyle = def.effect === 'boss' ? '#aa44ff' : '#ff6600';
+                ctx.beginPath();
+                ctx.arc(sx + slotSize - 7, barY2 + 8, 8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 9px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(count, sx + slotSize - 7, barY2 + 8);
+                ctx.restore();
+            }
+            // Boss core "used" indicator
+            if (def.effect === 'boss' && STORY_MODE.boss && STORY_MODE.boss._coreUsed) {
+                ctx.save();
+                ctx.globalAlpha = 0.6;
+                ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                ctx.fillRect(sx, barY2, slotSize, slotSize);
+                ctx.fillStyle = '#44ff88'; ctx.font = '16px Arial';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText('✔', sx + slotSize/2, barY2 + slotSize/2);
+                ctx.restore();
+            }
         });
         // Fire shield active label
         if (player.fireShield > 0) {
