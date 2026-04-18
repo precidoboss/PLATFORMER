@@ -285,9 +285,8 @@
         .tip-row span:last-child { font-family: 'Cinzel', serif; font-size: 11px; color: #907050; line-height: 1.5; }
 
         /* Character cards in howto */
-        .howto-chars { display: flex; gap: 20px; justify-content: center; }
+        .howto-chars { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; width: 100%; }
         .hc-card {
-            flex: 1; max-width: 300px;
             background: rgba(255,255,255,0.02); border: 1px solid #3a2810;
             border-radius: 4px; padding: 14px;
             display: flex; flex-direction: column; align-items: center; gap: 8px;
@@ -460,6 +459,18 @@
                             <div class="hc-name">The Guardian</div>
                             <div class="hc-desc">Ancient stone guardian. Chases, feints and lunges. 3 hits to defeat.</div>
                             <div class="hc-stats"><span>❤ 50 HP</span><span>⚔ 5 DMG</span><span>⚡ Smart</span></div>
+                        </div>
+                        <div class="hc-card">
+                            <canvas class="hc-sprite" id="howto-npc-canvas" width="96" height="96"></canvas>
+                            <div class="hc-name">Zephira / Sentinel Kael</div>
+                            <div class="hc-desc">Wandering sentinels who hold the secret of the Void-Warden's weakness. Seek them out — speak with both.</div>
+                            <div class="hc-stats"><span>✦ Story Mode</span><span>🔑 [F] Talk</span></div>
+                        </div>
+                        <div class="hc-card">
+                            <canvas class="hc-sprite" id="howto-boss-canvas" width="96" height="96"></canvas>
+                            <div class="hc-name">The Void-Warden</div>
+                            <div class="hc-desc">Ancient terror of the void. Attacks from range and melee. Enrages at 50% HP. Strike from the RIGHT for double damage if you know its secret.</div>
+                            <div class="hc-stats"><span>❤ 750 HP</span><span>⚔ 12–20 DMG</span><span>⚡ 2 Phases</span></div>
                         </div>
                     </div>
                 </div>
@@ -1572,15 +1583,15 @@
             C.fillStyle=g; C.beginPath(); C.arc(W/2,H/2,rad,0,Math.PI*2); C.fill();
             C.restore();
         }
-        // Portal sprite
+        // Portal sprite — 96x64, 3 cols x 2 rows, each frame 32x32
         const portalImg=images['portal_sheet'];
         if(portalImg&&portalImg.complete&&portalImg.naturalWidth) {
-            const totalF=Math.max(1,Math.round(portalImg.naturalWidth/96));
-            const pframe=Math.floor(t*8)%totalF;
-            const fw=portalImg.naturalWidth/totalF;
+            const COLS=3, FW=32, FH=32, TOTAL_FRAMES=6;
+            const pframe=Math.floor(t*8)%TOTAL_FRAMES;
+            const col=pframe%COLS, row=Math.floor(pframe/COLS);
             C.save(); C.imageSmoothingEnabled=false;
             C.shadowColor='#aa00ff'; C.shadowBlur=40;
-            C.drawImage(portalImg,pframe*fw,0,fw,portalImg.naturalHeight, W/2-96,H/2-110,192,220);
+            C.drawImage(portalImg, col*FW, row*FH, FW, FH, W/2-96, H/2-110, 192, 220);
             C.restore();
         } else {
             // Fallback animated ellipse portal
@@ -1775,7 +1786,7 @@
         // NPC1 (Zephira) — left, bowing (flipped horizontal to face right)
         const npcImg = images['npc_idle'];
         if (npcImg && npcImg.complete && npcImg.naturalWidth) {
-            const fw = npcImg.naturalWidth / 9, fh = npcImg.naturalHeight;
+            const fw = npcImg.naturalWidth / 19, fh = npcImg.naturalHeight;
             const sc = 2.8, dw = fw * sc, dh = fh * sc;
             // NPC1 left
             C.save(); C.imageSmoothingEnabled = false;
@@ -1924,8 +1935,8 @@
         scrollX = 0;
         player.x = 80; player.y = 320;
         player.vx = 0; player.vy = 0;
-        // Apply weakness bonus
-        const bossMaxHp = STORY_MODE.bossWeaknessKnown ? 750 : 1000;
+        // Apply weakness bonus — set low HP for testing
+        const bossMaxHp = 50;
         STORY_MODE.boss = {
             x: 700, y: 250,
             width:70, height:90,
@@ -2378,8 +2389,8 @@
     function drawNPCs() {
         const SM = STORY_MODE;
         const npcImg = images['npc_idle'];
-        // Sprite sheet: 9 frames in a single row (confirmed from uploaded image)
-        const NPC_TOTAL_FRAMES = 9;
+        // Sprite sheet: 19 frames in a single row (1919px / 101px per frame)
+        const NPC_TOTAL_FRAMES = 19;
 
         function drawNPC(npc, npcNum) {
             if (!npc) return;
@@ -2497,23 +2508,29 @@
     }
 
     function drawPortal() {
+        // Never draw the portal once inside the boss arena
+        if(STORY_MODE.bossArena) return;
         const p = STORY_MODE.portal;
         if(!p) return;
         const img = images['portal_sheet'];
         p.frameTimer=(p.frameTimer||0)+1;
         if(p.frameTimer>=5){ p.frame=(p.frame+1); p.frameTimer=0; }
-        // Try to get total frames from image width (assume 8 frames or fallback)
-        const totalF = img&&img.naturalWidth ? Math.max(1,Math.round(img.naturalWidth/96)) : 8;
-        const frame = p.frame % totalF;
         if(img&&img.complete&&img.naturalWidth){
-            const fw=img.naturalWidth/totalF;
+            // Dimensional_Portal.png is 96x64 — 3 columns x 2 rows, each frame 32x32
+            const COLS=3, ROWS=2, FW=32, FH=32;
+            const TOTAL_FRAMES=COLS*ROWS; // 6
+            const frame = p.frame % TOTAL_FRAMES;
+            const col = frame % COLS;
+            const row = Math.floor(frame / COLS);
+            const sx = col * FW, sy = row * FH;
+            // Draw portal scaled up to 96x110 on screen
+            const DRAW_W=96, DRAW_H=110;
             ctx.save();
             ctx.imageSmoothingEnabled=false;
-            // Pulsing glow
             const t=Date.now()/1000;
             ctx.shadowColor=`rgba(180,50,255,${0.6+0.3*Math.sin(t*3)})`;
             ctx.shadowBlur=30+10*Math.sin(t*2);
-            ctx.drawImage(img, frame*fw, 0, fw, img.naturalHeight, p.x, p.y, 96, 110);
+            ctx.drawImage(img, sx, sy, FW, FH, p.x, p.y, DRAW_W, DRAW_H);
             ctx.restore();
         } else {
             // Fallback: draw glowing oval
@@ -3745,6 +3762,8 @@
             animateSpriteOnCanvas('enemy-canvas',      'enemy_idle',  10, 10);
             animateSpriteOnCanvas('howto-hero-canvas',  'run_right',  8,  7);
             animateSpriteOnCanvas('howto-enemy-canvas', 'enemy_run',  16, 5);
+            animateSpriteOnCanvas('howto-npc-canvas',   'npc_idle',   19, 8);
+            animateSpriteOnCanvas('howto-boss-canvas',  'boss_idle',  9,  8);
         }
         tryStartSprites();
 
