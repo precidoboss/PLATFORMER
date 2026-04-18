@@ -420,13 +420,28 @@
                 <div class="howto-section span2">
                     <div class="howto-section-title">✨ Artifacts — Found in Chests</div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                        <div class="tip-row"><span class="tip-icon">🪖</span><span><b style="color:#ffd700">[1] Iron Helm</b> — Reduces max HP range (180→161) and grants +1 Max HP per pickup</span></div>
-                        <div class="tip-row"><span class="tip-icon">🍇</span><span><b style="color:#ffd700">[2] Shadow Berries</b> — Instantly restores 5 HP on pickup. Passive, no key needed</span></div>
-                        <div class="tip-row"><span class="tip-icon">💎</span><span><b style="color:#ffd700">[3] Mana Crystal</b> — Permanently increases your sword damage by +1</span></div>
-                        <div class="tip-row"><span class="tip-icon">🔥</span><span><b style="color:#ffd700">[4] Fire Feather</b> — Press <b>4</b> to activate a fire shield that blocks traps for 10 seconds</span></div>
-                        <div class="tip-row"><span class="tip-icon">⚙️</span><span><b style="color:#ffd700">[5] Ancient Core</b> — A mysterious relic... reserved for the Boss encounter ahead</span></div>
+                        <div class="tip-row">
+                            <span class="tip-icon"><img src="https://raw.githubusercontent.com/precidoboss/adventurer/main/Icon4.png" style="width:22px;height:22px;image-rendering:pixelated;vertical-align:middle;"></span>
+                            <span><b style="color:#ffd700">[1] Iron Helm</b> — +1 Max HP per pickup, applies instantly</span>
+                        </div>
+                        <div class="tip-row">
+                            <span class="tip-icon"><img src="https://raw.githubusercontent.com/precidoboss/adventurer/main/Icon2.png" style="width:22px;height:22px;image-rendering:pixelated;vertical-align:middle;"></span>
+                            <span><b style="color:#ffd700">[2] Shadow Berries</b> — Instantly restores 5 HP on pickup</span>
+                        </div>
+                        <div class="tip-row">
+                            <span class="tip-icon"><img src="https://raw.githubusercontent.com/precidoboss/adventurer/main/Icon3.png" style="width:22px;height:22px;image-rendering:pixelated;vertical-align:middle;"></span>
+                            <span><b style="color:#ffd700">[3] Mana Crystal</b> — Permanently increases sword damage by +1</span>
+                        </div>
+                        <div class="tip-row">
+                            <span class="tip-icon"><img src="https://raw.githubusercontent.com/precidoboss/adventurer/main/Icon1.png" style="width:22px;height:22px;image-rendering:pixelated;vertical-align:middle;"></span>
+                            <span><b style="color:#ffd700">[4] Fire Feather</b> — Press <b>4</b> to activate fire shield for 10 seconds</span>
+                        </div>
+                        <div class="tip-row">
+                            <span class="tip-icon"><img src="https://raw.githubusercontent.com/precidoboss/adventurer/main/Icon5.png" style="width:22px;height:22px;image-rendering:pixelated;vertical-align:middle;"></span>
+                            <span><b style="color:#ffd700">[5] Ancient Core</b> — A mysterious relic... reserved for the Boss encounter</span>
+                        </div>
                     </div>
-                    <div style="margin-top:10px;font-family:'Cinzel',serif;font-size:10px;color:#6a4820;">Artifacts appear as glowing icons rising from opened chests. Passive ones apply instantly. Active ones (🔥 Fire Feather) go to your hotbar — press the matching number key to activate.</div>
+                    <div style="margin-top:10px;font-family:'Cinzel',serif;font-size:10px;color:#6a4820;">Artifacts glow and rise from opened chests. Passive ones (1–3) apply instantly on pickup. Active ones (4–5) go to your hotbar — press the matching number key to use.</div>
                 </div>
                 <div class="howto-section span2">
                     <div class="howto-section-title">Characters</div>
@@ -539,7 +554,8 @@
         ui_rectbox:     'https://raw.githubusercontent.com/precidoboss/adventurer/main/RectangleBox_96x96.png',
         ui_topP1:       'https://raw.githubusercontent.com/precidoboss/adventurer/main/TopPatternPanel_01_33x15.png',
         ui_topP2:       'https://raw.githubusercontent.com/precidoboss/adventurer/main/TopPatternPanel_02_33x15.png',
-        ui_quiticon:    'https://raw.githubusercontent.com/precidoboss/adventurer/main/QuitIcon.png'
+        ui_quiticon:    'https://raw.githubusercontent.com/precidoboss/adventurer/main/QuitIcon.png',
+        blood_sheet:    'https://raw.githubusercontent.com/precidoboss/adventurer/main/5_100x100px.png'
     };
 
     // Sounds (loaded separately, not counted in asset load)
@@ -664,6 +680,7 @@
     let traps   = [];
     let dmgNumbers = []; // { x, y, val, life, color }
     let particles  = []; // death burst
+    let bloodAnims = []; // { x, y, frame, frameTimer, totalFrames, fps }
     let shakeTimer = 0, shakeMag = 0;
     let gamePaused = false;
 
@@ -775,7 +792,7 @@
         score = 0; scrollX = 0;
         uiCoins = 0;
         uiHp = player.maxHp; uiMaxHp = player.maxHp;
-        enemies = []; traps = []; dmgNumbers = []; particles = []; chestAnims = []; shakeTimer = 0;
+        enemies = []; traps = []; dmgNumbers = []; particles = []; chestAnims = []; bloodAnims = []; shakeTimer = 0;
         // Ground platform — long starter
         platforms = [{ x: -100, y: 440, w: 1400, h: 100, type: 1 }];
         collectables = [];
@@ -859,7 +876,7 @@
                 y: p.y - 32,
                 w: 32, h: 32,
                 type: 'arrow', frame: 0, frameTimer: 0,
-                shootTimer: 100, arrows: [] // offset timer so first shot comes quickly
+                shootTimer: 280, arrows: [] // offset timer so first shot comes after a delay
             });
         }
     }
@@ -949,24 +966,25 @@
         // ---- CHEST ARTIFACT ANIMATIONS ----
         chestAnims.forEach(ca => {
             ca.t++;
-            // When animation reaches halfway, apply the artifact effect and add to inventory
             if (ca.t === 45 && !ca.applied) {
                 ca.applied = true;
                 const def = ARTIFACT_DEFS.find(d => d.id === ca.artifactId);
                 if (def) {
+                    // ALL artifacts go into inventory (shown in hotbar)
+                    if (player.artifacts.length < 5) player.artifacts.push(ca.artifactId);
+                    // Passive effects apply immediately on pickup
                     if (def.effect === 'maxhp') {
-                        // Reduce maxHp from 180 toward 161: each pickup gives +1 maxHp (starting effect is −19 total possible)
-                        player.maxHp = Math.max(161, player.maxHp - 19 + 1);
+                        player.maxHp = Math.min(181, player.maxHp + 1);
                         player.hp = Math.min(player.hp + 1, player.maxHp);
                         uiHp = player.hp; uiMaxHp = player.maxHp;
+                        dmgNumbers.push({ x: player.x + 10, y: player.y - 30, val: '+1 MAX HP', life: 80, color: '#44ff88', isText: true });
                     } else if (def.effect === 'heal') {
                         player.hp = Math.min(player.maxHp, player.hp + 5);
                         uiHp = player.hp;
+                        dmgNumbers.push({ x: player.x + 10, y: player.y - 30, val: '+5 HP', life: 80, color: '#44ff88', isText: true });
                     } else if (def.effect === 'atk') {
                         player.attackDmg = (player.attackDmg || 20) + 1;
-                    } else if (def.effect === 'fireshield' || def.effect === 'boss') {
-                        // Add to inventory for key activation
-                        if (player.artifacts.length < 5) player.artifacts.push(ca.artifactId);
+                        dmgNumbers.push({ x: player.x + 10, y: player.y - 30, val: '+1 ATK', life: 80, color: '#ffdd44', isText: true });
                     }
                 }
             }
@@ -1099,6 +1117,14 @@
                     const distFactor = Math.max(0.4, 1 - (dist / 150) * 0.6);
                     const dmg = Math.round(baseDmg * distFactor);
                     e.hp -= dmg;
+                    // Blood effect — spawn at hit point
+                    bloodAnims.push({
+                        x: e.x + e.width/2 + (player.facing === 'right' ? -10 : 10),
+                        y: e.y + e.height * 0.4,
+                        frame: 0, frameTimer: 0,
+                        cols: 6, rows: 5, totalFrames: 30,
+                        fps30: true // alternate between 30fps and 60fps each hit
+                    });
                     e.hurtTimer = 18;
                     e.state = 'hurt';
                     e.frame = 0;
@@ -1133,6 +1159,17 @@
         particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += 0.2; p.life--; });
         particles = particles.filter(p => p.life > 0);
 
+        // Tick blood animations (30fps = advance every 2 game frames, 60fps = every 1)
+        bloodAnims.forEach(b => {
+            b.frameTimer++;
+            const frameDuration = b.fps30 ? 2 : 1;
+            if (b.frameTimer >= frameDuration) {
+                b.frameTimer = 0;
+                b.frame++;
+            }
+        });
+        bloodAnims = bloodAnims.filter(b => b.frame < b.totalFrames);
+
         // ---- TRAPS ----
         for (let t of traps) {
             // Animate
@@ -1147,7 +1184,7 @@
             // Arrow trap shoots
             if (t.type === 'arrow') {
                 t.shootTimer = (t.shootTimer || 0) + 1;
-                if (t.shootTimer > 150) {
+                if (t.shootTimer > 360) {
                     t.shootTimer = 0;
                     t.arrows = t.arrows || [];
                     t.arrows.push({ x: t.x + 32, y: t.y + 14, vx: -5, w: 12, h: 6 });
@@ -1328,6 +1365,24 @@
             ctx.restore();
         });
 
+        // Blood hit animations — 6-col × 5-row sprite sheet, each frame 100×100
+        const bloodImg = images['blood_sheet'];
+        if (bloodImg && bloodImg.complete && bloodImg.naturalWidth) {
+            bloodAnims.forEach(b => {
+                const col = b.frame % b.cols;
+                const row = Math.floor(b.frame / b.cols);
+                const fw = 100, fh = 100;
+                const drawSz = 64; // render size on screen
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, 1 - b.frame / b.totalFrames * 0.5);
+                ctx.drawImage(bloodImg,
+                    col * fw, row * fh, fw, fh,
+                    b.x - drawSz/2, b.y - drawSz/2, drawSz, drawSz
+                );
+                ctx.restore();
+            });
+        }
+
         // Enemies
         enemies.forEach(e => {
             const stateMap = { idle: 'enemy_idle', run: 'enemy_run', attack: 'enemy_attack', hurt: 'enemy_hurt' };
@@ -1365,18 +1420,44 @@
             const totalFrames = anims[player.state].frames;
             const destX = player.x - (player.drawWidth - player.width) / 2;
             const destY = player.y + player.height - player.drawHeight;
-            // Fire shield glow
+            // Fire shield glow — animated flame ring
             if (player.fireShield > 0) {
-                ctx.save();
-                const pulse = 0.6 + 0.4 * Math.sin(Date.now() / 80);
-                ctx.globalAlpha = 0.35 * pulse;
-                ctx.fillStyle = '#ff6600';
-                ctx.shadowColor = '#ff4400';
-                ctx.shadowBlur = 20;
-                ctx.beginPath();
-                ctx.ellipse(player.x + player.width/2, player.y + player.height/2, player.drawWidth/2, player.drawHeight/2, 0, 0, Math.PI*2);
-                ctx.fill();
-                ctx.restore();
+                const t = Date.now() / 1000;
+                const cx = player.x + player.width / 2;
+                const cy = player.y + player.height / 2;
+                // Outer pulsing ring
+                for (let ring = 0; ring < 3; ring++) {
+                    const phase = t * 4 + ring * (Math.PI * 2 / 3);
+                    const radius = 38 + ring * 6 + Math.sin(phase) * 5;
+                    const alpha = (0.5 - ring * 0.12) * (0.6 + 0.4 * Math.sin(phase));
+                    ctx.save();
+                    ctx.globalAlpha = alpha;
+                    const grad = ctx.createRadialGradient(cx, cy, radius - 8, cx, cy, radius + 4);
+                    grad.addColorStop(0, '#ff6600');
+                    grad.addColorStop(0.5, '#ff2200');
+                    grad.addColorStop(1, 'transparent');
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, radius + 6, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
+                // Orbiting fire sparks
+                for (let s = 0; s < 6; s++) {
+                    const angle = t * 3 + s * (Math.PI * 2 / 6);
+                    const r = 42 + Math.sin(t * 5 + s) * 6;
+                    const sx2 = cx + Math.cos(angle) * r;
+                    const sy2 = cy + Math.sin(angle) * r * 0.5;
+                    ctx.save();
+                    ctx.globalAlpha = 0.8;
+                    ctx.fillStyle = s % 2 === 0 ? '#ff8800' : '#ffcc00';
+                    ctx.shadowColor = '#ff4400';
+                    ctx.shadowBlur = 8;
+                    ctx.beginPath();
+                    ctx.arc(sx2, sy2, 3 + Math.sin(t * 6 + s) * 1.5, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
             }
             drawSprite(spriteImg, totalFrames, player.frame, false, destX, destY, player.drawWidth, player.drawHeight);
         }
