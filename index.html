@@ -827,17 +827,19 @@
         SM.objectivePct = pct;
 
         // Spawn NPC1 at 50%
-        if(pct >= 0.5 && !SM.npc1Shown && !SM.npc1Talked) {
+        if(pct >= 0.5 && !SM.npc1Shown) {
             SM.npc1Shown = true;
             spawnNPC(1);
         }
-        // Spawn NPC2 at 75%
-        if(pct >= 0.75 && SM.npc1Talked && !SM.npc2Shown && !SM.npc2Talked) {
+        // Spawn NPC2 at 75% — requires NPC1 to have been shown (not necessarily talked)
+        if(pct >= 0.75 && SM.npc1Shown && !SM.npc2Shown) {
             SM.npc2Shown = true;
             spawnNPC(2);
         }
         // Spawn portal at 100%
-        if(pct >= 1.0 && SM.npc2Talked && !SM.portalShown) {
+        // Requires npc2Talked (normal flow) OR as failsafe: both NPCs shown and player at 100%
+        const portalCanSpawn = SM.npc2Talked || (SM.npc1Shown && SM.npc2Shown && pct >= 1.0);
+        if(pct >= 1.0 && portalCanSpawn && !SM.portalShown) {
             SM.portalShown = true;
             spawnPortal();
         }
@@ -868,13 +870,30 @@
     }
 
     function spawnPortal() {
-        const lastP = platforms[platforms.length-1];
+        // Find a platform ahead of the player that's within visible range
+        let targetPlat = null;
+        // First try: platform ahead of player within reasonable distance
+        for (let i = 0; i < platforms.length; i++) {
+            const p = platforms[i];
+            if (p.x > player.x + 150 && p.x < player.x + 900 && p.w > 80) {
+                targetPlat = p; break;
+            }
+        }
+        // Fallback: any platform ahead
+        if (!targetPlat) {
+            for (let i = platforms.length - 1; i >= 0; i--) {
+                if (platforms[i].x > player.x) { targetPlat = platforms[i]; break; }
+            }
+        }
+        // Last resort: place directly ahead of player
+        const portalX = targetPlat ? targetPlat.x + targetPlat.w * 0.5 - 48 : player.x + 350;
+        const portalY = targetPlat ? targetPlat.y - 115 : player.y - 120;
         STORY_MODE.portal = {
-            x: lastP ? lastP.x + lastP.w/2 - 48 : player.x + 500,
-            y: lastP ? lastP.y - 110 : 280,
-            frame:0, frameTimer:0, pulseT:0
+            x: portalX,
+            y: portalY,
+            frame: 0, frameTimer: 0, pulseT: 0
         };
-        dmgNumbers.push({ x: STORY_MODE.portal.x, y: STORY_MODE.portal.y-40, val:'✦ A dimensional rift has opened!', life:240, color:'#ff88ff', isText:true });
+        dmgNumbers.push({ x: portalX + 48, y: portalY - 40, val: '✦ A dimensional rift has opened!', life: 240, color: '#ff88ff', isText: true });
     }
 
     function tryInteractNPC(which) {
@@ -943,8 +962,12 @@
             if(d.type==='npc2_right') {
                 STORY_MODE.bossWeaknessKnown = true;
                 STORY_MODE.npc2Talked = true;
-                if(calcObjectivePct()>=1.0) spawnPortal();
-                else STORY_MODE.portalShown = false; // will be set when pct hits 100
+                if(calcObjectivePct()>=1.0) {
+                    STORY_MODE.portalShown = true;
+                    spawnPortal();
+                } else {
+                    STORY_MODE.portalShown = false; // will be set when pct hits 100
+                }
             } else if(d.type==='boss_intro') {
                 startBossFight();
             }
@@ -1080,7 +1103,7 @@
         state.enemyFrameTimer++;
         if(state.enemyFrameTimer>=10){ state.enemyFrame=(state.enemyFrame+1)%10; state.enemyFrameTimer=0; }
         state.npcFrameTimer++;
-        if(state.npcFrameTimer>=12){ state.npcFrame=(state.npcFrame+1)%9; state.npcFrameTimer=0; }
+        if(state.npcFrameTimer>=12){ state.npcFrame=(state.npcFrame+1)%10; state.npcFrameTimer=0; }
         state.bossFrameTimer++;
         if(state.bossFrameTimer>=8){ state.bossFrame=(state.bossFrame+1)%9; state.bossFrameTimer=0; }
 
@@ -1786,7 +1809,7 @@
         // NPC1 (Zephira) — left, bowing (flipped horizontal to face right)
         const npcImg = images['npc_idle'];
         if (npcImg && npcImg.complete && npcImg.naturalWidth) {
-            const fw = npcImg.naturalWidth / 19, fh = npcImg.naturalHeight;
+            const fw = npcImg.naturalWidth / 10, fh = npcImg.naturalHeight;
             const sc = 2.8, dw = fw * sc, dh = fh * sc;
             // NPC1 left
             C.save(); C.imageSmoothingEnabled = false;
@@ -2389,8 +2412,9 @@
     function drawNPCs() {
         const SM = STORY_MODE;
         const npcImg = images['npc_idle'];
-        // Sprite sheet: 19 frames in a single row (1919px / 101px per frame)
-        const NPC_TOTAL_FRAMES = 19;
+        // Sprite sheet: 10 frames in a single row (1919px / ~192px per frame)
+        // Each frame is naturalWidth/10 wide; character content is ~48px centered inside each frame
+        const NPC_TOTAL_FRAMES = 10;
 
         function drawNPC(npc, npcNum) {
             if (!npc) return;
@@ -3762,7 +3786,7 @@
             animateSpriteOnCanvas('enemy-canvas',      'enemy_idle',  10, 10);
             animateSpriteOnCanvas('howto-hero-canvas',  'run_right',  8,  7);
             animateSpriteOnCanvas('howto-enemy-canvas', 'enemy_run',  16, 5);
-            animateSpriteOnCanvas('howto-npc-canvas',   'npc_idle',   19, 8);
+            animateSpriteOnCanvas('howto-npc-canvas',   'npc_idle',   10, 8);
             animateSpriteOnCanvas('howto-boss-canvas',  'boss_idle',  9,  8);
         }
         tryStartSprites();
