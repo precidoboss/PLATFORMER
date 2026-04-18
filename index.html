@@ -2120,6 +2120,7 @@
     function drawStoryUI() {
         if(!STORY_MODE.active) return;
         const SM = STORY_MODE;
+        const PAD = 10; // local constant matching drawCanvasUI
 
         // Cinematic is drawn on its own overlay canvas — skip here
         if(SM.cinematic) return;
@@ -2129,7 +2130,6 @@
             drawEndScreen(SM.gameEndStats);
             return;
         }
-        // While victory cinematic is playing, gameEndStats is set but cinematic handles display — skip
         if(SM.gameEndStats && !SM.showingEndStats) return;
 
         // Dialogue
@@ -2137,78 +2137,53 @@
             drawDialogueBox(SM.dialogue);
         }
 
-        // NPC password prompt
+        // NPC password prompt (drawn on top of dialogue box)
         if(SM.dialogue && SM.dialogue.inputMode) {
             drawPasswordPrompt();
             return;
         }
 
-        // Timer — show as elapsed stopwatch (not countdown)
+        // Timer — elapsed stopwatch, placed BELOW the distance panel (top-left stack)
         if(!SM.bossArena) {
-            const elapsed = Math.floor(SM.timer/60);
-            const mins = Math.floor(elapsed/60);
+            const elapsed = Math.floor(SM.timer / 60);
+            const mins = Math.floor(elapsed / 60);
             const secs = elapsed % 60;
-            const timeStr = `${mins}:${secs<10?'0'+secs:secs}`;
-            // Place timer below distance panel (top-left area, below ⚔ panel)
+            const timeStr = `${mins}:${secs < 10 ? '0' + secs : secs}`;
             const tmW = 120, tmH = 28, tmX = PAD, tmY = PAD + 36;
-            drawUI_img('ui_titlebox', tmX, tmY, tmW, tmH);
             const knotSz2 = 20;
+            drawUI_img('ui_titlebox', tmX, tmY, tmW, tmH);
             drawUI_img('ui_cornerknot', tmX - 3, tmY - 3, knotSz2, knotSz2);
             drawUI_img('ui_cornerknot', tmX + tmW - knotSz2 + 3, tmY - 3, knotSz2, knotSz2);
             drawUI_text('⏱ ' + timeStr, tmX + tmW / 2, tmY + tmH / 2, 12, '#cc88ff', 'center');
-        }
 
-        // Objective progress panel — below timer, using UI assets
-        const pct = SM.objectivePct;
-        const objW = 120, objH = 28, objX = PAD, objY = PAD + 72;
-        drawUI_img('ui_titlebox', objX, objY, objW, objH);
-        // Progress fill inside box
-        ctx.save();
-        ctx.globalAlpha = 0.7;
-        const objGrad = ctx.createLinearGradient(objX + 8, 0, objX + objW - 8, 0);
-        objGrad.addColorStop(0, '#8822cc'); objGrad.addColorStop(1, '#ff44ff');
-        ctx.fillStyle = objGrad;
-        ctx.fillRect(objX + 8, objY + objH - 8, (objW - 16) * pct, 5);
-        ctx.restore();
-        drawUI_text(`✦ ${Math.round(pct * 100)}%`, objX + objW / 2, objY + 11, 11, '#cc88ff', 'center');
-        drawUI_text('[TAB] Objectives', objX + objW / 2, objY + 22, 9, '#aa77cc', 'center');
+            // Objective progress panel — below timer
+            const pct = SM.objectivePct;
+            const objW = 120, objH = 28, objX = PAD, objY = PAD + 72;
+            drawUI_img('ui_titlebox', objX, objY, objW, objH);
+            ctx.save();
+            ctx.globalAlpha = 0.75;
+            const objGrad = ctx.createLinearGradient(objX + 8, 0, objX + objW - 8, 0);
+            objGrad.addColorStop(0, '#8822cc'); objGrad.addColorStop(1, '#ff44ff');
+            ctx.fillStyle = objGrad;
+            ctx.fillRect(objX + 8, objY + objH - 8, (objW - 16) * pct, 5);
+            ctx.restore();
+            drawUI_text(`✦ ${Math.round(pct * 100)}%`, objX + objW / 2, objY + 10, 11, '#cc88ff', 'center');
+            drawUI_text('[TAB] Board', objX + objW / 2, objY + 21, 9, '#aa77cc', 'center');
+        }
 
         // Objective board overlay
         if(SM.boardOpen) drawObjectiveBoard();
 
-        // NPC interact hints
-        if(SM.npc1 && !SM.npc1Talked) {
-            const nx = SM.npc1.x, ny = SM.npc1.y;
-            if(Math.abs(nx-player.x)<120) {
-                ctx.save();
-                ctx.fillStyle='rgba(0,0,0,0.6)';
-                ctx.fillRect(nx-40,ny-20,80,16);
-                ctx.fillStyle='#ffe066'; ctx.font='10px Arial'; ctx.textAlign='center';
-                ctx.fillText('Press F to talk', nx, ny-8);
-                ctx.restore();
-            }
-        }
-        if(SM.npc2 && !SM.npc2Talked) {
-            const nx = SM.npc2.x, ny = SM.npc2.y;
-            if(Math.abs(nx-player.x)<120) {
-                ctx.save();
-                ctx.fillStyle='rgba(0,0,0,0.6)';
-                ctx.fillRect(nx-40,ny-20,80,16);
-                ctx.fillStyle='#88ffcc'; ctx.font='10px Arial'; ctx.textAlign='center';
-                ctx.fillText('Press F to talk', nx, ny-8);
-                ctx.restore();
-            }
-        }
-        if(SM.portal) {
-            if(Math.abs(SM.portal.x+48-player.x)<120) {
-                ctx.save();
-                ctx.fillStyle='rgba(80,0,120,0.7)';
-                roundRect2(ctx, SM.portal.x, SM.portal.y-30, 96, 18, 4);
-                ctx.fill();
-                ctx.fillStyle='#ff88ff'; ctx.font='bold 10px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
-                ctx.fillText('Press F to enter rift', SM.portal.x+48, SM.portal.y-21);
-                ctx.restore();
-            }
+        // Portal enter hint (NPC hints are drawn in drawNPCs)
+        if(SM.portal && Math.abs(SM.portal.x + 48 - player.x) < 130) {
+            ctx.save();
+            ctx.fillStyle = 'rgba(80,0,120,0.75)';
+            roundRect2(ctx, SM.portal.x - 10, SM.portal.y - 32, 116, 20, 4);
+            ctx.fill();
+            ctx.fillStyle = '#ff88ff'; ctx.font = 'bold 10px Arial';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText('[F] Enter Rift', SM.portal.x + 48, SM.portal.y - 22);
+            ctx.restore();
         }
 
         // Boss arena UI
@@ -2748,22 +2723,26 @@
     }
 
     function resetGame() {
-        player.y = 100; player.x = 100; player.vy = 0; player.coins = 0;
-        player.hp = player.maxHp; player.dead = false; player.invincible = 0;
-        player.attackDmg = 20; player.artifacts = []; player.fireShield = 0;
         player.maxHp = 180;
+        player.hp = player.maxHp;
+        player.x = 100;
+        player.y = 340; // placed above the ground platform (y=440, player height=70 → lands at 370)
+        player.vy = 0; player.vx = 0;
+        player.coins = 0;
+        player.dead = false; player.invincible = 0;
+        player.attackDmg = 20; player.artifacts = []; player.fireShield = 0;
+        player.state = 'idle'; player.frame = 0; player.frameTimer = 0;
+        player.isAttacking = false; player.attackHit = false;
+        player.facing = 'right'; player.grounded = false;
         score = 0; scrollX = 0;
-        uiCoins = 0;
-        uiHp = player.maxHp; uiMaxHp = player.maxHp;
+        uiCoins = 0; uiHp = player.maxHp; uiMaxHp = player.maxHp; uiScore = 0;
         enemies = []; traps = []; dmgNumbers = []; particles = []; chestAnims = []; bloodAnims = []; shakeTimer = 0;
-        // Ground platform — long starter
         platforms = [{ x: -100, y: 440, w: 1400, h: 100, type: 1 }];
         collectables = [];
         spawnItemsOnPlatform(platforms[0]);
-        // Reset story mode if not active
         if(!STORY_MODE.active) {
-            STORY_MODE.bossArena=false; STORY_MODE.boss=null; STORY_MODE.dialogue=null;
-            STORY_MODE.cinematic=null; window._endScreenActive=false;
+            STORY_MODE.bossArena = false; STORY_MODE.boss = null; STORY_MODE.dialogue = null;
+            STORY_MODE.cinematic = null; window._endScreenActive = false;
         }
     }
 
