@@ -580,9 +580,31 @@
         boss_jump:      'https://raw.githubusercontent.com/precidoboss/adventurer/main/Jump.png',
         boss_proj:      'https://raw.githubusercontent.com/precidoboss/adventurer/main/Moving.png',
         npc_idle:       'https://raw.githubusercontent.com/precidoboss/adventurer/main/Idle2.png',
-        portal_sheet:   'https://raw.githubusercontent.com/precidoboss/adventurer/main/Dimensional_Portal.png'
+        portal_sheet:   'https://raw.githubusercontent.com/precidoboss/adventurer/main/Dimensional_Portal.png',
+        // Boss arena assets
+        arena_back:     'https://raw.githubusercontent.com/precidoboss/adventurer/main/back.png',
+        arena_platform: 'https://raw.githubusercontent.com/precidoboss/adventurer/main/platform-long.png',
+        arena_rock1:    'https://raw.githubusercontent.com/precidoboss/adventurer/main/rock-1.png',
+        arena_rock2:    'https://raw.githubusercontent.com/precidoboss/adventurer/main/rock-2.png',
+        arena_sign:     'https://raw.githubusercontent.com/precidoboss/adventurer/main/sign.png',
+        arena_skulls:   'https://raw.githubusercontent.com/precidoboss/adventurer/main/skulls.png',
+        arena_spikes:   'https://raw.githubusercontent.com/precidoboss/adventurer/main/spikes.png',
+        arena_treehouse:'https://raw.githubusercontent.com/precidoboss/adventurer/main/tree-house.png',
+        arena_crate:    'https://raw.githubusercontent.com/precidoboss/adventurer/main/big-crate.png',
+        arena_bush:     'https://raw.githubusercontent.com/precidoboss/adventurer/main/bush.png',
+        arena_tree:     'https://raw.githubusercontent.com/precidoboss/adventurer/main/tree.png',
+        arena_palm:     'https://raw.githubusercontent.com/precidoboss/adventurer/main/palm.png',
+        // Marketplace assets
+        market_house:   'https://raw.githubusercontent.com/precidoboss/adventurer/main/wooden-house.png',
+        ui_hlslot:      'https://raw.githubusercontent.com/precidoboss/adventurer/main/HighlightSlot_26x26.png',
+        ui_larrow:      'https://raw.githubusercontent.com/precidoboss/adventurer/main/LeftArrowButton_7x10.png',
+        ui_rarrow:      'https://raw.githubusercontent.com/precidoboss/adventurer/main/RightArrowButton_7x10.png',
+        // Dragon pet assets
+        dragon_idle:    'https://raw.githubusercontent.com/precidoboss/adventurer/main/IDLE22.png',
+        dragon_fly:     'https://raw.githubusercontent.com/precidoboss/adventurer/main/FLYING.png',
+        dragon_attack:  'https://raw.githubusercontent.com/precidoboss/adventurer/main/ATTACK.png',
+        dragon_fire:    'https://raw.githubusercontent.com/precidoboss/adventurer/main/projectile.png',
     };
-
     // Sounds (loaded separately, not counted in asset load)
     const SFX = {};
     function loadSound(key, url) {
@@ -593,6 +615,103 @@
     loadSound('sword',  'https://raw.githubusercontent.com/precidoboss/adventurer/main/17_orc_atk_sword_3.wav');
     loadSound('land',   'https://raw.githubusercontent.com/precidoboss/adventurer/main/13_human_jump_land_1.wav');
     loadSound('chest',  'https://raw.githubusercontent.com/precidoboss/adventurer/main/01_chest_open_3.wav');
+    loadSound('coin',   'https://raw.githubusercontent.com/precidoboss/adventurer/main/3_Coins.ogg');
+
+    // Synthesized sounds using Web Audio API
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playBossRoar() {
+        try {
+            const ctx2 = audioCtx;
+            // Deep distorted growl — multiple oscillators layered
+            const freqs = [60, 80, 45, 110];
+            freqs.forEach((freq, i) => {
+                const osc = ctx2.createOscillator();
+                const gain = ctx2.createGain();
+                const dist = ctx2.createWaveShaper();
+                // Distortion curve
+                const curve = new Float32Array(256);
+                for(let j=0;j<256;j++) { const x=j*2/256-1; curve[j]=Math.sign(x)*Math.pow(Math.abs(x),0.3); }
+                dist.curve = curve;
+                osc.type = i%2===0 ? 'sawtooth' : 'square';
+                osc.frequency.setValueAtTime(freq, ctx2.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(freq*0.6, ctx2.currentTime+1.2);
+                gain.gain.setValueAtTime(0, ctx2.currentTime);
+                gain.gain.linearRampToValueAtTime(0.18, ctx2.currentTime+0.08);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx2.currentTime+1.4);
+                osc.connect(dist); dist.connect(gain); gain.connect(ctx2.destination);
+                osc.start(ctx2.currentTime);
+                osc.stop(ctx2.currentTime+1.5);
+            });
+        } catch(e){}
+    }
+
+    function playRumble(intensity) {
+        try {
+            const ctx2 = audioCtx;
+            const buf = ctx2.createBuffer(1, ctx2.sampleRate*0.6, ctx2.sampleRate);
+            const data = buf.getChannelData(0);
+            for(let i=0;i<data.length;i++) data[i]=(Math.random()*2-1)*Math.exp(-i/(ctx2.sampleRate*0.15));
+            const src = ctx2.createBufferSource();
+            const gain = ctx2.createGain();
+            const filt = ctx2.createBiquadFilter();
+            filt.type='lowpass'; filt.frequency.value=200;
+            src.buffer=buf; gain.gain.value=intensity||0.6;
+            src.connect(filt); filt.connect(gain); gain.connect(ctx2.destination);
+            src.start();
+        } catch(e){}
+    }
+
+    function playRockCrash() {
+        try {
+            const ctx2 = audioCtx;
+            // Low boom
+            const osc = ctx2.createOscillator();
+            const gain = ctx2.createGain();
+            osc.type='sine'; osc.frequency.setValueAtTime(120, ctx2.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(20, ctx2.currentTime+0.5);
+            gain.gain.setValueAtTime(0.8, ctx2.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx2.currentTime+0.5);
+            osc.connect(gain); gain.connect(ctx2.destination);
+            osc.start(); osc.stop(ctx2.currentTime+0.55);
+            // Noise crack
+            const buf = ctx2.createBuffer(1,ctx2.sampleRate*0.3,ctx2.sampleRate);
+            const d=buf.getChannelData(0);
+            for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.exp(-i/(ctx2.sampleRate*0.04));
+            const ns=ctx2.createBufferSource(); const ng=ctx2.createGain();
+            ns.buffer=buf; ng.gain.value=0.5;
+            ns.connect(ng); ng.connect(ctx2.destination); ns.start();
+        } catch(e){}
+    }
+
+    function playArenaCollapse() {
+        try {
+            // Multiple staggered rock crashes with increasing rumble
+            for(let i=0;i<8;i++) {
+                setTimeout(() => playRockCrash(), i*180+Math.random()*80);
+            }
+            setTimeout(() => playRumble(1.0), 100);
+            setTimeout(() => playRumble(1.2), 800);
+            setTimeout(() => playRumble(0.9), 1400);
+        } catch(e){}
+    }
+
+    function playBossDefeatSpeech() {
+        // Synthesized menacing low tone + TTS
+        playBossRoar();
+        setTimeout(() => {
+            if('speechSynthesis' in window) {
+                const u = new SpeechSynthesisUtterance('You have not won yet, warrior. I will return. Watch your back.');
+                u.pitch=0.3; u.rate=0.7; u.volume=1;
+                // Try to use a deep voice
+                const voices = speechSynthesis.getVoices();
+                const deep = voices.find(v=>v.name.toLowerCase().includes('male')||v.name.toLowerCase().includes('david')||v.name.toLowerCase().includes('alex'));
+                if(deep) u.voice=deep;
+                speechSynthesis.cancel();
+                speechSynthesis.speak(u);
+            }
+        }, 800);
+    }
 
     let bgMusic = null;
     // ===== STORY MODE STATE =====
@@ -633,6 +752,11 @@
         gameEndStats: null,
         // objective board
         boardOpen: false,
+        // Marketplace
+        marketShown: false,
+        market: null,         // { x, y } world position of the house
+        marketOpen: false,    // UI open flag
+        marketPage: 0,        // current page (0=artifacts 1=dragon)
         // TTS
         ttsSupported: 'speechSynthesis' in window
     };
@@ -651,6 +775,13 @@
 
     function tts(text, rate) {
         if (!STORY_MODE.ttsSupported) return;
+        // Filter out action descriptions that should be sounds not spoken text
+        const soundOnly = text && (text.startsWith('*') || text.includes('ROARS') || text.includes('roars'));
+        if (soundOnly) {
+            // Play a boss roar sound instead of speaking the action text
+            playBossRoar();
+            return;
+        }
         try {
             const u = new SpeechSynthesisUtterance(text);
             u.rate = rate || 0.85; u.pitch = 1;
@@ -717,6 +848,18 @@
         fireShieldKey: false // to detect key press edge
     };
 
+    // Dragon pet state
+    const dragonPet = {
+        owned: false,
+        x: 0, y: 0,
+        targetX: 0, targetY: 0,
+        state: 'idle',   // idle | fly | attack
+        frame: 0, frameTimer: 0,
+        fireCooldown: 0,
+        fireProjs: [],   // { x, y, vx, frame, frameTimer }
+        attackTimer: 0,
+    };
+
     const anims = {
         idle:   { frames: 8,  speed: 10 },
         run:    { frames: 8,  speed: 7  },
@@ -739,6 +882,16 @@
         { id: 'crystal', key: '3', file: 'Icon3.png', effect: 'atk',       label: 'Mana Crystal',  desc: '+1 Attack Damage' },
         { id: 'feather', key: '4', file: 'Icon4.png', effect: 'fireshield',label: 'Fire Feather',   desc: 'Fire Shield for 10 sec (press 4)' },
         { id: 'core',    key: '5', file: 'Icon5.png', effect: 'boss',      label: 'Ancient Core',   desc: 'BOSS KEY — reserved' },
+    ];
+
+    // Market items: artifacts + dragon pet
+    const MARKET_ITEMS = [
+        { id: 'helm',    label: 'Iron Helm',      desc: '+1 Max HP per purchase',      cost: 10,  maxBuy: 10,  icon: 'helm',    type: 'artifact' },
+        { id: 'berries', label: 'Shadow Berries',  desc: 'Restores 5 HP instantly',     cost: 30,  maxBuy: null, icon: 'berries', type: 'artifact', dynamicMax: true },
+        { id: 'crystal', label: 'Mana Crystal',   desc: '+1 Attack Damage',            cost: 20,  maxBuy: 10,  icon: 'crystal', type: 'artifact' },
+        { id: 'feather', label: 'Fire Feather',   desc: 'Fire Shield 10s (press 4)',   cost: 25,  maxBuy: 5,   icon: 'feather', type: 'artifact' },
+        { id: 'core',    label: 'Ancient Core',   desc: 'BOSS KEY — weakens Warden',   cost: 100, maxBuy: 1,   icon: 'core',    type: 'artifact' },
+        { id: 'dragon',  label: 'Fire Dragon Pet', desc: 'Companion shoots fire at foes every 10s  (2 dmg)', cost: 100, maxBuy: 1, icon: 'dragon', type: 'pet' },
     ];
     // Map effect => icon index from uploads
     const ARTIFACT_ICONS = {};
@@ -783,6 +936,11 @@
         STORY_MODE.cinematic = null;
         STORY_MODE.boardOpen = false;
         STORY_MODE.npc1 = null; STORY_MODE.npc2 = null; STORY_MODE.portal = null;
+        STORY_MODE.marketShown = false; STORY_MODE.market = null;
+        STORY_MODE.marketOpen = false; STORY_MODE.marketPage = 0;
+        // Reset dragon pet
+        dragonPet.owned = false; dragonPet.fireProjs = [];
+        dragonPet.fireCooldown = 0; dragonPet.state = 'idle'; dragonPet.frame = 0;
         STORY_MODE.objectives.forEach(o => { o.current = 0; o.done = false; });
         resetGame();
         // Show cinematic intro
@@ -825,6 +983,12 @@
 
         const pct = calcObjectivePct();
         SM.objectivePct = pct;
+
+        // Spawn Marketplace at 80%
+        if(pct >= 0.8 && !SM.marketShown) {
+            SM.marketShown = true;
+            spawnMarket();
+        }
 
         // Spawn NPC1 at 50%
         if(pct >= 0.5 && !SM.npc1Shown) {
@@ -894,6 +1058,92 @@
             frame: 0, frameTimer: 0, pulseT: 0
         };
         dmgNumbers.push({ x: portalX + 48, y: portalY - 40, val: '✦ A dimensional rift has opened!', life: 240, color: '#ff88ff', isText: true });
+    }
+
+    function spawnMarket() {
+        // Find a platform ahead of player to place the wooden house
+        let targetPlat = null;
+        for (let i = 0; i < platforms.length; i++) {
+            const p = platforms[i];
+            if (p.x > player.x + 200 && p.x < player.x + 800 && p.w > 120) {
+                targetPlat = p; break;
+            }
+        }
+        if (!targetPlat) {
+            for (let i = platforms.length - 1; i >= 0; i--) {
+                if (platforms[i].x > player.x + 100) { targetPlat = platforms[i]; break; }
+            }
+        }
+        const mx = targetPlat ? targetPlat.x + targetPlat.w * 0.4 : player.x + 350;
+        const my = targetPlat ? targetPlat.y - 120 : player.y - 130;
+        STORY_MODE.market = { x: mx, y: my, width: 100, height: 120 };
+        STORY_MODE.marketOpen = false;
+        STORY_MODE.marketPage = 0;
+        dmgNumbers.push({ x: mx + 50, y: my - 30, val: '🏪 A marketplace has appeared!', life: 240, color: '#ffdd44', isText: true });
+    }
+
+    function openMarket() {
+        if (!STORY_MODE.market) return;
+        STORY_MODE.marketOpen = true;
+        STORY_MODE.marketPage = 0;
+        gamePaused = true;
+    }
+
+    function closeMarket() {
+        STORY_MODE.marketOpen = false;
+        gamePaused = false;
+    }
+
+    function buyMarketItem(item) {
+        if (player.coins < item.cost) return; // not enough coins
+        // Calc max buy
+        let maxBuy = item.maxBuy;
+        if (item.dynamicMax) {
+            // berries: max buys = how many 5-HP heals we can use (don't overheal)
+            maxBuy = Math.floor((player.maxHp - player.hp) / 5);
+            if (maxBuy <= 0) { dmgNumbers.push({x:player.x,y:player.y-30,val:'Already full HP!',life:80,color:'#ff8888',isText:true}); return; }
+        }
+        // Count how many of this item already purchased this market session
+        const bought = STORY_MODE.market['bought_' + item.id] || 0;
+        if (maxBuy !== null && bought >= maxBuy) {
+            dmgNumbers.push({x:player.x,y:player.y-30,val:'Maximum reached!',life:80,color:'#ff8888',isText:true});
+            return;
+        }
+        // Deduct coins
+        player.coins -= item.cost;
+        uiCoins = player.coins;
+        STORY_MODE.market['bought_' + item.id] = bought + 1;
+
+        if (item.type === 'artifact') {
+            // Apply effect
+            const def = ARTIFACT_DEFS.find(d => d.id === item.id);
+            if (def) {
+                if (def.effect === 'maxhp') {
+                    player.maxHp = Math.min(player.maxHp + 1, 250);
+                    player.hp = Math.min(player.hp + 1, player.maxHp);
+                    uiHp = player.hp; uiMaxHp = player.maxHp;
+                    dmgNumbers.push({x:player.x,y:player.y-30,val:'+1 MAX HP',life:80,color:'#44ff88',isText:true});
+                } else if (def.effect === 'heal') {
+                    player.hp = Math.min(player.maxHp, player.hp + 5);
+                    uiHp = player.hp;
+                    dmgNumbers.push({x:player.x,y:player.y-30,val:'+5 HP',life:80,color:'#44ff88',isText:true});
+                } else if (def.effect === 'atk') {
+                    player.attackDmg = (player.attackDmg || 20) + 1;
+                    dmgNumbers.push({x:player.x,y:player.y-30,val:'+1 ATK',life:80,color:'#ffaa00',isText:true});
+                } else if (def.effect === 'fireshield' || def.effect === 'boss') {
+                    if (player.artifacts.length < 5) player.artifacts.push(item.id);
+                    dmgNumbers.push({x:player.x,y:player.y-30,val:'Acquired: '+item.label,life:80,color:'#cc88ff',isText:true});
+                }
+            }
+        } else if (item.type === 'pet') {
+            // Unlock dragon
+            dragonPet.owned = true;
+            dragonPet.x = player.x - 60;
+            dragonPet.y = player.y - 40;
+            dragonPet.state = 'fly';
+            dmgNumbers.push({x:player.x,y:player.y-50,val:'🐉 Fire Dragon joined you!',life:120,color:'#ff6600',isText:true});
+        }
+        playSound('chest'); // purchase sound
     }
 
     function tryInteractNPC(which) {
@@ -1945,36 +2195,87 @@
         // Cinematic now runs its own rAF loop — updateCinematic is a no-op kept for compatibility
     }
 
-    // ===== BOSS ARENA =====
+    // Boss arena portal return position (where player came from)
+    let _portalReturnX = 0;
+    let _portalReturnY = 0;
+    let _portalReturnScrollX = 0;
+
     function enterBossArena() {
+        // Remember where player was for return teleport
+        _portalReturnX = player.x;
+        _portalReturnY = player.y;
+        _portalReturnScrollX = scrollX;
+
         STORY_MODE.bossArena = true;
-        // Build arena platforms
+        STORY_MODE.bossArenaScrollX = 0; // arena's own scroll offset
+        STORY_MODE.bossArenaMinX = 0;    // leftmost scroll limit (bidirectional)
+
+        // Boss arena layout - wide room with custom assets
+        // Arena is 2400px wide total, player starts at left side
+        // Ground platform runs the full width
         platforms = [
-            { x:-200, y:430, w:1400, h:80, type:0 },
-            { x:100,  y:310, w:220,  h:40, type:1 },
-            { x:620,  y:290, w:200,  h:40, type:1 },
+            // Main floor — wide enough to fight freely
+            { x: -100,  y: 430, w: 2600, h: 80, type: 0, arena: true },
+            // Raised platforms for vertical fighting
+            { x: 200,   y: 310, w: 240,  h: 40, type: 1, arena: true },
+            { x: 600,   y: 280, w: 200,  h: 40, type: 1, arena: true },
+            { x: 1050,  y: 300, w: 220,  h: 40, type: 1, arena: true },
+            { x: 1500,  y: 270, w: 200,  h: 40, type: 1, arena: true },
+            { x: 1900,  y: 310, w: 240,  h: 40, type: 1, arena: true },
         ];
+
+        // Arena decorations — stored for drawing
+        STORY_MODE.arenaDecorations = [
+            // Trees on left side
+            { key: 'arena_palm',      x: -60,  y: 250, w: 80,  h: 180 },
+            { key: 'arena_tree',      x: 60,   y: 240, w: 120, h: 190 },
+            // Tree house visible mid-right
+            { key: 'arena_treehouse', x: 1150, y: 200, w: 180, h: 230 },
+            // Right side trees
+            { key: 'arena_palm',      x: 2200, y: 245, w: 80,  h: 180 },
+            { key: 'arena_tree',      x: 2350, y: 235, w: 130, h: 200 },
+            // Rocks scattered
+            { key: 'arena_rock1',     x: 380,  y: 395, w: 64,  h: 50 },
+            { key: 'arena_rock2',     x: 820,  y: 400, w: 70,  h: 46 },
+            { key: 'arena_rock1',     x: 1350, y: 398, w: 60,  h: 48 },
+            { key: 'arena_rock2',     x: 1780, y: 395, w: 68,  h: 50 },
+            // Crates
+            { key: 'arena_crate',     x: 150,  y: 393, w: 52,  h: 52 },
+            { key: 'arena_crate',     x: 1600, y: 390, w: 52,  h: 52 },
+            // Skulls / bones
+            { key: 'arena_skulls',    x: 500,  y: 405, w: 60,  h: 36 },
+            { key: 'arena_skulls',    x: 1200, y: 407, w: 60,  h: 36 },
+            { key: 'arena_skulls',    x: 2000, y: 405, w: 60,  h: 36 },
+            // Spikes as hazard decoration (non-damaging visual)
+            { key: 'arena_spikes',    x: 720,  y: 404, w: 56,  h: 30 },
+            { key: 'arena_spikes',    x: 1450, y: 404, w: 56,  h: 30 },
+            // Sign at entrance
+            { key: 'arena_sign',      x: 20,   y: 385, w: 44,  h: 54 },
+            // Bushes
+            { key: 'arena_bush',      x: 950,  y: 410, w: 60,  h: 36 },
+            { key: 'arena_bush',      x: 2100, y: 410, w: 60,  h: 36 },
+        ];
+
         collectables = []; traps = []; enemies = [];
         scrollX = 0;
-        player.x = 80; player.y = 320;
+        player.x = 100; player.y = 320;
         player.vx = 0; player.vy = 0;
-        // Apply weakness bonus — set low HP for testing
+
         const bossMaxHp = 50;
         STORY_MODE.boss = {
-            x: 700, y: 250,
-            width:70, height:90,
-            drawWidth:200, drawHeight:200,
+            x: 1400, y: 250,
+            width: 70, height: 90,
+            drawWidth: 200, drawHeight: 200,
             hp: bossMaxHp, maxHp: bossMaxHp,
-            vx:0, vy:0, grounded:true,
-            facing:'left', state:'idle',
-            frame:0, frameTimer:0,
-            isAttacking:false, attackCooldown:0,
-            hurtTimer:0, dying:false, alpha:1,
-            projCooldown:0, projs:[],
-            phase:1, enrageTimer:0,
-            dashCooldown:0, jumpCooldown:0
+            vx: 0, vy: 0, grounded: true,
+            facing: 'left', state: 'idle',
+            frame: 0, frameTimer: 0,
+            isAttacking: false, attackCooldown: 0,
+            hurtTimer: 0, dying: false, alpha: 1,
+            projCooldown: 0, projs: [],
+            phase: 1, enrageTimer: 0,
+            dashCooldown: 0, jumpCooldown: 0
         };
-        // Boss intro dialogue
         openDialogue('boss_intro');
     }
 
@@ -1991,11 +2292,8 @@
         if(b.dying) {
             b.frameTimer++;
             if(b.frameTimer>=6){ b.frame++; b.frameTimer=0; }
-            b.alpha = Math.max(0, b.alpha - 0.012);
-            if(b.alpha<=0 && !STORY_MODE.bossDefeated) {
-                STORY_MODE.bossDefeated = true;
-                showEndScreen();
-            }
+            b.alpha = Math.max(0, b.alpha - 0.005); // slower fade so death anim plays fully
+            // Don't auto-trigger end — death cinematic handles it
             return;
         }
 
@@ -2066,7 +2364,7 @@
         }
 
         b.x += (b.vx||0);
-        b.x = Math.max(0, Math.min(GAME_WIDTH-b.width, b.x));
+        b.x = Math.max(-50, Math.min(GAME_WIDTH+100, b.x));
 
         // Boss animation
         b.frameTimer++;
@@ -2127,10 +2425,342 @@
                 if(b.hp<=0 && !b.dying) {
                     b.dying=true; b.state='death'; b.frame=0; b.frameTimer=0; b.alpha=1;
                     shakeTimer=30; shakeMag=10;
-                    tts('IMPOSSIBLE... I cannot be... defeated!', 0.5);
+                    // Play boss defeat speech (synthesized roar + TTS)
+                    playBossDefeatSpeech();
+                    // After speech, trigger arena destruction cinematic
+                    setTimeout(() => {
+                        if(STORY_MODE.bossArena && !STORY_MODE.bossDefeated) {
+                            startBossDeathCinematic();
+                        }
+                    }, 4500);
                 }
             }
         }
+    }
+
+    // ===== BOSS DEATH ARENA DESTRUCTION CINEMATIC =====
+    function startBossDeathCinematic() {
+        if(STORY_MODE.bossDefeated) return;
+        STORY_MODE.bossDefeated = true;
+        speechSynthesis && speechSynthesis.cancel && speechSynthesis.cancel();
+
+        // Create or reuse cinematic overlay canvas
+        if(!_cinCanvas) {
+            _cinCanvas = document.createElement('canvas');
+            _cinCanvas.style.cssText='position:fixed;inset:0;width:100%;height:100%;z-index:999;pointer-events:auto;image-rendering:pixelated;';
+            document.getElementById('game-container').appendChild(_cinCanvas);
+        }
+        const gameRect = canvas.getBoundingClientRect();
+        _cinCanvas.width  = GAME_WIDTH;
+        _cinCanvas.height = GAME_HEIGHT;
+        _cinCanvas.style.width  = gameRect.width  + 'px';
+        _cinCanvas.style.height = gameRect.height + 'px';
+        _cinCanvas.style.left   = gameRect.left   + 'px';
+        _cinCanvas.style.top    = gameRect.top    + 'px';
+        _cinCanvas.style.display = 'block';
+        _cinCtx = _cinCanvas.getContext('2d');
+
+        playArenaCollapse();
+
+        const bossDeathState = {
+            phase: 'speech',   // speech → shake → rocks → whiteout → teleport → done
+            t: 0,
+            shakeMag: 0,
+            shakeX: 0, shakeY: 0,
+            fallingRocks: [],
+            cracks: [],        // crack lines spreading across screen
+            dustClouds: [],
+            whiteAlpha: 0,
+            done: false,
+        };
+
+        // Generate random crack patterns
+        for(let i=0;i<12;i++) {
+            bossDeathState.cracks.push({
+                x: Math.random()*GAME_WIDTH,
+                y: Math.random()*GAME_HEIGHT,
+                angle: Math.random()*Math.PI*2,
+                length: 60+Math.random()*200,
+                progress: 0,
+                speed: 0.02+Math.random()*0.04,
+                color: `rgba(${80+Math.floor(Math.random()*60)},${20+Math.floor(Math.random()*30)},0,0.8)`
+            });
+        }
+
+        function spawnRock(x) {
+            const size = 30 + Math.random()*80;
+            bossDeathState.fallingRocks.push({
+                x: x !== undefined ? x : Math.random()*GAME_WIDTH,
+                y: -size,
+                vx: (Math.random()-0.5)*3,
+                vy: 2+Math.random()*5,
+                size,
+                rot: Math.random()*Math.PI*2,
+                rotV: (Math.random()-0.5)*0.1,
+                col: `rgb(${60+Math.floor(Math.random()*40)},${40+Math.floor(Math.random()*30)},${20+Math.floor(Math.random()*20)})`,
+                hit: false,
+            });
+        }
+
+        let lastRockTime = 0;
+        let rockInterval = 400;
+
+        function bossDeathLoop() {
+            if(bossDeathState.done) return;
+            requestAnimationFrame(bossDeathLoop);
+
+            const C = _cinCtx;
+            const W = GAME_WIDTH, H = GAME_HEIGHT;
+            bossDeathState.t++;
+            const t = bossDeathState.t;
+
+            // === PHASE TRANSITIONS ===
+            if(bossDeathState.phase==='speech' && t>180) {
+                // "Speech" phase: show the boss's last words text on screen
+                bossDeathState.phase='shake';
+                bossDeathState.shakeMag = 4;
+                playRumble(0.5);
+            }
+            if(bossDeathState.phase==='shake' && t>300) {
+                bossDeathState.phase='rocks';
+                bossDeathState.shakeMag = 12;
+                rockInterval = 120;
+                playRumble(0.9);
+            }
+            if(bossDeathState.phase==='rocks' && t>480) {
+                bossDeathState.phase='whiteout';
+                bossDeathState.shakeMag = 20;
+                rockInterval = 30;
+                playArenaCollapse();
+            }
+            if(bossDeathState.phase==='whiteout') {
+                bossDeathState.whiteAlpha = Math.min(1, bossDeathState.whiteAlpha + 0.015);
+                if(bossDeathState.whiteAlpha >= 1 && t > 560) {
+                    bossDeathState.phase='teleport';
+                }
+            }
+            if(bossDeathState.phase==='teleport') {
+                // Show teleport message then fade to game
+                bossDeathState.whiteAlpha = Math.max(0, bossDeathState.whiteAlpha - 0.02);
+                if(bossDeathState.whiteAlpha <= 0 && t > 620) {
+                    bossDeathState.done = true;
+                    _cinCanvas.style.display='none';
+                    // Teleport player back
+                    teleportPlayerBack();
+                    return;
+                }
+            }
+
+            // Spawn rocks
+            if(bossDeathState.phase==='rocks'||bossDeathState.phase==='whiteout') {
+                if(t-lastRockTime > rockInterval) {
+                    lastRockTime = t;
+                    spawnRock();
+                    if(bossDeathState.phase==='whiteout') { spawnRock(); spawnRock(); }
+                }
+            }
+
+            // Advance crack progress
+            bossDeathState.cracks.forEach(cr => {
+                if(bossDeathState.phase!=='speech') cr.progress = Math.min(1, cr.progress+cr.speed);
+            });
+
+            // Advance dust
+            bossDeathState.dustClouds.forEach(d => { d.r+=2; d.alpha-=0.015; });
+            bossDeathState.dustClouds = bossDeathState.dustClouds.filter(d=>d.alpha>0);
+
+            // Screen shake
+            const sm = bossDeathState.shakeMag;
+            bossDeathState.shakeX = sm>0 ? (Math.random()-0.5)*sm*2 : 0;
+            bossDeathState.shakeY = sm>0 ? (Math.random()-0.5)*sm*2 : 0;
+
+            // === DRAW ===
+            C.clearRect(0,0,W,H);
+            C.save();
+            C.translate(bossDeathState.shakeX, bossDeathState.shakeY);
+
+            // Background — use arena back image if available
+            const arenaBack = images['arena_back'];
+            if(arenaBack && arenaBack.complete && arenaBack.naturalWidth) {
+                C.drawImage(arenaBack, 0, 0, W, H);
+            } else {
+                C.fillStyle='#1a0a00'; C.fillRect(0,0,W,H);
+            }
+
+            // Dark overlay that gets heavier
+            const darkProg = Math.min(1,(t-200)/300);
+            C.fillStyle=`rgba(0,0,0,${Math.min(0.7,darkProg*0.7)})`; C.fillRect(0,0,W,H);
+
+            // Draw arena platforms
+            platforms.forEach(p => {
+                const platImg = images['arena_platform'];
+                if(platImg&&platImg.complete&&platImg.naturalWidth) {
+                    // Tile the platform image
+                    C.save();
+                    C.beginPath(); C.rect(p.x, p.y, p.w, p.h); C.clip();
+                    for(let px=p.x; px<p.x+p.w; px+=platImg.naturalWidth) {
+                        C.drawImage(platImg, px, p.y, platImg.naturalWidth, p.h);
+                    }
+                    C.restore();
+                } else {
+                    C.fillStyle='#3a2010'; C.fillRect(p.x, p.y, p.w, p.h);
+                }
+            });
+
+            // Draw cracks spreading
+            bossDeathState.cracks.forEach(cr => {
+                if(cr.progress<=0) return;
+                C.save();
+                C.strokeStyle = cr.color;
+                C.lineWidth = 2+Math.random()*2;
+                C.beginPath();
+                C.moveTo(cr.x, cr.y);
+                C.lineTo(
+                    cr.x + Math.cos(cr.angle)*cr.length*cr.progress,
+                    cr.y + Math.sin(cr.angle)*cr.length*cr.progress
+                );
+                C.stroke();
+                // Sub-crack
+                if(cr.progress>0.5) {
+                    C.lineWidth=1;
+                    C.beginPath();
+                    C.moveTo(cr.x+Math.cos(cr.angle)*cr.length*0.5, cr.y+Math.sin(cr.angle)*cr.length*0.5);
+                    C.lineTo(cr.x+Math.cos(cr.angle+0.8)*cr.length*0.3, cr.y+Math.sin(cr.angle+0.8)*cr.length*0.3);
+                    C.stroke();
+                }
+                C.restore();
+            });
+
+            // Update & draw falling rocks
+            bossDeathState.fallingRocks.forEach(r => {
+                r.x += r.vx; r.y += r.vy; r.rot += r.rotV;
+                r.vy = Math.min(r.vy+0.4, 18); // gravity
+                // Spawn dust on ground hit
+                if(!r.hit && r.y+r.size > 430) {
+                    r.hit=true; r.vy=-r.vy*0.2; r.vx*=0.5;
+                    playRockCrash();
+                    for(let i=0;i<3;i++) bossDeathState.dustClouds.push({
+                        x:r.x+(Math.random()-0.5)*r.size, y:430,
+                        r:10+Math.random()*20, alpha:0.7
+                    });
+                }
+                // Draw rock
+                C.save();
+                C.translate(r.x, r.y);
+                C.rotate(r.rot);
+                C.fillStyle=r.col;
+                C.shadowColor='rgba(0,0,0,0.8)'; C.shadowBlur=8;
+                C.beginPath();
+                // Irregular polygon rock shape
+                const pts=6;
+                for(let i=0;i<pts;i++){
+                    const a=(i/pts)*Math.PI*2;
+                    const rad=r.size*(0.7+0.3*Math.sin(i*1.7+r.rot*5));
+                    i===0?C.moveTo(Math.cos(a)*rad,Math.sin(a)*rad):C.lineTo(Math.cos(a)*rad,Math.sin(a)*rad);
+                }
+                C.closePath(); C.fill();
+                // Rock highlight
+                C.strokeStyle='rgba(200,160,80,0.3)'; C.lineWidth=1;
+                C.stroke();
+                C.restore();
+            });
+            bossDeathState.fallingRocks = bossDeathState.fallingRocks.filter(r=>r.y<H+200);
+
+            // Dust clouds
+            bossDeathState.dustClouds.forEach(d => {
+                C.save(); C.globalAlpha=d.alpha;
+                const dg=C.createRadialGradient(d.x,d.y,0,d.x,d.y,d.r);
+                dg.addColorStop(0,'rgba(180,140,80,0.6)');
+                dg.addColorStop(1,'transparent');
+                C.fillStyle=dg; C.beginPath(); C.arc(d.x,d.y,d.r,0,Math.PI*2); C.fill();
+                C.restore();
+            });
+
+            // Speech phase — boss last words
+            if(bossDeathState.phase==='speech' || (t<220)) {
+                const speechAlpha = t<30?t/30:t>150?(180-t)/30:1;
+                if(speechAlpha>0) {
+                    C.save();
+                    C.globalAlpha = Math.max(0,speechAlpha);
+                    C.fillStyle='rgba(0,0,0,0.75)';
+                    roundRect2(C,W/2-300,H*0.35-20,600,90,8); C.fill();
+                    C.strokeStyle='rgba(180,20,20,0.8)'; C.lineWidth=2;
+                    roundRect2(C,W/2-300,H*0.35-20,600,90,8); C.stroke();
+                    C.font='bold 13px "Cinzel",serif'; C.fillStyle='#ff4444';
+                    C.textAlign='center'; C.textBaseline='top';
+                    C.fillText('☠  THE VOID-WARDEN  ☠', W/2, H*0.35-8);
+                    C.font='16px "AntiquityPrint",serif'; C.fillStyle='#ffcccc';
+                    C.textBaseline='middle';
+                    C.fillText('You have not won yet, warrior...', W/2, H*0.35+38);
+                    C.font='14px "AntiquityPrint",serif'; C.fillStyle='#ff8888';
+                    C.fillText('I will return. Watch your back.', W/2, H*0.35+62);
+                    C.restore();
+                }
+            }
+
+            // Shake phase warning
+            if(bossDeathState.phase==='shake'||bossDeathState.phase==='rocks') {
+                const pulse=0.5+0.5*Math.sin(t*0.3);
+                C.save(); C.globalAlpha=pulse*0.7;
+                C.font='bold 22px "Cinzel Decorative",cursive';
+                C.fillStyle='#ff2200'; C.textAlign='center'; C.textBaseline='middle';
+                C.shadowColor='#ff0000'; C.shadowBlur=20;
+                C.fillText('⚠  THE ARENA IS COLLAPSING  ⚠', W/2, 80);
+                C.restore();
+            }
+
+            // White flash on whiteout
+            if(bossDeathState.whiteAlpha>0) {
+                C.save(); C.globalAlpha=bossDeathState.whiteAlpha;
+                C.fillStyle='#ffffff'; C.fillRect(0,0,W,H);
+                if(bossDeathState.phase==='teleport'&&bossDeathState.whiteAlpha<0.7) {
+                    C.globalAlpha=(1-bossDeathState.whiteAlpha)*0.9;
+                    C.fillStyle='rgba(0,0,0,1)'; C.fillRect(0,0,W,H);
+                    C.globalAlpha=1;
+                    C.font='bold 28px "Cinzel Decorative",cursive';
+                    C.fillStyle='#cc88ff'; C.textAlign='center'; C.textBaseline='middle';
+                    C.shadowColor='#8800ff'; C.shadowBlur=30;
+                    C.fillText('Returning to the realm...', W/2, H/2);
+                    C.font='16px "Cinzel",serif'; C.fillStyle='#aa66cc'; C.shadowBlur=0;
+                    C.fillText('Victory... for now.', W/2, H/2+46);
+                }
+                C.restore();
+            }
+
+            C.restore(); // end shake
+        }
+
+        bossDeathLoop();
+    }
+
+    function teleportPlayerBack() {
+        // Return player to where portal was, reset boss arena state
+        STORY_MODE.bossArena = false;
+        STORY_MODE.boss = null;
+
+        // Rebuild a basic world platform at return location
+        platforms = [{ x: -100, y: 440, w: 1400, h: 100, type: 1 }];
+        scrollX = _portalReturnScrollX;
+        player.x = _portalReturnX || 300;
+        player.y = _portalReturnY || 360;
+        player.vx = 0; player.vy = 0; player.dead = false;
+        player.invincible = 120;
+        enemies = []; traps = []; collectables = [];
+        spawnItemsOnPlatform(platforms[0]);
+
+        // Brief teleport glow effect
+        shakeTimer = 20; shakeMag = 8;
+        for(let i=0;i<20;i++) {
+            const ang=(Math.PI*2/20)*i;
+            particles.push({x:player.x+player.width/2, y:player.y+player.height/2,
+                vx:Math.cos(ang)*4, vy:Math.sin(ang)*4-2, life:40, color:'#cc88ff'});
+        }
+        dmgNumbers.push({x:player.x+10,y:player.y-40,val:'✦ Returned from the Void',life:200,color:'#cc88ff',isText:true});
+
+        // Trigger ending video / victory cinematic after a short delay
+        setTimeout(() => {
+            showEndScreen();
+        }, 2000);
     }
 
     function showEndScreen() {
@@ -2223,6 +2853,19 @@
         // Boss arena UI
         if(SM.bossArena && SM.boss && !SM.boss.dying) {
             drawBossHP();
+        }
+
+        // Market UI (fullscreen overlay when open)
+        if(SM.marketOpen) drawMarketUI();
+
+        // Dragon pet fire cooldown indicator
+        if(dragonPet.owned && !SM.bossArena && dragonPet.fireCooldown > 0) {
+            const pct = dragonPet.fireCooldown / 600;
+            const bx = dragonPet.x - 20, by = dragonPet.y - 16, bw = 40, bh = 5;
+            ctx.save();
+            ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.fillRect(bx,by,bw,bh);
+            ctx.fillStyle='#ff6600'; ctx.fillRect(bx,by,bw*pct,bh);
+            ctx.restore();
         }
     }
 
@@ -2570,6 +3213,315 @@
         }
     }
 
+    // ===== DRAW MARKET HOUSE =====
+    function drawMarketHouse() {
+        const m = STORY_MODE.market;
+        if (!m) return;
+        const img = images['market_house'];
+        const t = Date.now() / 1000;
+        const W = 110, H = 130;
+        ctx.save();
+        ctx.imageSmoothingEnabled = false;
+        const near = Math.abs(m.x + W/2 - player.x) < 140;
+        if (near) {
+            ctx.shadowColor = `rgba(255,200,50,${0.5+0.3*Math.sin(t*3)})`;
+            ctx.shadowBlur = 20 + 8*Math.sin(t*2);
+        }
+        if (img && img.complete && img.naturalWidth) {
+            ctx.drawImage(img, m.x, m.y, W, H);
+        } else {
+            ctx.fillStyle = '#6b3a1f'; ctx.fillRect(m.x, m.y+40, W, H-40);
+            ctx.fillStyle = '#8b2500';
+            ctx.beginPath();
+            ctx.moveTo(m.x, m.y+40); ctx.lineTo(m.x+W/2, m.y); ctx.lineTo(m.x+W, m.y+40);
+            ctx.closePath(); ctx.fill();
+        }
+        ctx.restore();
+        // Floating sign
+        const signY = m.y - 28 + Math.sin(t*2)*4;
+        ctx.save();
+        ctx.fillStyle='rgba(0,0,0,0.78)';
+        roundRect2(ctx, m.x-8, signY, W+16, 22, 5); ctx.fill();
+        ctx.strokeStyle='#ffcc44'; ctx.lineWidth=1.5;
+        roundRect2(ctx, m.x-8, signY, W+16, 22, 5); ctx.stroke();
+        ctx.font='bold 11px "Cinzel",serif'; ctx.fillStyle='#ffee88';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText('\uD83C\uDFEA Artifact Market', m.x+W/2, signY+11);
+        ctx.restore();
+        if (near) {
+            ctx.save();
+            ctx.font='bold 12px Arial'; ctx.fillStyle='#ffcc44';
+            ctx.textAlign='center'; ctx.textBaseline='middle';
+            ctx.shadowColor='#ff8800'; ctx.shadowBlur=10;
+            ctx.fillText('[F] Open Shop', m.x+W/2, m.y-44+Math.sin(t*4)*4);
+            ctx.restore();
+        }
+    }
+
+    // ===== DRAW DRAGON PET =====
+    function drawDragonPet() {
+        const d = dragonPet;
+        const stateMap   = { idle:'dragon_idle', fly:'dragon_fly', attack:'dragon_attack' };
+        const framesMap  = { idle:4, fly:4, attack:8 };
+        const key = stateMap[d.state] || 'dragon_idle';
+        const img = images[key];
+        const totalF = framesMap[d.state] || 4;
+        const DW = 64, DH = 64;
+        const t = Date.now()/1000;
+        ctx.save();
+        ctx.imageSmoothingEnabled = false;
+        ctx.shadowColor = `rgba(255,100,0,${0.4+0.3*Math.sin(t*3)})`;
+        ctx.shadowBlur  = 14+6*Math.sin(t*2);
+        if (img && img.complete && img.naturalWidth) {
+            const fw = img.naturalWidth / totalF;
+            const fh = img.naturalHeight;
+            const frame = Math.min(d.frame, totalF-1);
+            const facingLeft = player.x < d.x;
+            if (facingLeft) {
+                ctx.save(); ctx.scale(-1,1);
+                ctx.drawImage(img, frame*fw,0, fw,fh, -(d.x+DW), d.y, DW, DH);
+                ctx.restore();
+            } else {
+                ctx.drawImage(img, frame*fw,0, fw,fh, d.x, d.y, DW, DH);
+            }
+        } else {
+            ctx.font='36px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+            ctx.fillText('\uD83D\uDC09', d.x+DW/2, d.y+DH/2);
+        }
+        ctx.restore();
+        // Fire projectiles
+        const fireImg = images['dragon_fire'];
+        d.fireProjs.forEach(fp => {
+            ctx.save(); ctx.imageSmoothingEnabled=false;
+            ctx.shadowColor='#ff4400'; ctx.shadowBlur=12;
+            if (fireImg && fireImg.complete && fireImg.naturalWidth) {
+                const fw2 = fireImg.naturalWidth/4;
+                const fh2 = fireImg.naturalHeight;
+                const fr = Math.min(fp.frame, 3);
+                if (fp.vx < 0) {
+                    ctx.save(); ctx.scale(-1,1);
+                    ctx.drawImage(fireImg, fr*fw2,0, fw2,fh2, -(fp.x+32), fp.y-8, 32, 20);
+                    ctx.restore();
+                } else {
+                    ctx.drawImage(fireImg, fr*fw2,0, fw2,fh2, fp.x-16, fp.y-8, 32, 20);
+                }
+            } else {
+                ctx.fillStyle='#ff6600'; ctx.beginPath();
+                ctx.arc(fp.x, fp.y, 8, 0, Math.PI*2); ctx.fill();
+            }
+            ctx.restore();
+        });
+    }
+
+    // ===== DRAW MARKET UI =====
+    function drawMarketUI() {
+        const SM = STORY_MODE;
+        const W = GAME_WIDTH, H = GAME_HEIGHT;
+        const PW = 440, PH = 390;
+        const PX = Math.floor(W/2 - PW/2);
+        const PY = Math.floor(H/2 - PH/2);
+        const t = Date.now()/1000;
+
+        ctx.save();
+        // Backdrop
+        ctx.fillStyle='rgba(0,0,0,0.75)'; ctx.fillRect(0,0,W,H);
+
+        // Panel fill — tiled BottomPatternBG
+        drawUI_imgTiled('ui_bottombg', PX, PY, PW, PH);
+        // Gold border
+        ctx.strokeStyle='#c8a84b'; ctx.lineWidth=3;
+        roundRect2(ctx, PX, PY, PW, PH, 8); ctx.stroke();
+        ctx.strokeStyle='rgba(0,0,0,0.45)'; ctx.lineWidth=2;
+        roundRect2(ctx, PX+5, PY+5, PW-10, PH-10, 6); ctx.stroke();
+
+        // Top pattern strip
+        drawUI_imgTiled('ui_topP1', PX, PY, PW, 15);
+
+        // Title box
+        const titleW=240, titleH=30;
+        drawUI_img('ui_titlebox', PX+PW/2-titleW/2, PY+14, titleW, titleH);
+        ctx.font='bold 14px "Cinzel",serif'; ctx.fillStyle='#ffe07a';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.shadowColor='#ff9900'; ctx.shadowBlur=8;
+        ctx.fillText('\u2726  ARTIFACT MARKET  \u2726', PX+PW/2, PY+29);
+        ctx.shadowBlur=0;
+
+        // Quit X icon
+        drawUI_img('ui_quiticon', PX+PW-28, PY+10, 20, 20);
+        ctx.font='9px Arial'; ctx.fillStyle='#ffcc88';
+        ctx.textAlign='center'; ctx.textBaseline='top';
+        ctx.fillText('[ESC]', PX+PW-18, PY+32);
+
+        // Coins display
+        drawUI_img('ui_coinicon', PX+14, PY+16, 14, 16);
+        ctx.font='bold 12px "Cinzel",serif'; ctx.fillStyle='#ffd700';
+        ctx.textAlign='left'; ctx.textBaseline='middle';
+        ctx.fillText(player.coins+' gold', PX+32, PY+26);
+
+        // Page nav arrows
+        const PAGE_LABELS = ['Artifacts (1-5)', 'Dragon Pet'];
+        const curLabel = PAGE_LABELS[SM.marketPage] || '';
+        drawUI_img('ui_larrow', PX+14, PY+53, 14, 20);
+        drawUI_img('ui_rarrow', PX+PW-28, PY+53, 14, 20);
+        ctx.font='bold 11px "Cinzel",serif'; ctx.fillStyle='#ddc080';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(curLabel, PX+PW/2, PY+63);
+
+        // Separator line
+        ctx.strokeStyle='rgba(200,168,75,0.4)'; ctx.lineWidth=1;
+        ctx.beginPath(); ctx.moveTo(PX+10, PY+78); ctx.lineTo(PX+PW-10, PY+78); ctx.stroke();
+
+        // ---- PAGE 0 : Artifact grid ----
+        if (SM.marketPage === 0) {
+            const items = MARKET_ITEMS.slice(0,5);
+            const SLOT=76, GAP=10;
+            const gridW = items.length*(SLOT+GAP)-GAP;
+            const gx0 = PX + (PW-gridW)/2;
+            const gy0 = PY+88;
+            if (!SM._marketBtns) SM._marketBtns=[];
+
+            items.forEach((item,i) => {
+                const sx = gx0 + i*(SLOT+GAP);
+                const sy = gy0;
+                const bought = SM.market ? (SM.market['bought_'+item.id]||0) : 0;
+                let maxB = item.maxBuy;
+                if (item.dynamicMax) maxB = Math.max(0, Math.floor((player.maxHp-player.hp)/5));
+                const canBuy = player.coins>=item.cost && (maxB===null||bought<maxB);
+                const isHov = SM._marketHover===i;
+
+                // Slot box
+                ctx.save();
+                if (isHov && canBuy) { ctx.shadowColor='#ffe066'; ctx.shadowBlur=18; }
+                drawUI_img('ui_rectbox', sx, sy, SLOT, SLOT);
+                ctx.restore();
+
+                // Affordable shimmer
+                if (canBuy) {
+                    ctx.save(); ctx.globalAlpha=0.18+0.08*Math.sin(t*4+i);
+                    ctx.fillStyle='#ffe060'; ctx.fillRect(sx+4,sy+4,SLOT-8,SLOT-8);
+                    ctx.restore();
+                }
+                // Highlight overlay frame when hovered
+                if (isHov) drawUI_img('ui_hlslot', sx+(SLOT-26)/2, sy+(SLOT-26)/2, 26, 26);
+
+                // Icon emoji
+                const icons=['⛑️','🍓','💎','🪶','🗝️'];
+                ctx.font='26px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+                ctx.fillText(icons[i], sx+SLOT/2, sy+SLOT/2-4);
+
+                // Label inside slot bottom
+                ctx.font='bold 7px Arial'; ctx.fillStyle='#ffe07a';
+                ctx.textAlign='center'; ctx.textBaseline='bottom';
+                ctx.fillText(item.label, sx+SLOT/2, sy+SLOT-3);
+
+                // Cost ValueBar below slot
+                drawUI_img('ui_valuebar', sx-2, sy+SLOT+4, SLOT+4, 14);
+                drawUI_img('ui_coinicon', sx+4, sy+SLOT+5, 10, 12);
+                ctx.font='bold 9px Arial'; ctx.fillStyle='#ffd700';
+                ctx.textAlign='left'; ctx.textBaseline='middle';
+                ctx.fillText(item.cost+'g', sx+16, sy+SLOT+11);
+                ctx.fillStyle=canBuy?'#88ff88':'#ff6666';
+                ctx.textAlign='right';
+                ctx.fillText(bought+'/'+(maxB===null?'∞':maxB), sx+SLOT+2, sy+SLOT+11);
+
+                // BUY button
+                const btnY=sy+SLOT+20;
+                ctx.save();
+                if (isHov && canBuy) {
+                    ctx.shadowColor='#ffe066'; ctx.shadowBlur=12;
+                    drawUI_img('ui_hlbutton', sx-4, btnY-2, SLOT+8, 18);
+                } else {
+                    drawUI_img('ui_button', sx, btnY, SLOT, 14);
+                }
+                ctx.font='bold 9px "Cinzel",serif';
+                ctx.fillStyle=canBuy?'#fffadc':'#888877';
+                ctx.textAlign='center'; ctx.textBaseline='middle';
+                ctx.fillText(canBuy?'BUY':(maxB!==null&&bought>=maxB?'MAX':'N/A'), sx+SLOT/2, btnY+8);
+                ctx.restore();
+
+                // Register clickable button rect
+                SM._marketBtns[i]={ x:sx, y:btnY, w:SLOT, h:16, item };
+            });
+
+            // Description strip
+            if (SM._marketHover!==undefined && SM._marketHover<5) {
+                const hItem=MARKET_ITEMS[SM._marketHover];
+                if (hItem) {
+                    const dy=PY+PH-52;
+                    drawUI_img('ui_valuebar', PX+16, dy, PW-32, 16);
+                    ctx.font='11px "Cinzel",serif'; ctx.fillStyle='#ffe8a0';
+                    ctx.textAlign='center'; ctx.textBaseline='middle';
+                    ctx.fillText(hItem.desc, PX+PW/2, dy+8);
+                }
+            }
+        }
+
+        // ---- PAGE 1 : Dragon pet ----
+        if (SM.marketPage===1) {
+            const item=MARKET_ITEMS[5];
+            const cx=PX+PW/2;
+            const previewY=PY+88;
+            const dragonImg=images['dragon_idle'];
+            if (dragonImg&&dragonImg.complete&&dragonImg.naturalWidth) {
+                const fw=dragonImg.naturalWidth/4;
+                const animF=Math.floor(t*6)%4;
+                ctx.save(); ctx.imageSmoothingEnabled=false;
+                ctx.shadowColor='#ff6600'; ctx.shadowBlur=20+10*Math.sin(t*3);
+                ctx.drawImage(dragonImg, animF*fw,0, fw,dragonImg.naturalHeight, cx-50,previewY, 100,100);
+                ctx.restore();
+            } else {
+                ctx.font='80px Arial'; ctx.textAlign='center'; ctx.textBaseline='top';
+                ctx.fillText('\uD83D\uDC09', cx, previewY);
+            }
+            ctx.font='bold 15px "Cinzel",serif'; ctx.fillStyle='#ffcc44';
+            ctx.textAlign='center'; ctx.textBaseline='top';
+            ctx.shadowColor='#ff6600'; ctx.shadowBlur=10;
+            ctx.fillText('\uD83D\uDD25 '+item.label, cx, PY+196);
+            ctx.shadowBlur=0;
+            ctx.font='12px Arial'; ctx.fillStyle='#f0d080'; ctx.textBaseline='top';
+            ctx.fillText(item.desc, cx, PY+218);
+            ctx.font='11px Arial'; ctx.fillStyle='#ffaa66';
+            ctx.fillText('Cannot die  \u2022  Shoots every 10 seconds  \u2022  2 dmg per hit', cx, PY+236);
+
+            // Cost bar
+            drawUI_img('ui_valuebar', cx-80, PY+260, 160, 16);
+            drawUI_img('ui_coinicon', cx-74, PY+262, 12,14);
+            ctx.font='bold 11px "Cinzel",serif'; ctx.fillStyle='#ffd700';
+            ctx.textAlign='left'; ctx.textBaseline='middle';
+            ctx.fillText('Cost: '+item.cost+' gold', cx-58, PY+268);
+
+            // Buy/owned button
+            const alreadyOwned=dragonPet.owned;
+            const canAfford=player.coins>=item.cost;
+            const btnX=cx-70, btnY=PY+284, btnW=140, btnH=24;
+            if (!SM._marketBtns) SM._marketBtns=[];
+            if (alreadyOwned) {
+                drawUI_img('ui_button', btnX, btnY, btnW, btnH);
+                ctx.font='bold 10px "Cinzel",serif'; ctx.fillStyle='#88ff88';
+                ctx.textAlign='center'; ctx.textBaseline='middle';
+                ctx.fillText('\u2714 COMPANION ACTIVE', cx, btnY+12);
+            } else {
+                ctx.save();
+                if (canAfford) { ctx.shadowColor='#ffe066'; ctx.shadowBlur=14; drawUI_img('ui_hlbutton', btnX-4,btnY-2,btnW+8,btnH+4); }
+                else { drawUI_img('ui_button', btnX,btnY,btnW,btnH); }
+                ctx.font='bold 11px "Cinzel",serif';
+                ctx.fillStyle=canAfford?'#fffadc':'#777766';
+                ctx.textAlign='center'; ctx.textBaseline='middle';
+                ctx.fillText(canAfford?'BUY  \uD83D\uDC09':'NOT ENOUGH GOLD', cx, btnY+12);
+                ctx.restore();
+                SM._marketBtns[10]={ x:btnX, y:btnY, w:btnW, h:btnH, item };
+            }
+        }
+
+        // Bottom tip bar
+        drawUI_imgTiled('ui_topP1', PX, PY+PH-16, PW, 16);
+        ctx.font='10px "Cinzel",serif'; ctx.fillStyle='#c8a84b';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText('[ESC] Close  \u2022  [\u2190 \u2192] Switch Page  \u2022  Click to Buy', PX+PW/2, PY+PH-8);
+
+        ctx.restore();
+    }
+
     // Helper: rounded rect path
     function roundRect2(ctx, x, y, w, h, r) {
         ctx.beginPath();
@@ -2637,6 +3589,30 @@
             STORY_MODE.active=false; STORY_MODE.bossArena=false;
             goHome(); return;
         }
+        // Market UI buy clicks
+        if(STORY_MODE.marketOpen) {
+            const btns = STORY_MODE._marketBtns || [];
+            for (let i=0; i<btns.length; i++) {
+                const b = btns[i];
+                if (!b) continue;
+                if (cx>=b.x && cx<=b.x+b.w && cy>=b.y && cy<=b.y+b.h) {
+                    buyMarketItem(b.item);
+                    STORY_MODE._marketBtns = []; // reset so rects recalculate
+                    return;
+                }
+            }
+            // Quit X region (top-right of panel)
+            const PW=440, PH=390, PX=Math.floor(GAME_WIDTH/2-220), PY=Math.floor(GAME_HEIGHT/2-195);
+            if (cx>=PX+PW-36 && cx<=PX+PW-8 && cy>=PY+8 && cy<=PY+36) { closeMarket(); return; }
+            // Arrow buttons
+            if (cx>=PX+14 && cx<=PX+28 && cy>=PY+48 && cy<=PY+78) {
+                STORY_MODE.marketPage=Math.max(0, STORY_MODE.marketPage-1); return;
+            }
+            if (cx>=PX+PW-28 && cx<=PX+PW-14 && cy>=PY+48 && cy<=PY+78) {
+                STORY_MODE.marketPage=Math.min(1, STORY_MODE.marketPage+1); return;
+            }
+            return; // swallow other clicks while market is open
+        }
         // Dialogue advance
         if(STORY_MODE.dialogue && !STORY_MODE.dialogue.inputMode) {
             if(dialogueState._lineComplete) { advanceDialogue(); dialogueState._lineStart=null; }
@@ -2649,8 +3625,35 @@
         }
     });
 
+    // Market hover tracking
+    canvas.addEventListener('mousemove', e => {
+        if (!STORY_MODE.marketOpen) return;
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = GAME_WIDTH / rect.width;
+        const scaleY = GAME_HEIGHT / rect.height;
+        const cx = (e.clientX - rect.left) * scaleX;
+        const cy = (e.clientY - rect.top)  * scaleY;
+        const btns = STORY_MODE._marketBtns || [];
+        STORY_MODE._marketHover = undefined;
+        for (let i=0; i<btns.length; i++) {
+            const b = btns[i];
+            if (!b) continue;
+            if (cx>=b.x && cx<=b.x+b.w && cy>=b.y && cy<=b.y+b.h) {
+                STORY_MODE._marketHover = i; break;
+            }
+        }
+    });
+
     window.addEventListener('keydown', e => {
         startMusic();
+        // Market open — ESC closes, arrows switch page
+        if (STORY_MODE.marketOpen) {
+            e.preventDefault();
+            if (e.code==='Escape') { closeMarket(); return; }
+            if (e.code==='ArrowLeft')  { STORY_MODE.marketPage=Math.max(0, STORY_MODE.marketPage-1); return; }
+            if (e.code==='ArrowRight') { STORY_MODE.marketPage=Math.min(1, STORY_MODE.marketPage+1); return; }
+            return;
+        }
         if (e.code === 'Escape' || e.code === 'KeyP') { e.preventDefault(); togglePause(); return; }
         // Story mode: TAB for objective board
         if(STORY_MODE.active && e.code==='Tab') { e.preventDefault(); STORY_MODE.boardOpen=!STORY_MODE.boardOpen; return; }
@@ -2660,6 +3663,7 @@
             if(SM.npc1&&!SM.npc1Talked&&Math.abs(SM.npc1.x-player.x)<120) { tryInteractNPC(1); return; }
             if(SM.npc2&&!SM.npc2Talked&&Math.abs(SM.npc2.x-player.x)<120) { tryInteractNPC(2); return; }
             if(SM.portal&&Math.abs(SM.portal.x+48-player.x)<130) { tryEnterPortal(); return; }
+            if(SM.market&&Math.abs(SM.market.x+50-player.x)<130) { openMarket(); return; }
         }
         // Story dialogue advance
         if(STORY_MODE.dialogue && !STORY_MODE.dialogue.inputMode) {
@@ -2723,7 +3727,7 @@
     }
 
 
-    function restartGame() {
+    window.restartGame = function restartGame() {
         gameOverEl.style.display = 'none';
         if (STORY_MODE.active) {
             // Story mode death = full fresh restart of story mode
@@ -2732,17 +3736,17 @@
         } else {
             resetGame();
         }
-    }
+    };
 
     function togglePause() {
         gamePaused = !gamePaused;
         document.getElementById('pause-menu').style.display = gamePaused ? 'flex' : 'none';
     }
-    function resumeGame() {
+    window.resumeGame = function resumeGame() {
         gamePaused = false;
         document.getElementById('pause-menu').style.display = 'none';
-    }
-    function goHome() {
+    };
+    window.goHome = function goHome() {
         gamePaused = false;
         document.getElementById('pause-menu').style.display = 'none';
         // Fully reset story mode
@@ -2761,7 +3765,7 @@
         resetGame();
         player.dead = false;
         gameOverEl.style.display = 'none';
-    }
+    };
 
     function resetGame() {
         player.maxHp = 180;
@@ -2919,7 +3923,37 @@
         player.y += player.vy;
 
         // ---- CAMERA ----
-        if (player.x > GAME_WIDTH / 2) {
+        if (STORY_MODE.bossArena) {
+            // Boss arena: allow bidirectional movement, clamp to arena bounds
+            const ARENA_WIDTH = 2400;
+            // Scroll right if player goes past center
+            if (player.x > GAME_WIDTH / 2 + 50) {
+                let diff = player.x - (GAME_WIDTH / 2 + 50);
+                const maxScroll = ARENA_WIDTH - GAME_WIDTH;
+                if ((STORY_MODE.bossArenaScrollX||0) < maxScroll) {
+                    const actualDiff = Math.min(diff, maxScroll-(STORY_MODE.bossArenaScrollX||0));
+                    STORY_MODE.bossArenaScrollX = (STORY_MODE.bossArenaScrollX||0) + actualDiff;
+                    player.x -= actualDiff;
+                    platforms.forEach(p => p.x -= actualDiff);
+                    if(STORY_MODE.boss) STORY_MODE.boss.x -= actualDiff;
+                    if(STORY_MODE.arenaDecorations) STORY_MODE.arenaDecorations.forEach(d=>d.x-=actualDiff);
+                }
+            }
+            // Scroll left if player goes past left quarter of screen — bidirectional!
+            if (player.x < GAME_WIDTH / 4 - 50) {
+                let diff = (GAME_WIDTH / 4 - 50) - player.x;
+                if ((STORY_MODE.bossArenaScrollX||0) > 0) {
+                    const actualDiff = Math.min(diff, STORY_MODE.bossArenaScrollX||0);
+                    STORY_MODE.bossArenaScrollX -= actualDiff;
+                    player.x += actualDiff;
+                    platforms.forEach(p => p.x += actualDiff);
+                    if(STORY_MODE.boss) STORY_MODE.boss.x += actualDiff;
+                    if(STORY_MODE.arenaDecorations) STORY_MODE.arenaDecorations.forEach(d=>d.x+=actualDiff);
+                }
+            }
+            // Hard clamp player to screen edges (no falling off left/right)
+            player.x = Math.max(10, Math.min(GAME_WIDTH - player.width - 10, player.x));
+        } else if (player.x > GAME_WIDTH / 2) {
             let diff = player.x - GAME_WIDTH / 2;
             scrollX += diff;
             player.x = GAME_WIDTH / 2;
@@ -2935,6 +3969,7 @@
             if (STORY_MODE.npc1) STORY_MODE.npc1.x -= diff;
             if (STORY_MODE.npc2) STORY_MODE.npc2.x -= diff;
             if (STORY_MODE.portal) STORY_MODE.portal.x -= diff;
+            if (STORY_MODE.market) STORY_MODE.market.x -= diff;
             score = Math.floor(scrollX / 8);
             uiScore = score;
         }
@@ -2959,6 +3994,9 @@
                 c.collected = true;
                 player.coins += ITEM_TYPES[c.type].val;
                 uiCoins = player.coins;
+                if (c.type === 'COIN') {
+                    playSound('coin');
+                }
                 if (c.type === 'CHEST') {
                     playSound('chest');
                     // Story tracking
@@ -3186,9 +4224,79 @@
             });
         }
 
-        // Update particles
-        particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += 0.2; p.life--; });
-        particles = particles.filter(p => p.life > 0);
+        // ---- DRAGON PET UPDATE ----
+        if (dragonPet.owned && !STORY_MODE.bossArena) {
+            const d = dragonPet;
+            // Dragon hovers above-left of player, bobbing
+            const t = Date.now() / 1000;
+            d.targetX = player.x - 80 + Math.sin(t * 1.2) * 18;
+            d.targetY = player.y - 70 + Math.sin(t * 2.0) * 10;
+            // Smooth follow
+            d.x += (d.targetX - d.x) * 0.08;
+            d.y += (d.targetY - d.y) * 0.08;
+            // Scroll dragon with camera like everything else — handled via targetX tracking player
+            // Animate frames
+            const dragonAnimConfig = { idle:{frames:4,speed:10}, fly:{frames:4,speed:7}, attack:{frames:8,speed:5} };
+            const dcfg = dragonAnimConfig[d.state] || dragonAnimConfig.idle;
+            d.frameTimer = (d.frameTimer || 0) + 1;
+            if (d.frameTimer >= dcfg.speed) { d.frame = (d.frame + 1) % dcfg.frames; d.frameTimer = 0; }
+
+            // Fire cooldown
+            if (d.fireCooldown > 0) d.fireCooldown--;
+
+            // Check for nearby enemies — if enemy within 300px, dragon attacks
+            let closestEnemy = null; let closestDist = 300;
+            enemies.forEach(e => {
+                if (e.dying) return;
+                const dist = Math.abs(e.x - d.x);
+                if (dist < closestDist) { closestDist = dist; closestEnemy = e; }
+            });
+            if (closestEnemy && d.fireCooldown <= 0) {
+                d.fireCooldown = 600; // 10 seconds at 60fps
+                d.state = 'attack'; d.frame = 0; d.frameTimer = 0;
+                // Spawn fire projectile toward enemy
+                const dx = closestEnemy.x - d.x;
+                const spd = 5;
+                const vx = dx < 0 ? -spd : spd;
+                d.fireProjs.push({ x: d.x, y: d.y + 20, vx, frame: 0, frameTimer: 0, targetEnemy: closestEnemy });
+                // Revert to fly state after attack anim
+                setTimeout(() => { if(dragonPet.owned) dragonPet.state = 'fly'; }, 400);
+            } else if (d.state !== 'attack') {
+                d.state = Math.abs(d.x - d.targetX) > 8 ? 'fly' : 'idle';
+            }
+
+            // Update fire projectiles
+            d.fireProjs.forEach(fp => {
+                fp.x += fp.vx; fp.y += Math.sin(Date.now()/200) * 0.5;
+                // Animate fire frame
+                fp.frameTimer++;
+                if (fp.frameTimer >= 4) { fp.frame = (fp.frame + 1) % 4; fp.frameTimer = 0; }
+                // Hit check vs enemies
+                enemies.forEach(e => {
+                    if (e.dying || fp.hit) return;
+                    if (Math.abs(fp.x - e.x) < 30 && Math.abs(fp.y - (e.y + 20)) < 30) {
+                        fp.hit = true;
+                        e.hp -= 2;
+                        e.hurtTimer = 12; e.state = 'hurt'; e.frame = 0;
+                        dmgNumbers.push({ x: e.x + 10, y: e.y - 10, val: '🔥2', life: 45, color: '#ff6600' });
+                        if (e.hp <= 0 && !e.dying) {
+                            e.dying = true; e.alpha = 1; e.frame = 0;
+                            if (STORY_MODE.active) STORY_MODE.totalKills++;
+                            shakeTimer = 8; shakeMag = 4;
+                        }
+                        // Burst particles at hit
+                        for (let i = 0; i < 6; i++) {
+                            particles.push({ x: fp.x, y: fp.y,
+                                vx: (Math.random()-0.5)*4, vy: (Math.random()-2)*3,
+                                life: 20, color: `hsl(${20+Math.random()*30},100%,60%)` });
+                        }
+                    }
+                });
+            });
+            d.fireProjs = d.fireProjs.filter(fp => !fp.hit && fp.x > -100 && fp.x < GAME_WIDTH + 100);
+        }
+
+
 
         // Tick blood animations (30fps = advance every 2 game frames, 60fps = every 1)
         bloodAnims.forEach(b => {
@@ -3273,6 +4381,7 @@
         if (player.y > GAME_HEIGHT) {
             hurtPlayer(player.hp); // kill on fall
         }
+        // In boss arena: no death on left edge — player is clamped in the camera logic
     }
 
     function hurtPlayer(dmg) {
@@ -3326,15 +4435,58 @@
         }
 
         // Background
-        let bgScroll = (scrollX * 0.3) % GAME_WIDTH;
-        ctx.drawImage(images.background, -bgScroll, 0, GAME_WIDTH, GAME_HEIGHT);
-        ctx.drawImage(images.background, GAME_WIDTH - bgScroll, 0, GAME_WIDTH, GAME_HEIGHT);
+        if (STORY_MODE.bossArena) {
+            // Boss arena custom background
+            const arenaBack = images['arena_back'];
+            if (arenaBack && arenaBack.complete && arenaBack.naturalWidth) {
+                ctx.drawImage(arenaBack, 0, 0, GAME_WIDTH, GAME_HEIGHT);
+            } else {
+                ctx.fillStyle = '#1a0a00'; ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+            }
+            // Dark atmospheric overlay
+            const fog = ctx.createLinearGradient(0, 0, 0, GAME_HEIGHT);
+            fog.addColorStop(0, 'rgba(0,0,0,0.3)');
+            fog.addColorStop(1, 'rgba(0,0,0,0.5)');
+            ctx.fillStyle = fog; ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+        } else {
+            let bgScroll = (scrollX * 0.3) % GAME_WIDTH;
+            ctx.drawImage(images.background, -bgScroll, 0, GAME_WIDTH, GAME_HEIGHT);
+            ctx.drawImage(images.background, GAME_WIDTH - bgScroll, 0, GAME_WIDTH, GAME_HEIGHT);
+        }
 
         // Platforms
         platforms.forEach(p => {
-            const slice = platformSlices[p.type];
-            ctx.drawImage(images.platforms, slice.sx, slice.sy, slice.sw, slice.sh, p.x, p.y, p.w, p.h);
+            if (STORY_MODE.bossArena) {
+                const platImg = images['arena_platform'];
+                if (platImg && platImg.complete && platImg.naturalWidth) {
+                    ctx.save();
+                    ctx.beginPath(); ctx.rect(p.x, p.y, p.w, p.h); ctx.clip();
+                    const pw = platImg.naturalWidth, ph = platImg.naturalHeight;
+                    for (let px = p.x; px < p.x + p.w; px += pw) {
+                        ctx.drawImage(platImg, px, p.y, pw, p.h || ph);
+                    }
+                    ctx.restore();
+                } else {
+                    ctx.fillStyle = '#3a2010'; ctx.fillRect(p.x, p.y, p.w, p.h);
+                }
+            } else {
+                const slice = platformSlices[p.type];
+                ctx.drawImage(images.platforms, slice.sx, slice.sy, slice.sw, slice.sh, p.x, p.y, p.w, p.h);
+            }
         });
+
+        // Boss arena decorations (behind enemies/player)
+        if (STORY_MODE.bossArena && STORY_MODE.arenaDecorations) {
+            STORY_MODE.arenaDecorations.forEach(d => {
+                const img = images[d.key];
+                if (img && img.complete && img.naturalWidth) {
+                    ctx.save();
+                    ctx.imageSmoothingEnabled = false;
+                    ctx.drawImage(img, d.x, d.y, d.w, d.h);
+                    ctx.restore();
+                }
+            });
+        }
 
         // Traps
         traps.forEach(t => {
@@ -3526,10 +4678,14 @@
 
         // ===== STORY MODE RENDERING =====
         if(STORY_MODE.active) {
+            // Draw market house on platform
+            if(STORY_MODE.market) drawMarketHouse();
             // Draw portal
             if(STORY_MODE.portal) drawPortal();
             // Draw NPCs
             drawNPCs();
+            // Draw dragon pet
+            if(dragonPet.owned && !STORY_MODE.bossArena) drawDragonPet();
             // Draw boss
             if(STORY_MODE.bossArena && STORY_MODE.boss) drawBossSprites();
         }
@@ -3739,13 +4895,13 @@
     });
 
     // ===== HOME PAGE =====
-    function showView(id) {
+    window.showView = function showView(id) {
         document.querySelectorAll('.home-view').forEach(v => v.classList.remove('active'));
         const el = document.getElementById(id);
         if (el) el.classList.add('active');
-    }
+    };
 
-    (function() {
+    ;(function() {
         const homeCanvas = document.getElementById('home-canvas');
         const homeCtx = homeCanvas.getContext('2d');
 
