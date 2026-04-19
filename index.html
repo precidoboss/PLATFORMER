@@ -1033,7 +1033,7 @@
         width: 50, height: 70,
         drawWidth: 130, drawHeight: 120,
         vy: 0, vx: 0,
-        speed: 6, jumpForce: -14, gravity: 0.7,
+        speed: 7, jumpForce: -14.5, gravity: 0.72,
         grounded: false, wasGrounded: false,
         facing: 'right',
         state: 'idle',
@@ -3918,6 +3918,7 @@
 
     window.restartGame = function restartGame() {
         gameOverEl.style.display = 'none';
+        _lastTime = 0; _accumulator = 0;
         window._gameLoopActive = true;
         if (STORY_MODE.active) {
             // Story mode death = full fresh restart of story mode
@@ -3939,6 +3940,7 @@
     };
     window.goHome = function goHome() {
         window._gameLoopActive = false;
+        _lastTime = 0; _accumulator = 0;
         gamePaused = false;
         document.getElementById('pause-menu').style.display = 'none';
         // Fully reset story mode
@@ -4285,7 +4287,7 @@
                         }
                         if (!onEdge) {
                             e.state = 'run';
-                            e.vx = (dx > 0 ? 1 : -1) * 3.5;
+                            e.vx = (dx > 0 ? 1 : -1) * 4.5;
                         } else {
                             e.state = 'idle';
                             e.vx = 0;
@@ -4890,11 +4892,36 @@
         if(STORY_MODE.active) drawStoryUI();
 
         if (window._gameLoopActive) {
-            requestAnimationFrame(() => {
-                update();
-                draw();
-            });
+            requestAnimationFrame(_gameLoopTick);
         }
+    }
+
+    // ---- Fixed-timestep game loop (16.667ms = 60fps logic) ----
+    const FIXED_STEP = 1000 / 60;   // ms per logic tick
+    let _lastTime = 0;
+    let _accumulator = 0;
+
+    function _gameLoopTick(timestamp) {
+        if (!window._gameLoopActive) return;
+        requestAnimationFrame(_gameLoopTick);
+
+        if (_lastTime === 0) _lastTime = timestamp;
+        let dt = timestamp - _lastTime;
+        _lastTime = timestamp;
+
+        // Clamp: if tab was backgrounded / frame took >200ms, don't spiral
+        if (dt > 200) dt = 200;
+
+        _accumulator += dt;
+
+        // Run as many 60fps-equivalent logic ticks as needed
+        while (_accumulator >= FIXED_STEP) {
+            update();
+            _accumulator -= FIXED_STEP;
+        }
+
+        // Always render once per animation frame
+        draw();
     }
 
     // ---- Sprite-based UI helpers ----
@@ -5310,7 +5337,8 @@
                 homeEl.style.display = 'none';
                 resetGame();
                 window._gameLoopActive = true;
-                requestAnimationFrame(() => { update(); draw(); });
+                _lastTime = 0; _accumulator = 0;
+                requestAnimationFrame(_gameLoopTick);
                 if(window._gameMode==='story') initStoryMode();
             }, 600);
         };
