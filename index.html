@@ -320,12 +320,191 @@
         }
         #home-screen.fade-out { animation: homeFadeOut 0.6s forwards; }
         @keyframes homeFadeOut { to { opacity:0; pointer-events:none; } }
-                </style>
+                
+        /* ===== AUTH / PROFILE / LEADERBOARD OVERLAYS ===== */
+        .aq-overlay {
+            position: absolute; inset: 0; z-index: 50;
+            background: rgba(0,0,0,0.92);
+            display: flex; align-items: center; justify-content: center;
+            overflow-y: auto;
+        }
+        .aq-panel {
+            background: linear-gradient(160deg,#1a0e06,#0a0806);
+            border: 2px solid #7a4e20;
+            border-radius: 10px;
+            padding: 32px 40px;
+            width: 420px; max-width: 96vw;
+            display: flex; flex-direction: column; align-items: center; gap: 14px;
+            box-shadow: 0 0 60px rgba(180,100,0,0.2);
+        }
+        .aq-panel.wide { width: 680px; }
+        .aq-panel-title {
+            font-family: 'Cinzel Decorative', cursive;
+            font-size: 22px; color: #ffd700;
+            letter-spacing: 4px; text-align: center;
+            text-shadow: 0 0 20px rgba(255,200,0,0.4);
+            margin-bottom: 4px;
+        }
+        .aq-input {
+            width: 100%; padding: 10px 14px;
+            background: #110a04; color: #ffe8b0;
+            border: 1.5px solid #5a3a18; border-radius: 4px;
+            font-family: 'Cinzel', serif; font-size: 14px;
+            outline: none; box-sizing: border-box;
+        }
+        .aq-input:focus { border-color: #c8a040; }
+        .aq-btn {
+            width: 100%; padding: 11px;
+            font-family: 'Cinzel', serif; font-size: 14px;
+            letter-spacing: 2px; text-transform: uppercase;
+            border-radius: 4px; cursor: pointer; border: 1.5px solid;
+            transition: all 0.2s;
+        }
+        .aq-btn.primary {
+            background: linear-gradient(160deg,#3a2810,#1e140a);
+            color: #e8c870; border-color: #8a5828;
+        }
+        .aq-btn.primary:hover { background: linear-gradient(160deg,#5a3818,#2e1e0c); border-color: #ffd700; }
+        .aq-btn.secondary {
+            background: transparent; color: #a08050; border-color: #4a3018;
+        }
+        .aq-btn.secondary:hover { border-color: #8a6030; color: #d4a060; }
+        .aq-btn.ghost {
+            background: transparent; color: #7a6040; border-color: transparent;
+            font-size: 12px; padding: 6px;
+        }
+        .aq-btn.ghost:hover { color: #c0a060; }
+        .aq-divider {
+            width: 100%; height: 1px;
+            background: linear-gradient(90deg,transparent,#5a3a18,transparent);
+        }
+        .aq-err { color: #ff6666; font-family: 'Cinzel', serif; font-size: 12px; text-align: center; }
+        .aq-ok  { color: #66ff88; font-family: 'Cinzel', serif; font-size: 12px; text-align: center; }
+        .aq-label { font-family:'Cinzel',serif; font-size:11px; color:#7a5830; letter-spacing:2px; text-transform:uppercase; align-self:flex-start; }
+        /* Top bar buttons (profile + leaderboard) */
+        #aq-topbar {
+            position: absolute; top: 10px; right: 10px;
+            display: flex; gap: 8px; z-index: 40;
+        }
+        .aq-topbtn {
+            font-family:'Cinzel',serif; font-size:11px; letter-spacing:1px;
+            padding: 7px 14px; border-radius: 4px; cursor: pointer;
+            background: linear-gradient(160deg,#2a1808,#180e04);
+            color: #c8a040; border: 1.5px solid #5a3818;
+            transition: all 0.2s;
+        }
+        .aq-topbtn:hover { border-color:#ffd700; color:#ffe8a0; }
+        /* Auth row buttons on home */
+        #aq-home-auth {
+            display: flex; gap: 10px; margin-top: 6px;
+            opacity:0; animation: fadeSlideUp 0.7s 1.3s forwards;
+        }
+        /* Leaderboard table */
+        .aq-lb-table { width:100%; border-collapse:collapse; }
+        .aq-lb-table th {
+            font-family:'Cinzel',serif; font-size:10px; letter-spacing:2px;
+            color:#8a6030; text-transform:uppercase; text-align:left;
+            border-bottom:1px solid #3a2810; padding:6px 8px;
+        }
+        .aq-lb-table td {
+            font-family:'Cinzel',serif; font-size:12px; color:#c0a870;
+            padding:7px 8px; border-bottom:1px solid rgba(90,56,24,0.3);
+        }
+        .aq-lb-table tr.me td { color:#ffd700; }
+        .aq-lb-rank { color:#8a6030; font-size:11px; }
+        .aq-lb-tabs { display:flex; gap:8px; width:100%; }
+        .aq-lb-tab {
+            flex:1; padding:8px; font-family:'Cinzel',serif; font-size:11px;
+            letter-spacing:2px; text-transform:uppercase; cursor:pointer;
+            border:1px solid #3a2810; border-radius:3px; text-align:center;
+            color:#7a6040; background:transparent; transition:all 0.2s;
+        }
+        .aq-lb-tab.active { border-color:#8a5828; color:#e8c870; background:rgba(90,56,24,0.2); }
+        /* Profile stats grid */
+        .aq-stat-grid {
+            display:grid; grid-template-columns:1fr 1fr;
+            gap:8px; width:100%;
+        }
+        .aq-stat-card {
+            background:rgba(255,255,255,0.03); border:1px solid #3a2810;
+            border-radius:4px; padding:10px 14px;
+        }
+        .aq-stat-lbl { font-family:'Cinzel',serif; font-size:9px; color:#7a5830; letter-spacing:2px; text-transform:uppercase; }
+        .aq-stat-val { font-family:'Cinzel Decorative',cursive; font-size:18px; color:#e8c870; margin-top:2px; }
+        .aq-coin-bank {
+            width:100%; padding:14px; text-align:center;
+            background:rgba(255,200,0,0.06); border:1px solid #7a5020;
+            border-radius:6px;
+        }
+        .aq-coin-bank .big { font-family:'Cinzel Decorative',cursive; font-size:28px; color:#ffd700; }
+        .aq-coin-bank .lbl { font-family:'Cinzel',serif; font-size:11px; color:#8a6030; letter-spacing:3px; text-transform:uppercase; }
+        .aq-achievements { display:flex; flex-wrap:wrap; gap:8px; width:100%; }
+        .aq-ach {
+            display:flex; align-items:center; gap:8px;
+            background:rgba(255,255,255,0.03); border:1px solid #3a2810;
+            border-radius:4px; padding:8px 12px; flex:1; min-width:180px;
+        }
+        .aq-ach.locked { opacity:0.4; }
+        .aq-ach-icon { font-size:20px; }
+        .aq-ach-name { font-family:'Cinzel',serif; font-size:11px; color:#c0a060; }
+        .aq-ach-desc { font-family:'Cinzel',serif; font-size:9px; color:#6a5030; }
+        .aq-section-title {
+            font-family:'Cinzel',serif; font-size:11px; letter-spacing:3px;
+            color:#8a6030; text-transform:uppercase; align-self:flex-start;
+            border-bottom:1px solid #3a2810; padding-bottom:4px; width:100%;
+        }
+        .aq-lb-page { display:flex; gap:8px; align-items:center; margin-top:4px; }
+        .aq-lb-page button {
+            font-family:'Cinzel',serif; font-size:11px; padding:4px 12px;
+            background:#1a0e06; color:#c0a040; border:1px solid #4a2e10;
+            border-radius:3px; cursor:pointer;
+        }
+        .aq-lb-page button:hover { border-color:#8a6030; }
+        .aq-lb-page span { font-family:'Cinzel',serif; font-size:11px; color:#6a5030; }
+        #aq-game-coins-display {
+            position:absolute; top:10px; left:50%; transform:translateX(-50%);
+            background:rgba(0,0,0,0.6); border:1px solid #5a3818;
+            border-radius:4px; padding:4px 12px;
+            font-family:'Cinzel',serif; font-size:12px; color:#ffd700;
+            z-index:40; display:none;
+        }
+</style>
+    <!-- Supabase + bcrypt -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js"></script>
 </head>
 <body>
 
+<!-- ===== AQ AUTH PANELS ===== -->
+<!-- Auth gate overlay (shown on home) -->
+<div id="aq-auth-overlay" style="display:none;" class="aq-overlay">
+  <div class="aq-panel" id="aq-auth-panel">
+    <!-- toggled by JS between login / register views -->
+  </div>
+</div>
+
+<!-- Profile overlay -->
+<div id="aq-profile-overlay" style="display:none;" class="aq-overlay">
+  <div class="aq-panel wide" id="aq-profile-panel" style="max-height:90vh;overflow-y:auto;"></div>
+</div>
+
+<!-- Leaderboard overlay -->
+<div id="aq-lb-overlay" style="display:none;" class="aq-overlay">
+  <div class="aq-panel wide" id="aq-lb-panel" style="max-height:90vh;overflow-y:auto;"></div>
+</div>
+
+<!-- In-game coin bank display -->
+<div id="aq-game-coins-display">🏦 Bank: <span id="aq-bank-val">0</span></div>
+
 <div id="home-screen">
-    <canvas id="home-canvas"></canvas>
+    <canvas id="home-canvas">
+
+    <!-- Top-right bar: Profile + Leaderboard (only when logged in) -->
+    <div id="aq-topbar" style="display:none;">
+        <button class="aq-topbtn" onclick="AQ.showProfile()">👤 Profile</button>
+        <button class="aq-topbtn" onclick="AQ.showLeaderboard()">🏆 Leaderboard</button>
+    </div>
+</canvas>
     <!-- Stone cracks overlay -->
     <div class="stone-cracks"></div>
     <!-- Corner stones -->
@@ -365,6 +544,27 @@
                     <div class="stone-btn-inner">HOW TO PLAY</div>
                 </div>
             </div>
+
+            <div id="aq-home-auth">
+                <div class="stone-btn secondary" onclick="AQ.showAuth('login')">
+                    <div class="stone-btn-inner" style="font-size:11px;padding:10px 20px;">🔑 LOGIN</div>
+                </div>
+                <div class="stone-btn secondary" onclick="AQ.showAuth('register')">
+                    <div class="stone-btn-inner" style="font-size:11px;padding:10px 20px;">📜 SIGN UP</div>
+                </div>
+                <div class="stone-btn secondary" onclick="AQ.guestMode()">
+                    <div class="stone-btn-inner" style="font-size:11px;padding:10px 20px;color:#666;">👤 GUEST</div>
+                </div>
+            </div>
+            <div id="aq-home-user" style="display:none;opacity:0;animation:fadeSlideUp 0.5s forwards;">
+                <div style="font-family:'Cinzel',serif;font-size:12px;color:#8a6030;letter-spacing:2px;text-align:center;">
+                    ⚔ <span id="aq-home-username"></span> &nbsp;·&nbsp;
+                    <span style="color:#ffd700;">🏦 <span id="aq-home-bank">0</span> coins</span>
+                    &nbsp;·&nbsp;
+                    <span style="cursor:pointer;color:#7a5830;text-decoration:underline;" onclick="AQ.logout()">Logout</span>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -924,6 +1124,7 @@
     function initStoryMode() {
         STORY_MODE.active = true;
         STORY_MODE.timer = 0;
+        if(window.AQ) AQ.startSCRun();
         STORY_MODE.totalKills = 0;
         STORY_MODE.totalChests = 0;
         STORY_MODE.totalArtifacts = 0;
@@ -1123,6 +1324,7 @@
         // Deduct coins
         player.coins -= item.cost;
         uiCoins = player.coins;
+        if(window.AQ) AQ.trackSCSpend(item.cost);
         STORY_MODE.market['bought_' + item.id] = bought + 1;
 
         if (item.type === 'artifact') {
@@ -2424,6 +2626,7 @@
                     dmgNumbers.push({x:b.x+20,y:b.y-30,val:'WEAKNESS!',life:70,color:'#ff44ff',isText:true});
                 }
                 b.hp -= dmg;
+                if(window.AQ) AQ.trackSCDamageDealt(dmg);
                 b.hurtTimer = 20; b.state='hurt'; b.frame=0; b.frameTimer=0;
                 dmgNumbers.push({x:b.x+30,y:b.y-10,val:dmg,life:50,color:'#ff4444'});
                 shakeTimer=10; shakeMag=6;
@@ -2788,6 +2991,7 @@
             rating
         };
         // Play victory cinematic FIRST, then show stats after it finishes
+        if(window.AQ) AQ.finishSCRun(true);
         startCinematic('victory', SM.gameEndStats);
     }
 
@@ -3719,6 +3923,7 @@
         gameOverEl.style.display = 'none';
         if (STORY_MODE.active) {
             // Story mode death = full fresh restart of story mode
+            if(window.AQ) AQ.finishSCRun(false);
             speechSynthesis && speechSynthesis.cancel && speechSynthesis.cancel();
             initStoryMode();
         } else {
@@ -3961,6 +4166,7 @@
             if (STORY_MODE.market) STORY_MODE.market.x -= diff;
             score = Math.floor(scrollX / 8);
             uiScore = score;
+            if(window.AQ) { if(STORY_MODE.active) AQ.trackSCDist(score); else AQ.trackEndlessDist(score); }
         }
 
         // ---- PLAYER PLATFORM COLLISION ----
@@ -4172,7 +4378,7 @@
                         e.frame = 0;
                         e.frameTimer = 0;
                         // Story mode kill tracking
-                        if(STORY_MODE.active) STORY_MODE.totalKills++;
+                        if(STORY_MODE.active) { STORY_MODE.totalKills++; if(window.AQ) AQ.trackSCKill(); }
                         // Burst particles
                         for (let i = 0; i < 12; i++) {
                             const angle = (Math.PI * 2 / 12) * i;
@@ -4406,6 +4612,7 @@
         if (player.fireShield > 0 && typeof dmg === 'number' && dmg <= 7) return; // blocks trap damage
         player.hp = Math.max(0, player.hp - dmg);
         player.invincible = 60;
+        if(window.AQ) { if(STORY_MODE.active && !STORY_MODE.bossArena) AQ.trackSCDamageTaken(dmg); }
         uiHp = player.hp; uiMaxHp = player.maxHp;
         dmgNumbers.push({ x: player.x + 10, y: player.y - 10, val: dmg, life: 55, color: '#ff4444' });
         shakeTimer = 10; shakeMag = 5;
@@ -4414,6 +4621,8 @@
             if(STORY_MODE.active && STORY_MODE.bossArena) {
                 goScore.textContent = `Slain by the Void-Warden. Kills: ${STORY_MODE.totalKills}  |  Distance: ${score}m`;
             } else {
+                if(STORY_MODE.active && window.AQ) AQ.trackSCDeath();
+                if(!STORY_MODE.active && window.AQ) { AQ.trackEndlessDist(score); AQ.finishEndlessRun(); }
                 goScore.textContent = `Distance: ${score}m  |  Coins: ${player.coins}`;
             }
             gameOverEl.style.display = 'flex';
@@ -5087,6 +5296,7 @@
 
         window.startGame = function(mode) {
             window._gameMode = mode || 'endless';
+            if(mode !== 'story' && window.AQ) AQ.startEndlessRun();
             const homeEl = document.getElementById('home-screen');
             homeEl.classList.add('fade-out');
             startMusic();
@@ -5096,5 +5306,487 @@
     })();
 
         </script>
+
+<script>
+// ================================================================
+// AQ — Supabase Auth + Stats + Leaderboard Module
+// ================================================================
+(function() {
+'use strict';
+
+// ---- CONFIG: paste your Supabase URL and anon key here ----
+const SUPABASE_URL  = 'https://zigtdrhriwhsorbvxrho.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InppZ3RkcmhyaXdoc29yYnZ4cmhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1OTA0NTEsImV4cCI6MjA5MjE2NjQ1MX0.xtmzajqqMlXTaN-h-vJrLxdcbhUawzJyTHE1C6tsFPg';
+// -----------------------------------------------------------
+
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// Session stored in localStorage
+let _session = null; // { id, username, total_coins }
+let _isGuest  = false;
+
+function loadSession() {
+    try {
+        const s = localStorage.getItem('aq_session');
+        if (s) _session = JSON.parse(s);
+    } catch(e) { _session = null; }
+}
+function saveSession(s) {
+    _session = s;
+    if (s) localStorage.setItem('aq_session', JSON.stringify(s));
+    else    localStorage.removeItem('aq_session');
+}
+
+// ---- Run stats accumulated this session ----
+const _runStats = {
+    sc: { kills:0, damageDone:0, damageTaken:0, deaths:0, coinsEarned:0, coinsSpent:0, distance:0, startMs:0 },
+    endless: { kills:0, coinsEarned:0, distance:0, startMs:0 }
+};
+
+// ---- ACHIEVEMENTS catalog (mirrors DB) ----
+const ACH_CATALOG = [
+    { key:'first_run',    name:'First Step',      desc:'Complete your first Shadow Chronicle run',    icon:'👣' },
+    { key:'speed_demon',  name:'Speed Demon',      desc:'Finish Shadow Chronicle in under 10 minutes', icon:'⚡' },
+    { key:'untouchable',  name:'Untouchable',      desc:'Finish Shadow Chronicle taking 0 damage',     icon:'🛡️' },
+    { key:'coin_hoarder', name:'Coin Hoarder',     desc:'Bank 1,000 coins total',                     icon:'💰' },
+    { key:'rich',         name:'Rich',             desc:'Bank 10,000 coins total',                    icon:'🏦' },
+    { key:'exterminator', name:'Exterminator',     desc:'Kill 500 enemies across all runs',           icon:'💀' },
+    { key:'endless_100',  name:'Century Runner',   desc:'Reach distance 100 in Endless mode',         icon:'🏃' },
+    { key:'endless_500',  name:'Marathon',         desc:'Reach distance 500 in Endless mode',         icon:'🏅' },
+    { key:'deathless',    name:'Deathless',        desc:'Complete Shadow Chronicle with 0 deaths',    icon:'👑' },
+    { key:'veteran',      name:'10x Veteran',      desc:'Complete Shadow Chronicle 10 times',         icon:'🎖️' },
+];
+
+// ---- HASH helpers ----
+async function hashPwd(pwd) {
+    return bcrypt.hashSync(pwd, 10);
+}
+function checkPwd(pwd, hash) {
+    return bcrypt.compareSync(pwd, hash);
+}
+
+// ---- UI helpers ----
+function el(id)    { return document.getElementById(id); }
+function hide(id)  { const e=el(id); if(e) e.style.display='none'; }
+function show(id, disp) { const e=el(id); if(e) e.style.display = disp||'flex'; }
+
+function updateHomeBar() {
+    if (_session && !_isGuest) {
+        hide('aq-home-auth');
+        el('aq-home-username').textContent = _session.username;
+        el('aq-home-bank').textContent = (_session.total_coins||0).toLocaleString();
+        show('aq-home-user', 'block');
+        show('aq-topbar', 'flex');
+        // In-game bank display
+        show('aq-game-coins-display', 'block');
+        el('aq-bank-val').textContent = (_session.total_coins||0).toLocaleString();
+    } else {
+        show('aq-home-auth', 'flex');
+        hide('aq-home-user');
+        hide('aq-topbar');
+        hide('aq-game-coins-display');
+    }
+}
+
+// ---- AUTH PANEL ----
+function renderAuthPanel(mode) {
+    const p = el('aq-auth-panel');
+    const isLogin = (mode === 'login');
+    p.innerHTML = `
+        <div class="aq-panel-title">${isLogin ? '⚔ LOGIN' : '📜 REGISTER'}</div>
+        <div class="aq-divider"></div>
+        <div class="aq-label">Username</div>
+        <input class="aq-input" id="aq-uname" placeholder="Enter username" maxlength="20" autocomplete="off">
+        <div class="aq-label">Password</div>
+        <input class="aq-input" id="aq-pwd" type="password" placeholder="Enter password" maxlength="40">
+        <div class="aq-err" id="aq-auth-err" style="display:none;"></div>
+        <button class="aq-btn primary" id="aq-auth-submit">${isLogin ? 'Login' : 'Create Account'}</button>
+        <button class="aq-btn ghost" onclick="AQ.showAuth('${isLogin?'register':'login'}')">
+            ${isLogin ? "Don't have an account? Sign Up" : 'Already have an account? Login'}
+        </button>
+        <button class="aq-btn ghost" onclick="AQ.guestMode()">Continue as Guest (no saves)</button>
+        <button class="aq-btn ghost" onclick="AQ.closeAuth()">✕ Close</button>
+    `;
+    el('aq-auth-submit').onclick = () => {
+        if (isLogin) doLogin();
+        else doRegister();
+    };
+    // Enter key
+    [el('aq-uname'), el('aq-pwd')].forEach(inp => {
+        inp && inp.addEventListener('keydown', e => { if(e.key==='Enter') el('aq-auth-submit').click(); });
+    });
+}
+
+function authErr(msg) {
+    const e = el('aq-auth-err');
+    if (e) { e.textContent = msg; e.style.display = 'block'; }
+}
+
+async function doRegister() {
+    const username = (el('aq-uname').value||'').trim();
+    const pwd      = (el('aq-pwd').value||'').trim();
+    if (!username || username.length < 3) { authErr('Username must be at least 3 characters.'); return; }
+    if (!pwd || pwd.length < 4) { authErr('Password must be at least 4 characters.'); return; }
+    el('aq-auth-submit').textContent = 'Creating...';
+    el('aq-auth-submit').disabled = true;
+    // Check username taken
+    const { data: existing } = await db.from('users').select('id').eq('username', username).maybeSingle();
+    if (existing) { authErr('Username already taken.'); el('aq-auth-submit').textContent='Create Account'; el('aq-auth-submit').disabled=false; return; }
+    const hash = await hashPwd(pwd);
+    const { data, error } = await db.from('users').insert({ username, password_hash: hash }).select('id,username,total_coins').single();
+    if (error || !data) { authErr('Error creating account. Try again.'); el('aq-auth-submit').textContent='Create Account'; el('aq-auth-submit').disabled=false; return; }
+    saveSession({ id: data.id, username: data.username, total_coins: data.total_coins||0 });
+    _isGuest = false;
+    closeAllOverlays();
+    updateHomeBar();
+}
+
+async function doLogin() {
+    const username = (el('aq-uname').value||'').trim();
+    const pwd      = (el('aq-pwd').value||'').trim();
+    if (!username || !pwd) { authErr('Please fill in all fields.'); return; }
+    el('aq-auth-submit').textContent = 'Logging in...';
+    el('aq-auth-submit').disabled = true;
+    const { data, error } = await db.from('users').select('id,username,password_hash,total_coins').eq('username', username).maybeSingle();
+    if (!data || error) { authErr('Username not found.'); el('aq-auth-submit').textContent='Login'; el('aq-auth-submit').disabled=false; return; }
+    if (!checkPwd(pwd, data.password_hash)) { authErr('Incorrect password.'); el('aq-auth-submit').textContent='Login'; el('aq-auth-submit').disabled=false; return; }
+    saveSession({ id: data.id, username: data.username, total_coins: data.total_coins||0 });
+    _isGuest = false;
+    closeAllOverlays();
+    updateHomeBar();
+}
+
+function closeAllOverlays() {
+    hide('aq-auth-overlay');
+    hide('aq-profile-overlay');
+    hide('aq-lb-overlay');
+}
+
+// ---- RUN STATS HOOKS (called by game code) ----
+function startSCRun() {
+    if (!_session || _isGuest) return;
+    _runStats.sc = { kills:0, damageDone:0, damageTaken:0, deaths:0, coinsEarned:0, coinsSpent:0, distance:0, startMs: Date.now() };
+}
+
+function startEndlessRun() {
+    if (!_session || _isGuest) return;
+    _runStats.endless = { kills:0, coinsEarned:0, distance:0, startMs: Date.now() };
+}
+
+function trackSCKill()              { _runStats.sc.kills++; }
+function trackSCDamageDealt(d)     { _runStats.sc.damageDone  += (d||0); }
+function trackSCDamageTaken(d)     { _runStats.sc.damageTaken += (d||0); }
+function trackSCDeath()            { _runStats.sc.deaths++; }
+function trackSCCoin()             { _runStats.sc.coinsEarned++; }
+function trackSCSpend(cost)        { _runStats.sc.coinsSpent += (cost||0); }
+function trackSCDist(d)            { _runStats.sc.distance = Math.max(_runStats.sc.distance, d||0); }
+
+function trackEndlessKill()        { _runStats.endless.kills++; }
+function trackEndlessCoin()        { _runStats.endless.coinsEarned++; }
+function trackEndlessDist(d)       { _runStats.endless.distance = Math.max(_runStats.endless.distance, d||0); }
+
+async function finishSCRun(completed) {
+    if (!_session || _isGuest) return;
+    const s = _runStats.sc;
+    const time_ms = completed ? (Date.now() - s.startMs) : null;
+    const { data: run, error } = await db.from('shadow_chronicle_runs').insert({
+        user_id:       _session.id,
+        completed:     !!completed,
+        time_taken_ms: time_ms,
+        coins_earned:  s.coinsEarned,
+        coins_spent:   s.coinsSpent,
+        enemies_killed: s.kills,
+        damage_dealt:  s.damageDone,
+        damage_taken:  s.damageTaken,
+        deaths:        s.deaths,
+        distance:      s.distance,
+    }).select('id, coins_banked').single();
+    if (error || !run) { console.warn('SC run save error', error); return; }
+
+    // Bank leftover coins
+    if (completed && run.coins_banked > 0) {
+        await db.from('users').update({ total_coins: (_session.total_coins||0) + run.coins_banked }).eq('id', _session.id);
+        _session.total_coins = (_session.total_coins||0) + run.coins_banked;
+        saveSession(_session);
+        updateHomeBar();
+        // Show bank notification
+        const bv = el('aq-bank-val');
+        if (bv) bv.textContent = _session.total_coins.toLocaleString();
+    }
+
+    // Check achievements
+    await checkAchievements();
+}
+
+async function finishEndlessRun() {
+    if (!_session || _isGuest) return;
+    const s = _runStats.endless;
+    await db.from('endless_runs').insert({
+        user_id:       _session.id,
+        distance:      s.distance,
+        coins_earned:  s.coinsEarned,
+        enemies_killed: s.kills,
+    });
+    await checkAchievements();
+}
+
+// ---- ACHIEVEMENTS ----
+async function checkAchievements() {
+    if (!_session || _isGuest) return;
+    try {
+        // Fetch user aggregate stats for achievement checks
+        const [scRes, endlessRes, achRes] = await Promise.all([
+            db.from('shadow_chronicle_runs').select('completed, time_taken_ms, damage_taken, deaths, enemies_killed').eq('user_id', _session.id),
+            db.from('endless_runs').select('distance, enemies_killed').eq('user_id', _session.id),
+            db.from('user_achievements').select('achievement_id').eq('user_id', _session.id)
+        ]);
+
+        const scRuns    = scRes.data || [];
+        const eRuns     = endlessRes.data || [];
+        const unlockedIds = new Set((achRes.data||[]).map(a=>a.achievement_id));
+
+        const completions     = scRuns.filter(r=>r.completed);
+        const totalSCKills    = scRuns.reduce((s,r)=>s+(r.enemies_killed||0),0);
+        const totalEndKills   = eRuns.reduce((s,r)=>s+(r.enemies_killed||0),0);
+        const totalKills      = totalSCKills + totalEndKills;
+        const bestEndDist     = Math.max(0,...eRuns.map(r=>r.distance||0));
+        const hasDeathless    = completions.some(r=>(r.deaths||0)===0);
+        const hasUntouchable  = completions.some(r=>(r.damage_taken||0)===0);
+        const hasSpeedDemon   = completions.some(r=>r.time_taken_ms && r.time_taken_ms < 10*60*1000);
+        const bank            = _session.total_coins||0;
+
+        // Achievement key → id lookup
+        const { data: achDefs } = await db.from('achievements').select('id,key');
+        const keyToId = {};
+        (achDefs||[]).forEach(a=>{ keyToId[a.key]=a.id; });
+
+        const toUnlock = [];
+        function check(key, cond) { if(cond && keyToId[key] && !unlockedIds.has(keyToId[key])) toUnlock.push(keyToId[key]); }
+
+        check('first_run',    completions.length >= 1);
+        check('speed_demon',  hasSpeedDemon);
+        check('untouchable',  hasUntouchable);
+        check('coin_hoarder', bank >= 1000);
+        check('rich',         bank >= 10000);
+        check('exterminator', totalKills >= 500);
+        check('endless_100',  bestEndDist >= 100);
+        check('endless_500',  bestEndDist >= 500);
+        check('deathless',    hasDeathless);
+        check('veteran',      completions.length >= 10);
+
+        if (toUnlock.length) {
+            await db.from('user_achievements').insert(
+                toUnlock.map(id=>({ user_id: _session.id, achievement_id: id }))
+            );
+        }
+    } catch(e) { console.warn('Ach check err', e); }
+}
+
+// ---- PROFILE PANEL ----
+async function showProfile() {
+    if (!_session) { showAuth('login'); return; }
+    const p = el('aq-profile-panel');
+    p.innerHTML = '<div class="aq-panel-title">👤 PROFILE</div><div style="color:#7a5830;font-family:Cinzel,serif;font-size:12px;">Loading...</div>';
+    show('aq-profile-overlay');
+
+    try {
+        const [userRes, scRes, endRes, achRes, achDefRes] = await Promise.all([
+            db.from('users').select('username,total_coins,created_at').eq('id', _session.id).single(),
+            db.from('shadow_chronicle_runs').select('*').eq('user_id', _session.id),
+            db.from('endless_runs').select('*').eq('user_id', _session.id),
+            db.from('user_achievements').select('achievement_id, unlocked_at').eq('user_id', _session.id),
+            db.from('achievements').select('*')
+        ]);
+
+        const user   = userRes.data || {};
+        const scRuns = scRes.data   || [];
+        const eRuns  = endRes.data  || [];
+        const unlockedAchs = new Set((achRes.data||[]).map(a=>a.achievement_id));
+        const achDefs = achDefRes.data || [];
+
+        const completions     = scRuns.filter(r=>r.completed);
+        const bestSCTime      = completions.length ? Math.min(...completions.map(r=>r.time_taken_ms||Infinity)) : null;
+        const totalSCKills    = scRuns.reduce((s,r)=>s+(r.enemies_killed||0),0);
+        const totalSCDmgDone  = scRuns.reduce((s,r)=>s+(r.damage_dealt||0),0);
+        const totalSCDmgTaken = scRuns.reduce((s,r)=>s+(r.damage_taken||0),0);
+        const bestEndDist     = eRuns.length ? Math.max(...eRuns.map(r=>r.distance||0)) : 0;
+        const totalEndRuns    = eRuns.length;
+
+        function fmtMs(ms) {
+            if (!ms || ms===Infinity) return '—';
+            const m=Math.floor(ms/60000), s=Math.floor((ms%60000)/1000);
+            return `${m}m ${s<10?'0'+s:s}s`;
+        }
+
+        p.innerHTML = `
+            <div class="aq-panel-title">👤 ${user.username||_session.username}</div>
+            <div class="aq-divider"></div>
+            <div class="aq-coin-bank">
+                <div class="big">🏦 ${(user.total_coins||0).toLocaleString()}</div>
+                <div class="lbl">Coin Bank</div>
+            </div>
+            <div class="aq-section-title">✦ Shadow Chronicle</div>
+            <div class="aq-stat-grid">
+                <div class="aq-stat-card"><div class="aq-stat-lbl">Total Runs</div><div class="aq-stat-val">${scRuns.length}</div></div>
+                <div class="aq-stat-card"><div class="aq-stat-lbl">Completions</div><div class="aq-stat-val">${completions.length}</div></div>
+                <div class="aq-stat-card"><div class="aq-stat-lbl">Best Time</div><div class="aq-stat-val" style="font-size:14px;">${fmtMs(bestSCTime)}</div></div>
+                <div class="aq-stat-card"><div class="aq-stat-lbl">Enemies Killed</div><div class="aq-stat-val">${totalSCKills.toLocaleString()}</div></div>
+                <div class="aq-stat-card"><div class="aq-stat-lbl">Damage Dealt</div><div class="aq-stat-val">${totalSCDmgDone.toLocaleString()}</div></div>
+                <div class="aq-stat-card"><div class="aq-stat-lbl">Damage Taken</div><div class="aq-stat-val">${totalSCDmgTaken.toLocaleString()}</div></div>
+            </div>
+            <div class="aq-section-title">⚔ Endless Mode</div>
+            <div class="aq-stat-grid">
+                <div class="aq-stat-card"><div class="aq-stat-lbl">Total Runs</div><div class="aq-stat-val">${totalEndRuns}</div></div>
+                <div class="aq-stat-card"><div class="aq-stat-lbl">Best Distance</div><div class="aq-stat-val">${bestEndDist.toLocaleString()}m</div></div>
+            </div>
+            <div class="aq-section-title">🏅 Achievements (${unlockedAchs.size}/${achDefs.length})</div>
+            <div class="aq-achievements">
+                ${achDefs.map(a=>{
+                    const cat = ACH_CATALOG.find(c=>c.key===a.key)||{};
+                    const unlocked = unlockedAchs.has(a.id);
+                    return `<div class="aq-ach ${unlocked?'':'locked'}">
+                        <div class="aq-ach-icon">${a.icon||cat.icon||'🏅'}</div>
+                        <div><div class="aq-ach-name">${a.name}</div><div class="aq-ach-desc">${a.description}</div></div>
+                    </div>`;
+                }).join('')}
+            </div>
+            <div class="aq-divider"></div>
+            <button class="aq-btn secondary" onclick="document.getElementById('aq-profile-overlay').style.display='none'">Close</button>
+        `;
+    } catch(e) {
+        p.innerHTML += `<div class="aq-err">Error loading profile: ${e.message}</div><button class="aq-btn ghost" onclick="document.getElementById('aq-profile-overlay').style.display='none'">Close</button>`;
+    }
+}
+
+// ---- LEADERBOARD PANEL ----
+let _lbMode = 'shadow';
+let _lbPage = 0;
+
+async function showLeaderboard() {
+    show('aq-lb-overlay');
+    _lbPage = 0;
+    renderLB();
+}
+
+async function renderLB() {
+    const p = el('aq-lb-panel');
+    const PAGE_SIZE = 10;
+    p.innerHTML = `
+        <div class="aq-panel-title">🏆 LEADERBOARD</div>
+        <div class="aq-lb-tabs">
+            <div class="aq-lb-tab ${_lbMode==='shadow'?'active':''}" onclick="AQ._lbMode='shadow';AQ._lbPage=0;AQ.renderLB()">✦ Shadow Chronicle</div>
+            <div class="aq-lb-tab ${_lbMode==='endless'?'active':''}" onclick="AQ._lbMode='endless';AQ._lbPage=0;AQ.renderLB()">⚔ Endless Mode</div>
+        </div>
+        <div id="aq-lb-content" style="width:100%;"><div style="color:#7a5830;font-family:Cinzel,serif;font-size:12px;text-align:center;padding:20px;">Loading...</div></div>
+        <button class="aq-btn secondary" style="margin-top:8px;" onclick="document.getElementById('aq-lb-overlay').style.display='none'">Close</button>
+    `;
+
+    try {
+        let rows, total;
+        if (_lbMode === 'shadow') {
+            const { data } = await db.from('leaderboard_shadow').select('*');
+            rows  = (data||[]).slice(_lbPage*PAGE_SIZE, (_lbPage+1)*PAGE_SIZE);
+            total = (data||[]).length;
+        } else {
+            const { data } = await db.from('leaderboard_endless').select('*');
+            rows  = (data||[]).slice(_lbPage*PAGE_SIZE, (_lbPage+1)*PAGE_SIZE);
+            total = (data||[]).length;
+        }
+
+        function fmtMs(ms) {
+            if (!ms) return '—';
+            const m=Math.floor(ms/60000), s=Math.floor((ms%60000)/1000);
+            return `${m}m ${s<10?'0'+s:s}s`;
+        }
+
+        const tableHTML = _lbMode === 'shadow' ? `
+            <table class="aq-lb-table">
+                <tr><th>#</th><th>Player</th><th>Best Time</th><th>Completions</th></tr>
+                ${rows.map(r=>`<tr class="${r.username===(_session&&_session.username)?'me':''}">
+                    <td class="aq-lb-rank">${r.rank}</td>
+                    <td>${r.username}</td>
+                    <td>${fmtMs(r.best_time_ms)}</td>
+                    <td>${r.total_completions||0}</td>
+                </tr>`).join('')}
+            </table>
+        ` : `
+            <table class="aq-lb-table">
+                <tr><th>#</th><th>Player</th><th>Best Distance</th><th>Runs</th></tr>
+                ${rows.map(r=>`<tr class="${r.username===(_session&&_session.username)?'me':''}">
+                    <td class="aq-lb-rank">${r.rank}</td>
+                    <td>${r.username}</td>
+                    <td>${(r.best_distance||0).toLocaleString()}m</td>
+                    <td>${r.total_runs||0}</td>
+                </tr>`).join('')}
+            </table>
+        `;
+
+        const totalPages = Math.ceil(total/PAGE_SIZE);
+        el('aq-lb-content').innerHTML = `
+            ${tableHTML}
+            ${totalPages>1?`<div class="aq-lb-page">
+                <button onclick="AQ._lbPage=Math.max(0,AQ._lbPage-1);AQ.renderLB()">◀</button>
+                <span>Page ${_lbPage+1} / ${totalPages}</span>
+                <button onclick="AQ._lbPage=Math.min(${totalPages-1},AQ._lbPage+1);AQ.renderLB()">▶</button>
+            </div>`:''}
+        `;
+    } catch(e) {
+        el('aq-lb-content').innerHTML = `<div class="aq-err">Error loading leaderboard.</div>`;
+    }
+}
+
+// ---- PUBLIC API ----
+window.AQ = {
+    _lbMode, _lbPage,
+    showAuth(mode) {
+        renderAuthPanel(mode||'login');
+        show('aq-auth-overlay');
+    },
+    closeAuth() { hide('aq-auth-overlay'); },
+    guestMode() {
+        _isGuest = true;
+        _session = null;
+        saveSession(null);
+        hide('aq-auth-overlay');
+        updateHomeBar();
+    },
+    logout() {
+        saveSession(null);
+        _session = null;
+        _isGuest = false;
+        updateHomeBar();
+    },
+    showProfile, showLeaderboard,
+    renderLB,
+    get _lbMode() { return _lbMode; }, set _lbMode(v) { _lbMode=v; },
+    get _lbPage()  { return _lbPage;  }, set _lbPage(v)  { _lbPage=v; },
+
+    // Hooks for game code
+    startSCRun, finishSCRun,
+    startEndlessRun, finishEndlessRun,
+    trackSCKill, trackSCDamageDealt, trackSCDamageTaken, trackSCDeath,
+    trackSCCoin, trackSCSpend, trackSCDist,
+    trackEndlessKill, trackEndlessCoin, trackEndlessDist,
+
+    getSession() { return _session; },
+    isGuest()    { return _isGuest; },
+    getBankCoins() { return _session ? (_session.total_coins||0) : 0; },
+};
+
+// ---- INIT ----
+loadSession();
+window.addEventListener('DOMContentLoaded', () => {
+    // If no session show auth state
+    updateHomeBar();
+    // Show auth prompt automatically if not logged in on home screen
+    if (!_session && !_isGuest) {
+        // Don't auto-open — let user click the buttons
+    }
+});
+
+})();
+</script>
+
 </body>
 </html>
