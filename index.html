@@ -469,10 +469,8 @@
             z-index:40; display:none;
         }
 </style>
-    <!-- Supabase + bcrypt -->
-    <script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js"></script>
+    <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-    <script>window.bcrypt = window.bcrypt || (window.dcodeIO && window.dcodeIO.bcrypt);</script>
 </head>
 <body>
 
@@ -5359,16 +5357,15 @@ const ACH_CATALOG = [
 
 // ---- HASH helpers ----
 async function hashPwd(pwd) {
-    return new Promise(resolve => {
-        setTimeout(() => {
-            const _bc = window.bcrypt || (window.dcodeIO && window.dcodeIO.bcrypt);
-            resolve(_bc.hashSync(pwd, 6));
-        }, 0);
-    });
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pwd));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
 }
 function checkPwd(pwd, hash) {
-    const _bc = window.bcrypt || (window.dcodeIO && window.dcodeIO.bcrypt);
-    return _bc.compareSync(pwd, hash);
+    // sync compare not possible with subtle — caller must use await checkPwdAsync
+    return false;
+}
+async function checkPwdAsync(pwd, hash) {
+    return (await hashPwd(pwd)) === hash;
 }
 
 // ---- UI helpers ----
@@ -5455,7 +5452,7 @@ async function doLogin() {
     el('aq-auth-submit').disabled = true;
     const { data, error } = await db.from('users').select('id,username,password_hash,total_coins').eq('username', username).maybeSingle();
     if (!data || error) { authErr('Username not found.'); el('aq-auth-submit').textContent='Login'; el('aq-auth-submit').disabled=false; return; }
-    if (!checkPwd(pwd, data.password_hash)) { authErr('Incorrect password.'); el('aq-auth-submit').textContent='Login'; el('aq-auth-submit').disabled=false; return; }
+    if (!await checkPwdAsync(pwd, data.password_hash)) { authErr('Incorrect password.'); el('aq-auth-submit').textContent='Login'; el('aq-auth-submit').disabled=false; return; }
     saveSession({ id: data.id, username: data.username, total_coins: data.total_coins||0 });
     _isGuest = false;
     closeAllOverlays();
