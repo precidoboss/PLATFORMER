@@ -446,8 +446,8 @@
                     <div style="margin-top:10px;font-family:'Cinzel',serif;font-size:10px;color:#6a4820;">Artifacts glow and rise from opened chests. Passive ones (1–3) apply instantly on pickup. Active ones (4–5) go to your hotbar — press the matching number key to use.</div>
                 </div>
                 <div class="howto-section span2">
-                    <div class="howto-section-title">Characters</div>
-                    <div class="howto-chars">
+                    <div class="howto-section-title">Characters & Companions</div>
+                    <div class="howto-chars" style="grid-template-columns:1fr 1fr 1fr;">
                         <div class="hc-card">
                             <canvas class="hc-sprite" id="howto-hero-canvas" width="96" height="80"></canvas>
                             <div class="hc-name">The Warrior</div>
@@ -460,16 +460,22 @@
                             <div class="hc-desc">Ancient stone guardian. Chases, feints and lunges. 3 hits to defeat.</div>
                             <div class="hc-stats"><span>❤ 50 HP</span><span>⚔ 5 DMG</span><span>⚡ Smart</span></div>
                         </div>
+                        <div class="hc-card" style="border-color:#ff6600;box-shadow:0 0 10px rgba(255,100,0,0.2);">
+                            <canvas class="hc-sprite" id="howto-dragon-canvas" width="96" height="96" style="background:rgba(20,10,0,0.5);border-radius:4px;"></canvas>
+                            <div class="hc-name" style="color:#ff8800;">🔥 Fire Dragon</div>
+                            <div class="hc-desc">Your loyal companion. Buy from the Marketplace (100g). Auto-aims fireballs at the nearest enemy — even the boss. Follows you into the Boss Arena. Cannot die.</div>
+                            <div class="hc-stats"><span>🔥 2 DMG/shot</span><span>⏱ 10s cooldown</span><span>🏪 100 Gold</span></div>
+                        </div>
                         <div class="hc-card">
                             <canvas class="hc-sprite" id="howto-npc-canvas" width="96" height="96"></canvas>
                             <div class="hc-name">Zephira / Sentinel Kael</div>
                             <div class="hc-desc">Wandering sentinels who hold the secret of the Void-Warden's weakness. Seek them out — speak with both.</div>
                             <div class="hc-stats"><span>✦ Story Mode</span><span>🔑 [F] Talk</span></div>
                         </div>
-                        <div class="hc-card">
+                        <div class="hc-card" style="grid-column:span 2;">
                             <canvas class="hc-sprite" id="howto-boss-canvas" width="96" height="96"></canvas>
                             <div class="hc-name">The Void-Warden</div>
-                            <div class="hc-desc">Ancient terror of the void. Attacks from range and melee. Enrages at 50% HP. Strike from the RIGHT for double damage if you know its secret.</div>
+                            <div class="hc-desc">Ancient terror of the void. Attacks from range and melee. Enrages at 50% HP. Strike from the RIGHT for double damage if you know its secret. Your dragon companion can help wear it down.</div>
                             <div class="hc-stats"><span>❤ 750 HP</span><span>⚔ 12–20 DMG</span><span>⚡ 2 Phases</span></div>
                         </div>
                     </div>
@@ -1097,9 +1103,6 @@
         STORY_MODE._marketFreezePlayer = false;
         STORY_MODE._marketBtns = [];
         STORY_MODE._marketHover = undefined;
-        // Reset any lingering canvas state from market rendering
-        ctx.shadowBlur = 0;
-        ctx.globalAlpha = 1;
     }
 
     function buyMarketItem(item) {
@@ -2834,8 +2837,7 @@
             drawUI_img('ui_titlebox', objX, objY, objW, objH);
             ctx.save();
             ctx.globalAlpha = 0.75;
-            const objGrad = ctx.createLinearGradient(objX + 8, 0, objX + objW - 8, 0);
-            objGrad.addColorStop(0, '#8822cc'); objGrad.addColorStop(1, '#ff44ff');
+            const objGrad = SM.objectivePct > 0.5 ? '#cc44ff' : '#8822cc';
             ctx.fillStyle = objGrad;
             ctx.fillRect(objX + 8, objY + objH - 8, (objW - 16) * pct, 5);
             ctx.restore();
@@ -2846,8 +2848,8 @@
         // Objective board overlay
         if(SM.boardOpen) drawObjectiveBoard();
 
-        // Portal enter hint (NPC hints are drawn in drawNPCs) — never show inside boss arena
-        if(!SM.bossArena && SM.portal && Math.abs(SM.portal.x + 48 - player.x) < 130) {
+        // Portal enter hint (NPC hints are drawn in drawNPCs)
+        if(SM.portal && Math.abs(SM.portal.x + 48 - player.x) < 130) {
             ctx.save();
             ctx.fillStyle = 'rgba(80,0,120,0.75)';
             roundRect2(ctx, SM.portal.x - 10, SM.portal.y - 32, 116, 20, 4);
@@ -2877,8 +2879,8 @@
         ctx.save();
         // Animated border glow
         const t = Date.now()/1000;
-        const glowColor = bossStyle ? `rgba(200,0,50,${0.4+0.2*Math.sin(t*3)})` : heroStyle ? `rgba(80,200,255,${0.4+0.2*Math.sin(t*3)})` : `rgba(150,80,255,${0.4+0.2*Math.sin(t*2)})`;
-        ctx.fillStyle=`rgba(0,0,0,0.85)`;
+        const glowColor = bossStyle ? 'rgba(200,0,50,0.5)' : heroStyle ? 'rgba(80,200,255,0.5)' : 'rgba(150,80,255,0.5)';
+        ctx.fillStyle='rgba(0,0,0,0.85)';
         roundRect2(ctx,20,boxY,GAME_WIDTH-40,boxH,8);
         ctx.fill();
         ctx.strokeStyle=glowColor; ctx.lineWidth=3;
@@ -2900,7 +2902,8 @@
         wrapText(ctx, shown, 36, boxY+36, GAME_WIDTH-72, 22);
         // Continue prompt
         if(d._lineComplete) {
-            ctx.fillStyle=`rgba(255,220,100,${0.5+0.5*Math.sin(t*4)})`;
+            const blinkOn = Math.floor(Date.now()/500)%2===0;
+            ctx.fillStyle= blinkOn ? 'rgba(255,220,100,0.9)' : 'rgba(255,220,100,0.4)';
             ctx.textAlign='right'; ctx.font='12px Arial';
             ctx.fillText('▶ Click or Space to continue', GAME_WIDTH-36, boxY+boxH-16);
         }
@@ -2979,17 +2982,14 @@
         ctx.fillStyle='rgba(0,0,0,0.7)';
         roundRect2(ctx, bx-10, by-5, bw+20, bh+10, 6);
         ctx.fill();
-        // HP bar
-        const t=Date.now()/1000;
-        const pct = Math.max(0,b.hp/b.maxHp);
+        const pct = Math.max(0, b.hp/b.maxHp);
         ctx.fillStyle='#111'; ctx.fillRect(bx, by+16, bw, 14);
-        const hpGrad=ctx.createLinearGradient(bx,0,bx+bw*pct,0);
-        hpGrad.addColorStop(0,'#cc0022'); hpGrad.addColorStop(1,'#ff3366');
-        ctx.fillStyle=hpGrad;
+        // Solid color bar — no gradient per frame
+        ctx.fillStyle = pct > 0.5 ? '#cc0022' : '#ff3366';
         ctx.fillRect(bx, by+16, bw*pct, 14);
-        // Enrage flash phase 2
+        // Phase 2 border — static stroke, no sin
         if(b.phase===2) {
-            ctx.strokeStyle=`rgba(255,100,0,${0.5+0.5*Math.sin(t*8)})`;
+            ctx.strokeStyle='rgba(255,100,0,0.7)';
             ctx.lineWidth=2; ctx.strokeRect(bx, by+16, bw, 14);
         }
         ctx.fillStyle='#ff8888'; ctx.font='bold 13px "Cinzel", serif';
@@ -3009,11 +3009,9 @@
         const cx=GAME_WIDTH/2;
         // Animated glow
         const t=Date.now()/1000;
-        ctx.shadowColor='#aa44ff'; ctx.shadowBlur=40+20*Math.sin(t);
         ctx.fillStyle='#cc88ff'; ctx.font='bold 42px "Cinzel Decorative", cursive';
         ctx.textAlign='center'; ctx.textBaseline='middle';
         ctx.fillText('VOID-WARDEN DEFEATED', cx, 100);
-        ctx.shadowBlur=0;
         const ratingColors = {S:'#ffd700',A:'#ff8800',B:'#88ff44',C:'#aaaaaa'};
         ctx.font='bold 90px "Cinzel Decorative", cursive';
         ctx.fillStyle=ratingColors[stats.rating]||'#fff';
@@ -3077,16 +3075,8 @@
 
             ctx.save();
             ctx.imageSmoothingEnabled = false;
-
-            // NPC aura glow — purple for NPC1, teal for NPC2
-            const glowColor = npcNum === 1 ? '#aa44ff' : '#44ffcc';
-            ctx.shadowColor = glowColor;
-            ctx.shadowBlur = nearPlayer ? 20 + 8 * Math.sin(t * 3) : 10;
-
-            // NPC2 gets a blue-tint filter to visually differentiate
+            // No shadowBlur — too expensive every frame. Use a color tint border instead.
             if (npcNum === 2) ctx.filter = 'hue-rotate(160deg) brightness(1.3) saturate(1.4)';
-
-            // Draw sprite frame
             ctx.drawImage(img, npc.frame * fw, 0, fw, fh, drawX, drawY, dw, dh);
             ctx.filter = 'none';
             ctx.restore();
@@ -3094,6 +3084,7 @@
             // Floating name tag
             const nameY = drawY - 6;
             const name = npcNum === 1 ? 'Zephira' : 'Sentinel Kael';
+            const glowColor = npcNum === 1 ? '#aa44ff' : '#44ffcc';
             ctx.save();
             ctx.font = 'bold 11px "Cinzel",serif';
             const tw = ctx.measureText(name).width + 16;
@@ -3102,22 +3093,18 @@
             ctx.fill();
             ctx.fillStyle = glowColor;
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.shadowColor = glowColor; ctx.shadowBlur = 6;
             ctx.fillText(name, npc.x, nameY - 7);
             ctx.restore();
 
-            // Bobbing "!" interact marker when player is nearby and NPC not talked
             if (nearPlayer && !talked) {
-                const bob = Math.sin(t * 4) * 4;
                 ctx.save();
                 ctx.font = 'bold 18px Arial';
                 ctx.fillStyle = '#ffff00';
-                ctx.shadowColor = '#ff8800'; ctx.shadowBlur = 10;
                 ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.fillText('!', npc.x, drawY - 22 + bob);
+                ctx.fillText('!', npc.x, drawY - 22);
                 ctx.font = '10px Arial';
-                ctx.fillStyle = '#ffe066'; ctx.shadowBlur = 0;
-                ctx.fillText('[F] Talk', npc.x, drawY - 36 + bob);
+                ctx.fillStyle = '#ffe066';
+                ctx.fillText('[F] Talk', npc.x, drawY - 36);
                 ctx.restore();
             }
 
@@ -3150,14 +3137,11 @@
         ctx.globalAlpha = b.dying ? b.alpha : 1;
         if(b.hurtTimer>0&&!b.dying) ctx.filter='brightness(3) saturate(0)';
         if(b.phase===2 && !b.dying) {
-            // Red glow aura
-            const t=Date.now()/1000;
-            ctx.shadowColor=`rgba(255,0,50,${0.5+0.3*Math.sin(t*4)})`;
-            ctx.shadowBlur=20+10*Math.sin(t*4);
+            // Simple red tint instead of shadowBlur for phase 2
+            ctx.filter = 'saturate(2) brightness(1.1)';
         }
         drawSprite(img, totalF, b.frame, b.facing==='left', destX, destY, b.drawWidth, b.drawHeight);
         ctx.filter='none'; ctx.restore();
-
         // Draw projectiles using Moving.png (boss_proj)
         const projImg = images['boss_proj'];
         if(projImg&&projImg.complete&&projImg.naturalWidth) {
@@ -3173,7 +3157,6 @@
     }
 
     function drawPortal() {
-        // Never draw the portal once inside the boss arena
         if(STORY_MODE.bossArena) return;
         const p = STORY_MODE.portal;
         if(!p) return;
@@ -3181,49 +3164,44 @@
         p.frameTimer=(p.frameTimer||0)+1;
         if(p.frameTimer>=5){ p.frame=(p.frame+1); p.frameTimer=0; }
         if(img&&img.complete&&img.naturalWidth){
-            // Dimensional_Portal.png is 96x64 — 3 columns x 2 rows, each frame 32x32
             const COLS=3, ROWS=2, FW=32, FH=32;
-            const TOTAL_FRAMES=COLS*ROWS; // 6
+            const TOTAL_FRAMES=COLS*ROWS;
             const frame = p.frame % TOTAL_FRAMES;
             const col = frame % COLS;
             const row = Math.floor(frame / COLS);
             const sx = col * FW, sy = row * FH;
-            // Draw portal scaled up to 96x110 on screen
             const DRAW_W=96, DRAW_H=110;
             ctx.save();
             ctx.imageSmoothingEnabled=false;
-            const t=Date.now()/1000;
-            ctx.shadowColor=`rgba(180,50,255,${0.6+0.3*Math.sin(t*3)})`;
-            ctx.shadowBlur=30+10*Math.sin(t*2);
+            // No shadowBlur — draw a simple tinted rect behind for glow effect
+            ctx.globalAlpha = 0.3;
+            ctx.fillStyle = '#aa00ff';
+            ctx.fillRect(p.x - 8, p.y - 8, DRAW_W + 16, DRAW_H + 16);
+            ctx.globalAlpha = 1;
             ctx.drawImage(img, sx, sy, FW, FH, p.x, p.y, DRAW_W, DRAW_H);
             ctx.restore();
         } else {
-            // Fallback: draw glowing oval
-            const t=Date.now()/1000;
             ctx.save();
-            ctx.shadowColor='#aa00ff'; ctx.shadowBlur=30+15*Math.sin(t*2);
-            const grad=ctx.createRadialGradient(p.x+48,p.y+55,5,p.x+48,p.y+55,50);
-            grad.addColorStop(0,'rgba(180,50,255,0.9)');
-            grad.addColorStop(1,'rgba(80,0,140,0.1)');
-            ctx.fillStyle=grad;
+            ctx.fillStyle = 'rgba(150,30,220,0.7)';
             ctx.beginPath(); ctx.ellipse(p.x+48,p.y+55,40,60,0,0,Math.PI*2); ctx.fill();
             ctx.restore();
         }
     }
 
-    // ===== DRAW MARKET HOUSE =====
     function drawMarketHouse() {
         const m = STORY_MODE.market;
         if (!m) return;
         const img = images['market_house'];
-        const t = Date.now() / 1000;
         const W = 110, H = 130;
         ctx.save();
         ctx.imageSmoothingEnabled = false;
         const near = Math.abs(m.x + W/2 - player.x) < 140;
+        // No shadowBlur — use a simple border highlight when near
         if (near) {
-            ctx.shadowColor = `rgba(255,200,50,${0.5+0.3*Math.sin(t*3)})`;
-            ctx.shadowBlur = 20 + 8*Math.sin(t*2);
+            ctx.globalAlpha = 0.4;
+            ctx.fillStyle = '#ffcc00';
+            ctx.fillRect(m.x - 4, m.y - 4, W + 8, H + 8);
+            ctx.globalAlpha = 1;
         }
         if (img && img.complete && img.naturalWidth) {
             ctx.drawImage(img, m.x, m.y, W, H);
@@ -3236,7 +3214,7 @@
         }
         ctx.restore();
         // Floating sign
-        const signY = m.y - 28 + Math.sin(t*2)*4;
+        const signY = m.y - 28;
         ctx.save();
         ctx.fillStyle='rgba(0,0,0,0.78)';
         roundRect2(ctx, m.x-8, signY, W+16, 22, 5); ctx.fill();
@@ -3250,8 +3228,7 @@
             ctx.save();
             ctx.font='bold 12px Arial'; ctx.fillStyle='#ffcc44';
             ctx.textAlign='center'; ctx.textBaseline='middle';
-            ctx.shadowColor='#ff8800'; ctx.shadowBlur=10;
-            ctx.fillText('[F] Open Shop', m.x+W/2, m.y-44+Math.sin(t*4)*4);
+            ctx.fillText('[F] Open Shop', m.x+W/2, m.y-44);
             ctx.restore();
         }
     }
@@ -3269,9 +3246,7 @@
 
         ctx.save();
         ctx.imageSmoothingEnabled = false;
-        // Orange glow
-        ctx.shadowColor = `rgba(255,120,0,${0.5+0.3*Math.sin(t*3)})`;
-        ctx.shadowBlur  = 12 + 5*Math.sin(t*2);
+        // No shadowBlur on dragon — too expensive per frame
 
         if (img && img.complete && img.naturalWidth) {
             const fw    = img.naturalWidth / totalF;
@@ -3294,34 +3269,23 @@
         }
         ctx.restore();
 
-        // ---- Draw fire projectiles as canvas-painted fireballs ----
+        // ---- Draw fire projectiles — cheap, no createRadialGradient per frame ----
         d.fireProjs.forEach(fp => {
             const goingRight = fp.vx > 0;
             ctx.save();
             ctx.imageSmoothingEnabled = false;
-
-            // Outer glow — one radial gradient, no sine
-            const glowR = ctx.createRadialGradient(fp.x, fp.y, 0, fp.x, fp.y, 20);
-            glowR.addColorStop(0,   'rgba(255,220,80,0.9)');
-            glowR.addColorStop(0.4, 'rgba(255,100,0,0.7)');
-            glowR.addColorStop(1,   'rgba(100,0,0,0)');
-            ctx.fillStyle = glowR;
-            ctx.beginPath(); ctx.arc(fp.x, fp.y, 20, 0, Math.PI*2); ctx.fill();
-
-            // Core bright sphere — simple solid circle
-            ctx.fillStyle = '#ffee88';
-            ctx.beginPath(); ctx.arc(fp.x, fp.y, 7, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = '#ff6600';
-            ctx.beginPath(); ctx.arc(fp.x+2, fp.y+2, 4, 0, Math.PI*2); ctx.fill();
-
-            // Flame tail — 3 blobs (was 5), no per-blob save/restore
+            // Simple orange circle core
+            ctx.fillStyle = '#ff8800';
+            ctx.beginPath(); ctx.arc(fp.x, fp.y, 10, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#ffee44';
+            ctx.beginPath(); ctx.arc(fp.x - 2, fp.y - 2, 5, 0, Math.PI*2); ctx.fill();
+            // 3-blob tail — batch drawn, no per-blob save/restore
             const tailDir = goingRight ? -1 : 1;
             ctx.globalAlpha = 0.45;
-            ctx.fillStyle = 'rgba(255,120,0,0.8)';
+            ctx.fillStyle = '#ff5500';
             for (let i = 1; i <= 3; i++) {
-                const tx = fp.x + tailDir * i * 8;
-                const tr = Math.max(1, 7 - i*1.8);
-                ctx.beginPath(); ctx.arc(tx, fp.y, tr, 0, Math.PI*2); ctx.fill();
+                const r = Math.max(1, 7 - i * 2);
+                ctx.beginPath(); ctx.arc(fp.x + tailDir * i * 8, fp.y, r, 0, Math.PI*2); ctx.fill();
             }
             ctx.restore();
         });
@@ -3337,215 +3301,213 @@
         }
     }
 
-    // ===== DRAW MARKET UI — optimized: no per-frame shadowBlur sine waves =====
+    // ===== DRAW MARKET UI — zero shadowBlur, zero createPattern per frame =====
     function drawMarketUI() {
         const SM = STORY_MODE;
         const W = GAME_WIDTH, H = GAME_HEIGHT;
         const PW = 440, PH = 390;
         const PX = Math.floor(W/2 - PW/2);
         const PY = Math.floor(H/2 - PH/2);
-        // Use a slow frame counter for minor animation instead of Date.now() sine
-        const animFrame = Math.floor(Date.now() / 200) % 8; // slow 5fps tick
+        const slowTick = Math.floor(Date.now() / 300) % 2; // 0 or 1, flips ~3x/sec
 
-        ctx.save();
-        ctx.shadowBlur = 0; // ensure no inherited shadow
+        // ---- backdrop ----
+        ctx.fillStyle = 'rgba(0,0,0,0.80)';
+        ctx.fillRect(0, 0, W, H);
 
-        // Backdrop — single fillRect, no gradient
-        ctx.fillStyle='rgba(0,0,0,0.78)'; ctx.fillRect(0,0,W,H);
+        // ---- panel background — solid color, no tiling ----
+        ctx.fillStyle = '#1a0e06';
+        roundRect2(ctx, PX, PY, PW, PH, 8); ctx.fill();
 
-        // Panel fill — tiled pattern (cached in drawUI_imgTiled)
-        drawUI_imgTiled('ui_bottombg', PX, PY, PW, PH);
-
-        // Gold border — no shadow
-        ctx.strokeStyle='#c8a84b'; ctx.lineWidth=3;
+        // ---- gold border ----
+        ctx.strokeStyle = '#c8a84b'; ctx.lineWidth = 3;
         roundRect2(ctx, PX, PY, PW, PH, 8); ctx.stroke();
-        ctx.strokeStyle='rgba(0,0,0,0.4)'; ctx.lineWidth=1.5;
+        ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 1.5;
         roundRect2(ctx, PX+4, PY+4, PW-8, PH-8, 6); ctx.stroke();
 
-        // Top pattern strip
-        drawUI_imgTiled('ui_topP1', PX, PY, PW, 15);
+        // ---- top strip ----
+        ctx.fillStyle = '#2a1a0a';
+        ctx.fillRect(PX, PY, PW, 15);
+        ctx.strokeStyle = 'rgba(200,168,75,0.3)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(PX, PY+15); ctx.lineTo(PX+PW, PY+15); ctx.stroke();
 
-        // Title box — no shadowBlur
-        const titleW=240, titleH=30;
-        drawUI_img('ui_titlebox', PX+PW/2-titleW/2, PY+14, titleW, titleH);
-        ctx.font='bold 14px "Cinzel",serif'; ctx.fillStyle='#ffe07a';
-        ctx.textAlign='center'; ctx.textBaseline='middle';
-        ctx.fillText('\u2726  ARTIFACT MARKET  \u2726', PX+PW/2, PY+29);
+        // ---- title ----
+        ctx.font = 'bold 15px "Cinzel",serif'; ctx.fillStyle = '#ffe07a';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('\u2726  ARTIFACT MARKET  \u2726', PX+PW/2, PY+30);
 
-        // Quit X icon
-        drawUI_img('ui_quiticon', PX+PW-28, PY+10, 20, 20);
-        ctx.font='9px Arial'; ctx.fillStyle='#ffcc88';
-        ctx.textAlign='center'; ctx.textBaseline='top';
-        ctx.fillText('[ESC]', PX+PW-18, PY+32);
+        // ---- [ESC] close hint ----
+        ctx.font = '9px Arial'; ctx.fillStyle = '#ffcc88';
+        ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+        ctx.fillText('[ESC] Close', PX+PW-10, PY+10);
 
-        // Coins display
+        // ---- coins ----
         drawUI_img('ui_coinicon', PX+14, PY+16, 14, 16);
-        ctx.font='bold 12px "Cinzel",serif'; ctx.fillStyle='#ffd700';
-        ctx.textAlign='left'; ctx.textBaseline='middle';
-        ctx.fillText(player.coins+' gold', PX+32, PY+26);
+        ctx.font = 'bold 12px "Cinzel",serif'; ctx.fillStyle = '#ffd700';
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillText(player.coins + ' gold', PX+32, PY+26);
 
-        // Page nav arrows
+        // ---- page nav ----
         const PAGE_LABELS = ['Artifacts (1-5)', 'Dragon Pet'];
-        const curLabel = PAGE_LABELS[SM.marketPage] || '';
         drawUI_img('ui_larrow', PX+14, PY+53, 14, 20);
         drawUI_img('ui_rarrow', PX+PW-28, PY+53, 14, 20);
-        ctx.font='bold 11px "Cinzel",serif'; ctx.fillStyle='#ddc080';
-        ctx.textAlign='center'; ctx.textBaseline='middle';
-        ctx.fillText(curLabel, PX+PW/2, PY+63);
+        ctx.font = 'bold 11px "Cinzel",serif'; ctx.fillStyle = '#ddc080';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(PAGE_LABELS[SM.marketPage] || '', PX+PW/2, PY+63);
 
-        // Separator line
-        ctx.strokeStyle='rgba(200,168,75,0.35)'; ctx.lineWidth=1;
+        // ---- separator ----
+        ctx.strokeStyle = 'rgba(200,168,75,0.3)'; ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(PX+10, PY+78); ctx.lineTo(PX+PW-10, PY+78); ctx.stroke();
 
-        // ---- PAGE 0 : Artifact grid ----
+        // ===== PAGE 0: Artifacts =====
         if (SM.marketPage === 0) {
-            const items = MARKET_ITEMS.slice(0,5);
-            const SLOT=76, GAP=10;
-            const gridW = items.length*(SLOT+GAP)-GAP;
-            const gx0 = PX + (PW-gridW)/2;
-            const gy0 = PY+88;
-            if (!SM._marketBtns) SM._marketBtns=[];
+            const items = MARKET_ITEMS.slice(0, 5);
+            const SLOT = 76, GAP = 10;
+            const gridW = items.length * (SLOT + GAP) - GAP;
+            const gx0 = PX + (PW - gridW) / 2;
+            const gy0 = PY + 88;
+            if (!SM._marketBtns) SM._marketBtns = [];
 
-            items.forEach((item,i) => {
-                const sx = gx0 + i*(SLOT+GAP);
+            items.forEach((item, i) => {
+                const sx = gx0 + i * (SLOT + GAP);
                 const sy = gy0;
-                const bought = SM.market ? (SM.market['bought_'+item.id]||0) : 0;
+                const bought = SM.market ? (SM.market['bought_' + item.id] || 0) : 0;
                 let maxB = item.maxBuy;
-                if (item.dynamicMax) maxB = Math.max(0, Math.floor((player.maxHp-player.hp)/5));
-                const canBuy = player.coins>=item.cost && (maxB===null||bought<maxB);
-                const isHov = SM._marketHover===i;
+                if (item.dynamicMax) maxB = Math.max(0, Math.floor((player.maxHp - player.hp) / 5));
+                const canBuy = player.coins >= item.cost && (maxB === null || bought < maxB);
+                const isHov = SM._marketHover === i;
 
-                // Slot box — highlight border only (no shadowBlur)
-                if (isHov && canBuy) {
-                    ctx.strokeStyle='#ffe066'; ctx.lineWidth=2;
-                    ctx.strokeRect(sx-1, sy-1, SLOT+2, SLOT+2);
+                // slot background
+                ctx.fillStyle = isHov ? '#2e1e0e' : '#1e110a';
+                ctx.fillRect(sx, sy, SLOT, SLOT);
+                ctx.strokeStyle = isHov && canBuy ? '#ffe066' : canBuy ? '#8a6030' : '#3a2810';
+                ctx.lineWidth = isHov && canBuy ? 2 : 1;
+                ctx.strokeRect(sx, sy, SLOT, SLOT);
+
+                // affordable slow blink
+                if (canBuy && slowTick === 1) {
+                    ctx.fillStyle = 'rgba(255,224,96,0.12)';
+                    ctx.fillRect(sx+2, sy+2, SLOT-4, SLOT-4);
                 }
-                drawUI_img('ui_rectbox', sx, sy, SLOT, SLOT);
 
-                // Affordable tint — static alpha instead of animated sine
-                if (canBuy) {
-                    ctx.globalAlpha = animFrame < 4 ? 0.14 : 0.22; // slow blink via frame counter
-                    ctx.fillStyle='#ffe060'; ctx.fillRect(sx+4,sy+4,SLOT-8,SLOT-8);
-                    ctx.globalAlpha = 1;
-                }
-                if (isHov) drawUI_img('ui_hlslot', sx+(SLOT-26)/2, sy+(SLOT-26)/2, 26, 26);
-
-                // Icon
+                // icon
                 const iconImg = ARTIFACT_ICONS[item.id];
-                ctx.imageSmoothingEnabled = false;
+                ctx.save(); ctx.imageSmoothingEnabled = false;
                 if (iconImg && iconImg.complete && iconImg.naturalWidth) {
                     const iconSz = SLOT - 20;
                     ctx.drawImage(iconImg, sx + (SLOT-iconSz)/2, sy + 6, iconSz, iconSz);
                 } else {
-                    const fallbacks = ['⛑️','🍓','💎','🪶','🗝️'];
-                    ctx.font='26px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
-                    ctx.fillText(fallbacks[i], sx+SLOT/2, sy+SLOT/2-4);
+                    ctx.font = '26px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillText(['⛑️','🍓','💎','🪶','🗝️'][i], sx+SLOT/2, sy+SLOT/2-4);
                 }
-                ctx.imageSmoothingEnabled = true;
+                ctx.restore();
 
-                // Label
-                ctx.font='bold 7px Arial'; ctx.fillStyle='#ffe07a';
-                ctx.textAlign='center'; ctx.textBaseline='bottom';
+                // label
+                ctx.font = 'bold 7px Arial'; ctx.fillStyle = '#ffe07a';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
                 ctx.fillText(item.label, sx+SLOT/2, sy+SLOT-3);
 
-                // Cost bar
-                drawUI_img('ui_valuebar', sx-2, sy+SLOT+4, SLOT+4, 14);
+                // cost strip
+                ctx.fillStyle = '#0e0906';
+                ctx.fillRect(sx-2, sy+SLOT+4, SLOT+4, 14);
+                ctx.strokeStyle = '#3a2810'; ctx.lineWidth = 1;
+                ctx.strokeRect(sx-2, sy+SLOT+4, SLOT+4, 14);
                 drawUI_img('ui_coinicon', sx+4, sy+SLOT+5, 10, 12);
-                ctx.font='bold 9px Arial'; ctx.fillStyle='#ffd700';
-                ctx.textAlign='left'; ctx.textBaseline='middle';
-                ctx.fillText(item.cost+'g', sx+16, sy+SLOT+11);
-                ctx.fillStyle=canBuy?'#88ff88':'#ff6666';
-                ctx.textAlign='right';
-                ctx.fillText(bought+'/'+(maxB===null?'∞':maxB), sx+SLOT+2, sy+SLOT+11);
+                ctx.font = 'bold 9px Arial'; ctx.fillStyle = '#ffd700';
+                ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+                ctx.fillText(item.cost + 'g', sx+16, sy+SLOT+11);
+                ctx.fillStyle = canBuy ? '#88ff88' : '#ff6666';
+                ctx.textAlign = 'right';
+                ctx.fillText(bought + '/' + (maxB === null ? '∞' : maxB), sx+SLOT+2, sy+SLOT+11);
 
-                // BUY button — highlight via border only, no shadowBlur
-                const btnY=sy+SLOT+20;
-                if (isHov && canBuy) {
-                    drawUI_img('ui_hlbutton', sx-4, btnY-2, SLOT+8, 18);
-                } else {
-                    drawUI_img('ui_button', sx, btnY, SLOT, 14);
-                }
-                ctx.font='bold 9px "Cinzel",serif';
-                ctx.fillStyle=canBuy?'#fffadc':'#888877';
-                ctx.textAlign='center'; ctx.textBaseline='middle';
-                ctx.fillText(canBuy?'BUY':(maxB!==null&&bought>=maxB?'MAX':'N/A'), sx+SLOT/2, btnY+8);
+                // BUY button
+                const btnY = sy + SLOT + 20;
+                ctx.fillStyle = isHov && canBuy ? '#4a2e10' : '#1e0e06';
+                ctx.fillRect(sx, btnY, SLOT, 14);
+                ctx.strokeStyle = isHov && canBuy ? '#ffe066' : '#5a3a18';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(sx, btnY, SLOT, 14);
+                ctx.font = 'bold 9px "Cinzel",serif';
+                ctx.fillStyle = canBuy ? '#fffadc' : '#666655';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(canBuy ? 'BUY' : (maxB !== null && bought >= maxB ? 'MAX' : 'N/A'), sx+SLOT/2, btnY+7);
 
-                SM._marketBtns[i]={ x:sx, y:btnY, w:SLOT, h:16, item };
+                SM._marketBtns[i] = { x: sx, y: btnY, w: SLOT, h: 16, item };
             });
 
-            // Description strip
-            if (SM._marketHover!==undefined && SM._marketHover<5) {
-                const hItem=MARKET_ITEMS[SM._marketHover];
+            // description strip
+            if (SM._marketHover !== undefined && SM._marketHover < 5) {
+                const hItem = MARKET_ITEMS[SM._marketHover];
                 if (hItem) {
-                    const dy=PY+PH-52;
-                    drawUI_img('ui_valuebar', PX+16, dy, PW-32, 16);
-                    ctx.font='11px "Cinzel",serif'; ctx.fillStyle='#ffe8a0';
-                    ctx.textAlign='center'; ctx.textBaseline='middle';
+                    const dy = PY + PH - 52;
+                    ctx.fillStyle = '#0e0906';
+                    ctx.fillRect(PX+16, dy, PW-32, 16);
+                    ctx.strokeStyle = '#5a3a18'; ctx.lineWidth = 1;
+                    ctx.strokeRect(PX+16, dy, PW-32, 16);
+                    ctx.font = '11px "Cinzel",serif'; ctx.fillStyle = '#ffe8a0';
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                     ctx.fillText(hItem.desc, PX+PW/2, dy+8);
                 }
             }
         }
 
-        // ---- PAGE 1 : Dragon pet ----
-        if (SM.marketPage===1) {
-            const item=MARKET_ITEMS[5];
-            const cx=PX+PW/2;
-            const previewY=PY+88;
-            const dragonImg=images['dragon_idle'];
-            ctx.imageSmoothingEnabled = false;
-            if (dragonImg&&dragonImg.complete&&dragonImg.naturalWidth) {
-                const fw=dragonImg.naturalWidth/4;
-                const animF=Math.floor(Date.now()/160)%4; // 6fps dragon anim, no shadowBlur
-                ctx.drawImage(dragonImg, animF*fw,0, fw,dragonImg.naturalHeight, cx-50,previewY, 100,100);
+        // ===== PAGE 1: Dragon Pet =====
+        if (SM.marketPage === 1) {
+            const item = MARKET_ITEMS[5];
+            const cx = PX + PW/2;
+            const previewY = PY + 88;
+            const dragonImg = images['dragon_idle'];
+            ctx.save(); ctx.imageSmoothingEnabled = false;
+            if (dragonImg && dragonImg.complete && dragonImg.naturalWidth) {
+                const fw = dragonImg.naturalWidth / 4;
+                const animF = Math.floor(Date.now() / 160) % 4;
+                ctx.drawImage(dragonImg, animF*fw, 0, fw, dragonImg.naturalHeight, cx-50, previewY, 100, 100);
             } else {
-                ctx.font='80px Arial'; ctx.textAlign='center'; ctx.textBaseline='top';
-                ctx.fillText('\uD83D\uDC09', cx, previewY);
+                ctx.font = '80px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+                ctx.fillText('🐉', cx, previewY);
             }
-            ctx.imageSmoothingEnabled = true;
-            ctx.font='bold 15px "Cinzel",serif'; ctx.fillStyle='#ffcc44';
-            ctx.textAlign='center'; ctx.textBaseline='top';
-            ctx.fillText('\uD83D\uDD25 '+item.label, cx, PY+196);
-            ctx.font='12px Arial'; ctx.fillStyle='#f0d080';
+            ctx.restore();
+
+            ctx.font = 'bold 15px "Cinzel",serif'; ctx.fillStyle = '#ffcc44';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+            ctx.fillText('🔥 ' + item.label, cx, PY+196);
+            ctx.font = '12px Arial'; ctx.fillStyle = '#f0d080';
             ctx.fillText(item.desc, cx, PY+218);
-            ctx.font='11px Arial'; ctx.fillStyle='#ffaa66';
-            ctx.fillText('Cannot die  \u2022  Shoots every 10 seconds  \u2022  2 dmg per hit', cx, PY+236);
+            ctx.font = '11px Arial'; ctx.fillStyle = '#ffaa66';
+            ctx.fillText('Cannot die  •  Auto-aims fireballs  •  Follows into Boss Arena', cx, PY+236);
 
-            drawUI_img('ui_valuebar', cx-80, PY+260, 160, 16);
-            drawUI_img('ui_coinicon', cx-74, PY+262, 12,14);
-            ctx.font='bold 11px "Cinzel",serif'; ctx.fillStyle='#ffd700';
-            ctx.textAlign='left'; ctx.textBaseline='middle';
-            ctx.fillText('Cost: '+item.cost+' gold', cx-58, PY+268);
+            // cost bar
+            ctx.fillStyle = '#0e0906';
+            ctx.fillRect(cx-80, PY+260, 160, 16);
+            ctx.strokeStyle = '#5a3a18'; ctx.lineWidth = 1;
+            ctx.strokeRect(cx-80, PY+260, 160, 16);
+            drawUI_img('ui_coinicon', cx-74, PY+262, 12, 14);
+            ctx.font = 'bold 11px "Cinzel",serif'; ctx.fillStyle = '#ffd700';
+            ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+            ctx.fillText('Cost: ' + item.cost + ' gold', cx-58, PY+268);
 
-            const alreadyOwned=dragonPet.owned;
-            const canAfford=player.coins>=item.cost;
-            const btnX=cx-70, btnY=PY+284, btnW=140, btnH=24;
-            if (!SM._marketBtns) SM._marketBtns=[];
-            if (alreadyOwned) {
-                drawUI_img('ui_button', btnX, btnY, btnW, btnH);
-                ctx.font='bold 10px "Cinzel",serif'; ctx.fillStyle='#88ff88';
-                ctx.textAlign='center'; ctx.textBaseline='middle';
-                ctx.fillText('\u2714 COMPANION ACTIVE', cx, btnY+12);
-            } else {
-                if (canAfford) {
-                    drawUI_img('ui_hlbutton', btnX-4,btnY-2,btnW+8,btnH+4);
-                } else {
-                    drawUI_img('ui_button', btnX,btnY,btnW,btnH);
-                }
-                ctx.font='bold 11px "Cinzel",serif';
-                ctx.fillStyle=canAfford?'#fffadc':'#777766';
-                ctx.textAlign='center'; ctx.textBaseline='middle';
-                ctx.fillText(canAfford?'BUY  \uD83D\uDC09':'NOT ENOUGH GOLD', cx, btnY+12);
-                SM._marketBtns[10]={ x:btnX, y:btnY, w:btnW, h:btnH, item };
-            }
+            const alreadyOwned = dragonPet.owned;
+            const canAfford = player.coins >= item.cost;
+            const btnX = cx-70, btnY = PY+284, btnW = 140, btnH = 24;
+            if (!SM._marketBtns) SM._marketBtns = [];
+
+            ctx.fillStyle = alreadyOwned ? '#1a2a1a' : canAfford ? '#3a2010' : '#1a0e06';
+            ctx.fillRect(btnX, btnY, btnW, btnH);
+            ctx.strokeStyle = alreadyOwned ? '#44ff88' : canAfford ? '#ffe066' : '#5a3a18';
+            ctx.lineWidth = alreadyOwned || canAfford ? 2 : 1;
+            ctx.strokeRect(btnX, btnY, btnW, btnH);
+            ctx.font = 'bold 11px "Cinzel",serif';
+            ctx.fillStyle = alreadyOwned ? '#88ff88' : canAfford ? '#fffadc' : '#666655';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(alreadyOwned ? '✔ COMPANION ACTIVE' : canAfford ? 'BUY 🐉' : 'NOT ENOUGH GOLD', cx, btnY+12);
+            if (!alreadyOwned) SM._marketBtns[10] = { x: btnX, y: btnY, w: btnW, h: btnH, item };
         }
 
-        // Bottom tip bar
-        drawUI_imgTiled('ui_topP1', PX, PY+PH-16, PW, 16);
-        ctx.font='10px "Cinzel",serif'; ctx.fillStyle='#c8a84b';
-        ctx.textAlign='center'; ctx.textBaseline='middle';
-        ctx.fillText('[ESC] Close  \u2022  [\u2190 \u2192] Switch Page  \u2022  Click to Buy', PX+PW/2, PY+PH-8);
-
-        ctx.restore();
+        // ---- bottom tip ----
+        ctx.fillStyle = '#2a1a0a';
+        ctx.fillRect(PX, PY+PH-18, PW, 18);
+        ctx.font = '10px "Cinzel",serif'; ctx.fillStyle = '#c8a84b';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('[ESC] Close  •  [← →] Switch Page  •  Click to Buy', PX+PW/2, PY+PH-9);
     }
 
     // Helper: rounded rect path
@@ -3683,8 +3645,8 @@
         if (e.code === 'Escape' || e.code === 'KeyP') { e.preventDefault(); togglePause(); return; }
         // Story mode: TAB for objective board
         if(STORY_MODE.active && e.code==='Tab') { e.preventDefault(); STORY_MODE.boardOpen=!STORY_MODE.boardOpen; return; }
-        // Story mode: F key to interact — no portal/market/NPC interaction inside boss arena
-        if(STORY_MODE.active && e.code==='KeyF' && !gamePaused && !STORY_MODE.bossArena) {
+        // Story mode: F key to interact
+        if(STORY_MODE.active && e.code==='KeyF' && !gamePaused) {
             const SM=STORY_MODE;
             if(SM.npc1&&!SM.npc1Talked&&Math.abs(SM.npc1.x-player.x)<120) { tryInteractNPC(1); return; }
             if(SM.npc2&&!SM.npc2Talked&&Math.abs(SM.npc2.x-player.x)<120) { tryInteractNPC(2); return; }
@@ -4252,23 +4214,17 @@
         }
 
         // ---- DRAGON PET UPDATE ----
-        if (dragonPet.owned) {
+        if (dragonPet.owned && !STORY_MODE.bossArena) {
             const d = dragonPet;
             const t = Date.now() / 1000;
 
-            // Find closest enemy for targeting — including boss in boss arena
+            // Find closest enemy for targeting
             let closestEnemy = null; let closestDist = 300;
             enemies.forEach(e => {
                 if (e.dying) return;
                 const dist = Math.abs(e.x - player.x);
                 if (dist < closestDist) { closestDist = dist; closestEnemy = e; }
             });
-            // Also target boss if in boss arena
-            if (STORY_MODE.bossArena && STORY_MODE.boss && !STORY_MODE.boss.dying) {
-                const boss = STORY_MODE.boss;
-                const dist = Math.abs(boss.x - player.x);
-                if (!closestEnemy || dist < closestDist) { closestDist = dist; closestEnemy = boss; }
-            }
 
             // Dragon hovers at player's shoulder level, offset to one side
             const offsetSide = player.facing === 'right' ? -80 : 80;
@@ -4299,22 +4255,11 @@
             if (closestEnemy && d.fireCooldown <= 0) {
                 d.fireCooldown = 600; // 10 seconds
                 d.state = 'attack'; d.frame = 0; d.frameTimer = 0;
-                // Auto-aim: compute direction vector toward enemy center
-                const targetCX = closestEnemy.x + (closestEnemy.width || 40) / 2;
-                const targetCY = closestEnemy.y + (closestEnemy.height || 70) / 2;
-                const fireStartX = d.x + 32;
-                const fireStartY = d.y + 20;
-                const dx2 = targetCX - fireStartX;
-                const dy2 = targetCY - fireStartY;
-                const dist2 = Math.sqrt(dx2*dx2 + dy2*dy2) || 1;
-                const speed = 7;
-                const vx = (dx2 / dist2) * speed;
-                const vy = (dy2 / dist2) * speed;
+                const vx = closestEnemy.x > d.x ? 6 : -6;
                 d.fireProjs.push({
-                    x: fireStartX,
-                    y: fireStartY,
-                    vx, vy,
-                    targetX: targetCX, targetY: targetCY,
+                    x: d.x + (vx > 0 ? 32 : -8),
+                    y: d.y + 20,
+                    vx,
                     frame: 0, frameTimer: 0
                 });
                 setTimeout(() => { if (dragonPet.owned) dragonPet.state = 'fly'; }, 500);
@@ -4325,10 +4270,10 @@
             // Update fire projectiles
             d.fireProjs.forEach(fp => {
                 fp.x += fp.vx;
-                fp.y += fp.vy; // auto-aimed trajectory, no extra wave
+                fp.y += Math.sin(t * 8 + fp.x * 0.05) * 0.4; // slight wave
                 fp.frameTimer++;
                 if (fp.frameTimer >= 3) { fp.frame = (fp.frame + 1) % 4; fp.frameTimer = 0; }
-                // Hit regular enemies
+                // Hit enemies
                 enemies.forEach(e => {
                     if (e.dying || fp.hit) return;
                     if (Math.abs(fp.x - (e.x + e.width/2)) < 28 && Math.abs(fp.y - (e.y + e.height/2)) < 28) {
@@ -4341,6 +4286,7 @@
                             if (STORY_MODE.active) STORY_MODE.totalKills++;
                             shakeTimer = 8; shakeMag = 4;
                         }
+                        // Fire burst particles
                         for (let i = 0; i < 8; i++) {
                             const ang = (Math.PI*2/8)*i;
                             particles.push({ x: fp.x, y: fp.y,
@@ -4349,24 +4295,8 @@
                         }
                     }
                 });
-                // Hit boss in boss arena
-                if (!fp.hit && STORY_MODE.bossArena && STORY_MODE.boss && !STORY_MODE.boss.dying) {
-                    const boss = STORY_MODE.boss;
-                    if (Math.abs(fp.x - (boss.x + boss.width/2)) < 40 && Math.abs(fp.y - (boss.y + boss.height/2)) < 50) {
-                        fp.hit = true;
-                        boss.hp -= 2;
-                        boss.hurtTimer = 10;
-                        dmgNumbers.push({ x: boss.x+20, y: boss.y-10, val: '🔥2', life: 45, color: '#ff6600' });
-                        for (let i = 0; i < 8; i++) {
-                            const ang = (Math.PI*2/8)*i;
-                            particles.push({ x: fp.x, y: fp.y,
-                                vx: Math.cos(ang)*3, vy: Math.sin(ang)*3-1,
-                                life: 22, color: i%2===0?'#ff6600':'#ffcc00' });
-                        }
-                    }
-                }
             });
-            d.fireProjs = d.fireProjs.filter(fp => !fp.hit && fp.x > -150 && fp.x < GAME_WIDTH+150 && fp.y > -150 && fp.y < GAME_HEIGHT+150);
+            d.fireProjs = d.fireProjs.filter(fp => !fp.hit && fp.x > -150 && fp.x < GAME_WIDTH+150);
         }
 
 
@@ -4510,6 +4440,8 @@
     }
 
     function draw() {
+        ctx.shadowBlur = 0; // ALWAYS reset first — prevents any prior shadowBlur leaking
+        ctx.globalAlpha = 1;
         ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
         // Screen shake
@@ -4522,18 +4454,14 @@
 
         // Background
         if (STORY_MODE.bossArena) {
-            // Boss arena custom background
             const arenaBack = images['arena_back'];
             if (arenaBack && arenaBack.complete && arenaBack.naturalWidth) {
                 ctx.drawImage(arenaBack, 0, 0, GAME_WIDTH, GAME_HEIGHT);
             } else {
                 ctx.fillStyle = '#1a0a00'; ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
             }
-            // Dark atmospheric overlay
-            const fog = ctx.createLinearGradient(0, 0, 0, GAME_HEIGHT);
-            fog.addColorStop(0, 'rgba(0,0,0,0.3)');
-            fog.addColorStop(1, 'rgba(0,0,0,0.5)');
-            ctx.fillStyle = fog; ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+            // Static dark overlay — no gradient creation per frame
+            ctx.fillStyle = 'rgba(0,0,0,0.38)'; ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
         } else {
             let bgScroll = (scrollX * 0.3) % GAME_WIDTH;
             ctx.drawImage(images.background, -bgScroll, 0, GAME_WIDTH, GAME_HEIGHT);
@@ -4603,18 +4531,13 @@
             const progress = ca.t / ca.maxT; // 0→1
             const img = ARTIFACT_ICONS[ca.artifactId];
             if (!img || !img.complete || !img.naturalWidth) return;
-            // Rise up from ground
-            const rise = progress * 60; // rises 60px up
+            const rise = progress * 60;
             const drawY = ca.y - rise;
-            // Scale in then fade out
             const scale = progress < 0.3 ? progress / 0.3 : progress > 0.75 ? 1 - (progress - 0.75) / 0.25 : 1;
-            const alpha = scale;
             const sz = 28 * scale;
             ctx.save();
-            ctx.globalAlpha = alpha;
-            // Glow effect
-            ctx.shadowColor = '#ffdd44';
-            ctx.shadowBlur = 12 * scale;
+            ctx.globalAlpha = scale;
+            ctx.imageSmoothingEnabled = false;
             ctx.drawImage(img, ca.x + 6 - sz/2, drawY + 6 - sz/2, sz, sz);
             ctx.restore();
             // Sparkle particles around it
@@ -4700,42 +4623,19 @@
             const destY = player.y + player.height - player.drawHeight;
             // Fire shield glow — animated flame ring
             if (player.fireShield > 0) {
-                const t = Date.now() / 1000;
                 const cx = player.x + player.width / 2;
                 const cy = player.y + player.height / 2;
-                // Outer pulsing ring
-                for (let ring = 0; ring < 3; ring++) {
-                    const phase = t * 4 + ring * (Math.PI * 2 / 3);
-                    const radius = 38 + ring * 6 + Math.sin(phase) * 5;
-                    const alpha = (0.5 - ring * 0.12) * (0.6 + 0.4 * Math.sin(phase));
-                    ctx.save();
-                    ctx.globalAlpha = alpha;
-                    const grad = ctx.createRadialGradient(cx, cy, radius - 8, cx, cy, radius + 4);
-                    grad.addColorStop(0, '#ff6600');
-                    grad.addColorStop(0.5, '#ff2200');
-                    grad.addColorStop(1, 'transparent');
-                    ctx.fillStyle = grad;
-                    ctx.beginPath();
-                    ctx.arc(cx, cy, radius + 6, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.restore();
-                }
-                // Orbiting fire sparks
-                for (let s = 0; s < 6; s++) {
-                    const angle = t * 3 + s * (Math.PI * 2 / 6);
-                    const r = 42 + Math.sin(t * 5 + s) * 6;
-                    const sx2 = cx + Math.cos(angle) * r;
-                    const sy2 = cy + Math.sin(angle) * r * 0.5;
-                    ctx.save();
-                    ctx.globalAlpha = 0.8;
-                    ctx.fillStyle = s % 2 === 0 ? '#ff8800' : '#ffcc00';
-                    ctx.shadowColor = '#ff4400';
-                    ctx.shadowBlur = 8;
-                    ctx.beginPath();
-                    ctx.arc(sx2, sy2, 3 + Math.sin(t * 6 + s) * 1.5, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.restore();
-                }
+                // Simple pulsing ring — no shadowBlur, no nested save/restore loops
+                const pulse = Math.floor(Date.now() / 120) % 2 === 0 ? 40 : 44;
+                ctx.save();
+                ctx.globalAlpha = 0.55;
+                ctx.strokeStyle = '#ff6600';
+                ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.arc(cx, cy, pulse, 0, Math.PI * 2); ctx.stroke();
+                ctx.strokeStyle = '#ff2200';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.arc(cx, cy, pulse - 6, 0, Math.PI * 2); ctx.stroke();
+                ctx.restore();
             }
             drawSprite(spriteImg, totalFrames, player.frame, false, destX, destY, player.drawWidth, player.drawHeight);
         }
@@ -4767,8 +4667,8 @@
             if(STORY_MODE.portal) drawPortal();
             // Draw NPCs
             drawNPCs();
-            // Draw dragon pet (above player) — follows into boss arena too
-            if(dragonPet.owned) drawDragonPet();
+            // Draw dragon pet (above player)
+            if(dragonPet.owned && !STORY_MODE.bossArena) drawDragonPet();
             // Draw boss
             if(STORY_MODE.bossArena && STORY_MODE.boss) drawBossSprites();
         }
@@ -4786,7 +4686,6 @@
     }
 
     // ---- Sprite-based UI helpers ----
-    const _patternCache = {};
     function drawUI_img(key, dx, dy, dw, dh) {
         const img = images[key];
         if (!img || !img.complete || !img.naturalWidth) return;
@@ -4795,15 +4694,12 @@
     function drawUI_imgTiled(key, dx, dy, dw, dh) {
         const img = images[key];
         if (!img || !img.complete || !img.naturalWidth) return;
-        if (!_patternCache[key]) {
-            const pat = ctx.createPattern(img, 'repeat');
-            if (!pat) return;
-            _patternCache[key] = pat;
-        }
         ctx.save();
-        ctx.beginPath(); ctx.rect(dx, dy, dw, dh); ctx.clip();
+        ctx.beginPath(); ctx.rect(dx, dy, dw, dh);
+        const pat = ctx.createPattern(img, 'repeat');
+        if (!pat) { ctx.restore(); return; }
         ctx.translate(dx, dy);
-        ctx.fillStyle = _patternCache[key];
+        ctx.fillStyle = pat;
         ctx.fillRect(0, 0, dw, dh);
         ctx.restore();
     }
@@ -4813,8 +4709,6 @@
         ctx.fillStyle = color || '#ffe8a0';
         ctx.textAlign = align || 'left';
         ctx.textBaseline = 'middle';
-        ctx.shadowColor = 'rgba(0,0,0,0.9)';
-        ctx.shadowBlur = 4;
         ctx.fillText(txt, x, y);
         ctx.restore();
     }
@@ -5031,6 +4925,7 @@
             animateSpriteOnCanvas('howto-enemy-canvas', 'enemy_run',  16, 5);
             animateSpriteOnCanvas('howto-npc-canvas',   'npc_idle',   10, 8);
             animateSpriteOnCanvas('howto-boss-canvas',  'boss_idle',  9,  8);
+            animateSpriteOnCanvas('howto-dragon-canvas','dragon_fly',  4,  6);
         }
         tryStartSprites();
 
