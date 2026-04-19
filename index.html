@@ -498,14 +498,12 @@
 <div id="aq-game-coins-display">🏦 Bank: <span id="aq-bank-val">0</span></div>
 
 <div id="home-screen">
-    <canvas id="home-canvas">
-
+    <canvas id="home-canvas"></canvas>
     <!-- Top-right bar: Profile + Leaderboard (only when logged in) -->
     <div id="aq-topbar" style="display:none;">
         <button class="aq-topbtn" onclick="AQ.showProfile()">👤 Profile</button>
         <button class="aq-topbtn" onclick="AQ.showLeaderboard()">🏆 Leaderboard</button>
     </div>
-</canvas>
     <!-- Stone cracks overlay -->
     <div class="stone-cracks"></div>
     <!-- Corner stones -->
@@ -5361,8 +5359,12 @@ const ACH_CATALOG = [
 
 // ---- HASH helpers ----
 async function hashPwd(pwd) {
-    const _bc = window.bcrypt || (window.dcodeIO && window.dcodeIO.bcrypt);
-    return _bc.hashSync(pwd, 10);
+    return new Promise(resolve => {
+        setTimeout(() => {
+            const _bc = window.bcrypt || (window.dcodeIO && window.dcodeIO.bcrypt);
+            resolve(_bc.hashSync(pwd, 6));
+        }, 0);
+    });
 }
 function checkPwd(pwd, hash) {
     const _bc = window.bcrypt || (window.dcodeIO && window.dcodeIO.bcrypt);
