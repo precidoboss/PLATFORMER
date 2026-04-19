@@ -1097,6 +1097,9 @@
         STORY_MODE._marketFreezePlayer = false;
         STORY_MODE._marketBtns = [];
         STORY_MODE._marketHover = undefined;
+        // Reset any lingering canvas state from market rendering
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
     }
 
     function buyMarketItem(item) {
@@ -2843,8 +2846,8 @@
         // Objective board overlay
         if(SM.boardOpen) drawObjectiveBoard();
 
-        // Portal enter hint (NPC hints are drawn in drawNPCs)
-        if(SM.portal && Math.abs(SM.portal.x + 48 - player.x) < 130) {
+        // Portal enter hint (NPC hints are drawn in drawNPCs) — never show inside boss arena
+        if(!SM.bossArena && SM.portal && Math.abs(SM.portal.x + 48 - player.x) < 130) {
             ctx.save();
             ctx.fillStyle = 'rgba(80,0,120,0.75)';
             roundRect2(ctx, SM.portal.x - 10, SM.portal.y - 32, 116, 20, 4);
@@ -3293,54 +3296,32 @@
 
         // ---- Draw fire projectiles as canvas-painted fireballs ----
         d.fireProjs.forEach(fp => {
-            const tt = Date.now() / 1000 + fp.x * 0.01;
             const goingRight = fp.vx > 0;
             ctx.save();
-            // Outer glow
-            const glowR = ctx.createRadialGradient(fp.x, fp.y, 0, fp.x, fp.y, 22);
+            ctx.imageSmoothingEnabled = false;
+
+            // Outer glow — one radial gradient, no sine
+            const glowR = ctx.createRadialGradient(fp.x, fp.y, 0, fp.x, fp.y, 20);
             glowR.addColorStop(0,   'rgba(255,220,80,0.9)');
-            glowR.addColorStop(0.35,'rgba(255,100,0,0.75)');
-            glowR.addColorStop(0.7, 'rgba(200,30,0,0.4)');
+            glowR.addColorStop(0.4, 'rgba(255,100,0,0.7)');
             glowR.addColorStop(1,   'rgba(100,0,0,0)');
             ctx.fillStyle = glowR;
-            ctx.beginPath(); ctx.arc(fp.x, fp.y, 22, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(fp.x, fp.y, 20, 0, Math.PI*2); ctx.fill();
 
-            // Core bright sphere
-            const coreR = ctx.createRadialGradient(fp.x-3, fp.y-3, 0, fp.x, fp.y, 9);
-            coreR.addColorStop(0,   'rgba(255,255,200,1)');
-            coreR.addColorStop(0.5, 'rgba(255,160,20,1)');
-            coreR.addColorStop(1,   'rgba(220,50,0,0.8)');
-            ctx.fillStyle = coreR;
-            ctx.beginPath(); ctx.arc(fp.x, fp.y, 9, 0, Math.PI*2); ctx.fill();
+            // Core bright sphere — simple solid circle
+            ctx.fillStyle = '#ffee88';
+            ctx.beginPath(); ctx.arc(fp.x, fp.y, 7, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#ff6600';
+            ctx.beginPath(); ctx.arc(fp.x+2, fp.y+2, 4, 0, Math.PI*2); ctx.fill();
 
-            // Flame tail — elongated blobs trailing behind
+            // Flame tail — 3 blobs (was 5), no per-blob save/restore
             const tailDir = goingRight ? -1 : 1;
-            for (let i = 1; i <= 5; i++) {
-                const tx = fp.x + tailDir * i * 7;
-                const ty = fp.y + Math.sin(tt*10 + i) * 3;
-                const tr = Math.max(1, 8 - i*1.4);
-                const ta = Math.max(0, 0.55 - i*0.1);
-                ctx.save();
-                ctx.globalAlpha = ta;
-                const tailG = ctx.createRadialGradient(tx, ty, 0, tx, ty, tr);
-                tailG.addColorStop(0, 'rgba(255,150,0,0.9)');
-                tailG.addColorStop(1, 'rgba(200,40,0,0)');
-                ctx.fillStyle = tailG;
-                ctx.beginPath(); ctx.arc(tx, ty, tr*1.5, 0, Math.PI*2); ctx.fill();
-                ctx.restore();
-            }
-
-            // Sparkle flecks
-            for (let s = 0; s < 4; s++) {
-                const ang = tt*6 + s*(Math.PI/2);
-                const sr  = 13 + Math.sin(tt*8+s)*4;
-                ctx.save();
-                ctx.globalAlpha = 0.5+0.3*Math.sin(tt*5+s);
-                ctx.fillStyle = s%2===0 ? '#ffee44' : '#ff7700';
-                ctx.beginPath();
-                ctx.arc(fp.x+Math.cos(ang)*sr, fp.y+Math.sin(ang)*sr*0.5, 2.5, 0, Math.PI*2);
-                ctx.fill();
-                ctx.restore();
+            ctx.globalAlpha = 0.45;
+            ctx.fillStyle = 'rgba(255,120,0,0.8)';
+            for (let i = 1; i <= 3; i++) {
+                const tx = fp.x + tailDir * i * 8;
+                const tr = Math.max(1, 7 - i*1.8);
+                ctx.beginPath(); ctx.arc(tx, fp.y, tr, 0, Math.PI*2); ctx.fill();
             }
             ctx.restore();
         });
@@ -3356,38 +3337,40 @@
         }
     }
 
-    // ===== DRAW MARKET UI =====
+    // ===== DRAW MARKET UI — optimized: no per-frame shadowBlur sine waves =====
     function drawMarketUI() {
         const SM = STORY_MODE;
         const W = GAME_WIDTH, H = GAME_HEIGHT;
         const PW = 440, PH = 390;
         const PX = Math.floor(W/2 - PW/2);
         const PY = Math.floor(H/2 - PH/2);
-        const t = Date.now()/1000;
+        // Use a slow frame counter for minor animation instead of Date.now() sine
+        const animFrame = Math.floor(Date.now() / 200) % 8; // slow 5fps tick
 
         ctx.save();
-        // Backdrop
-        ctx.fillStyle='rgba(0,0,0,0.75)'; ctx.fillRect(0,0,W,H);
+        ctx.shadowBlur = 0; // ensure no inherited shadow
 
-        // Panel fill — tiled BottomPatternBG
+        // Backdrop — single fillRect, no gradient
+        ctx.fillStyle='rgba(0,0,0,0.78)'; ctx.fillRect(0,0,W,H);
+
+        // Panel fill — tiled pattern (cached in drawUI_imgTiled)
         drawUI_imgTiled('ui_bottombg', PX, PY, PW, PH);
-        // Gold border
+
+        // Gold border — no shadow
         ctx.strokeStyle='#c8a84b'; ctx.lineWidth=3;
         roundRect2(ctx, PX, PY, PW, PH, 8); ctx.stroke();
-        ctx.strokeStyle='rgba(0,0,0,0.45)'; ctx.lineWidth=2;
-        roundRect2(ctx, PX+5, PY+5, PW-10, PH-10, 6); ctx.stroke();
+        ctx.strokeStyle='rgba(0,0,0,0.4)'; ctx.lineWidth=1.5;
+        roundRect2(ctx, PX+4, PY+4, PW-8, PH-8, 6); ctx.stroke();
 
         // Top pattern strip
         drawUI_imgTiled('ui_topP1', PX, PY, PW, 15);
 
-        // Title box
+        // Title box — no shadowBlur
         const titleW=240, titleH=30;
         drawUI_img('ui_titlebox', PX+PW/2-titleW/2, PY+14, titleW, titleH);
         ctx.font='bold 14px "Cinzel",serif'; ctx.fillStyle='#ffe07a';
         ctx.textAlign='center'; ctx.textBaseline='middle';
-        ctx.shadowColor='#ff9900'; ctx.shadowBlur=8;
         ctx.fillText('\u2726  ARTIFACT MARKET  \u2726', PX+PW/2, PY+29);
-        ctx.shadowBlur=0;
 
         // Quit X icon
         drawUI_img('ui_quiticon', PX+PW-28, PY+10, 20, 20);
@@ -3411,7 +3394,7 @@
         ctx.fillText(curLabel, PX+PW/2, PY+63);
 
         // Separator line
-        ctx.strokeStyle='rgba(200,168,75,0.4)'; ctx.lineWidth=1;
+        ctx.strokeStyle='rgba(200,168,75,0.35)'; ctx.lineWidth=1;
         ctx.beginPath(); ctx.moveTo(PX+10, PY+78); ctx.lineTo(PX+PW-10, PY+78); ctx.stroke();
 
         // ---- PAGE 0 : Artifact grid ----
@@ -3432,42 +3415,40 @@
                 const canBuy = player.coins>=item.cost && (maxB===null||bought<maxB);
                 const isHov = SM._marketHover===i;
 
-                // Slot box
-                ctx.save();
-                if (isHov && canBuy) { ctx.shadowColor='#ffe066'; ctx.shadowBlur=18; }
-                drawUI_img('ui_rectbox', sx, sy, SLOT, SLOT);
-                ctx.restore();
-
-                // Affordable shimmer
-                if (canBuy) {
-                    ctx.save(); ctx.globalAlpha=0.18+0.08*Math.sin(t*4+i);
-                    ctx.fillStyle='#ffe060'; ctx.fillRect(sx+4,sy+4,SLOT-8,SLOT-8);
-                    ctx.restore();
+                // Slot box — highlight border only (no shadowBlur)
+                if (isHov && canBuy) {
+                    ctx.strokeStyle='#ffe066'; ctx.lineWidth=2;
+                    ctx.strokeRect(sx-1, sy-1, SLOT+2, SLOT+2);
                 }
-                // Highlight overlay frame when hovered
+                drawUI_img('ui_rectbox', sx, sy, SLOT, SLOT);
+
+                // Affordable tint — static alpha instead of animated sine
+                if (canBuy) {
+                    ctx.globalAlpha = animFrame < 4 ? 0.14 : 0.22; // slow blink via frame counter
+                    ctx.fillStyle='#ffe060'; ctx.fillRect(sx+4,sy+4,SLOT-8,SLOT-8);
+                    ctx.globalAlpha = 1;
+                }
                 if (isHov) drawUI_img('ui_hlslot', sx+(SLOT-26)/2, sy+(SLOT-26)/2, 26, 26);
 
-                // Icon — real artifact image
+                // Icon
                 const iconImg = ARTIFACT_ICONS[item.id];
-                ctx.save();
                 ctx.imageSmoothingEnabled = false;
                 if (iconImg && iconImg.complete && iconImg.naturalWidth) {
                     const iconSz = SLOT - 20;
                     ctx.drawImage(iconImg, sx + (SLOT-iconSz)/2, sy + 6, iconSz, iconSz);
                 } else {
-                    // Fallback while loading
                     const fallbacks = ['⛑️','🍓','💎','🪶','🗝️'];
                     ctx.font='26px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
                     ctx.fillText(fallbacks[i], sx+SLOT/2, sy+SLOT/2-4);
                 }
-                ctx.restore();
+                ctx.imageSmoothingEnabled = true;
 
-                // Label inside slot bottom
+                // Label
                 ctx.font='bold 7px Arial'; ctx.fillStyle='#ffe07a';
                 ctx.textAlign='center'; ctx.textBaseline='bottom';
                 ctx.fillText(item.label, sx+SLOT/2, sy+SLOT-3);
 
-                // Cost ValueBar below slot
+                // Cost bar
                 drawUI_img('ui_valuebar', sx-2, sy+SLOT+4, SLOT+4, 14);
                 drawUI_img('ui_coinicon', sx+4, sy+SLOT+5, 10, 12);
                 ctx.font='bold 9px Arial'; ctx.fillStyle='#ffd700';
@@ -3477,11 +3458,9 @@
                 ctx.textAlign='right';
                 ctx.fillText(bought+'/'+(maxB===null?'∞':maxB), sx+SLOT+2, sy+SLOT+11);
 
-                // BUY button
+                // BUY button — highlight via border only, no shadowBlur
                 const btnY=sy+SLOT+20;
-                ctx.save();
                 if (isHov && canBuy) {
-                    ctx.shadowColor='#ffe066'; ctx.shadowBlur=12;
                     drawUI_img('ui_hlbutton', sx-4, btnY-2, SLOT+8, 18);
                 } else {
                     drawUI_img('ui_button', sx, btnY, SLOT, 14);
@@ -3490,9 +3469,7 @@
                 ctx.fillStyle=canBuy?'#fffadc':'#888877';
                 ctx.textAlign='center'; ctx.textBaseline='middle';
                 ctx.fillText(canBuy?'BUY':(maxB!==null&&bought>=maxB?'MAX':'N/A'), sx+SLOT/2, btnY+8);
-                ctx.restore();
 
-                // Register clickable button rect
                 SM._marketBtns[i]={ x:sx, y:btnY, w:SLOT, h:16, item };
             });
 
@@ -3515,35 +3492,30 @@
             const cx=PX+PW/2;
             const previewY=PY+88;
             const dragonImg=images['dragon_idle'];
+            ctx.imageSmoothingEnabled = false;
             if (dragonImg&&dragonImg.complete&&dragonImg.naturalWidth) {
                 const fw=dragonImg.naturalWidth/4;
-                const animF=Math.floor(t*6)%4;
-                ctx.save(); ctx.imageSmoothingEnabled=false;
-                ctx.shadowColor='#ff6600'; ctx.shadowBlur=20+10*Math.sin(t*3);
+                const animF=Math.floor(Date.now()/160)%4; // 6fps dragon anim, no shadowBlur
                 ctx.drawImage(dragonImg, animF*fw,0, fw,dragonImg.naturalHeight, cx-50,previewY, 100,100);
-                ctx.restore();
             } else {
                 ctx.font='80px Arial'; ctx.textAlign='center'; ctx.textBaseline='top';
                 ctx.fillText('\uD83D\uDC09', cx, previewY);
             }
+            ctx.imageSmoothingEnabled = true;
             ctx.font='bold 15px "Cinzel",serif'; ctx.fillStyle='#ffcc44';
             ctx.textAlign='center'; ctx.textBaseline='top';
-            ctx.shadowColor='#ff6600'; ctx.shadowBlur=10;
             ctx.fillText('\uD83D\uDD25 '+item.label, cx, PY+196);
-            ctx.shadowBlur=0;
-            ctx.font='12px Arial'; ctx.fillStyle='#f0d080'; ctx.textBaseline='top';
+            ctx.font='12px Arial'; ctx.fillStyle='#f0d080';
             ctx.fillText(item.desc, cx, PY+218);
             ctx.font='11px Arial'; ctx.fillStyle='#ffaa66';
             ctx.fillText('Cannot die  \u2022  Shoots every 10 seconds  \u2022  2 dmg per hit', cx, PY+236);
 
-            // Cost bar
             drawUI_img('ui_valuebar', cx-80, PY+260, 160, 16);
             drawUI_img('ui_coinicon', cx-74, PY+262, 12,14);
             ctx.font='bold 11px "Cinzel",serif'; ctx.fillStyle='#ffd700';
             ctx.textAlign='left'; ctx.textBaseline='middle';
             ctx.fillText('Cost: '+item.cost+' gold', cx-58, PY+268);
 
-            // Buy/owned button
             const alreadyOwned=dragonPet.owned;
             const canAfford=player.coins>=item.cost;
             const btnX=cx-70, btnY=PY+284, btnW=140, btnH=24;
@@ -3554,14 +3526,15 @@
                 ctx.textAlign='center'; ctx.textBaseline='middle';
                 ctx.fillText('\u2714 COMPANION ACTIVE', cx, btnY+12);
             } else {
-                ctx.save();
-                if (canAfford) { ctx.shadowColor='#ffe066'; ctx.shadowBlur=14; drawUI_img('ui_hlbutton', btnX-4,btnY-2,btnW+8,btnH+4); }
-                else { drawUI_img('ui_button', btnX,btnY,btnW,btnH); }
+                if (canAfford) {
+                    drawUI_img('ui_hlbutton', btnX-4,btnY-2,btnW+8,btnH+4);
+                } else {
+                    drawUI_img('ui_button', btnX,btnY,btnW,btnH);
+                }
                 ctx.font='bold 11px "Cinzel",serif';
                 ctx.fillStyle=canAfford?'#fffadc':'#777766';
                 ctx.textAlign='center'; ctx.textBaseline='middle';
                 ctx.fillText(canAfford?'BUY  \uD83D\uDC09':'NOT ENOUGH GOLD', cx, btnY+12);
-                ctx.restore();
                 SM._marketBtns[10]={ x:btnX, y:btnY, w:btnW, h:btnH, item };
             }
         }
@@ -3710,8 +3683,8 @@
         if (e.code === 'Escape' || e.code === 'KeyP') { e.preventDefault(); togglePause(); return; }
         // Story mode: TAB for objective board
         if(STORY_MODE.active && e.code==='Tab') { e.preventDefault(); STORY_MODE.boardOpen=!STORY_MODE.boardOpen; return; }
-        // Story mode: F key to interact
-        if(STORY_MODE.active && e.code==='KeyF' && !gamePaused) {
+        // Story mode: F key to interact — no portal/market/NPC interaction inside boss arena
+        if(STORY_MODE.active && e.code==='KeyF' && !gamePaused && !STORY_MODE.bossArena) {
             const SM=STORY_MODE;
             if(SM.npc1&&!SM.npc1Talked&&Math.abs(SM.npc1.x-player.x)<120) { tryInteractNPC(1); return; }
             if(SM.npc2&&!SM.npc2Talked&&Math.abs(SM.npc2.x-player.x)<120) { tryInteractNPC(2); return; }
@@ -4279,17 +4252,23 @@
         }
 
         // ---- DRAGON PET UPDATE ----
-        if (dragonPet.owned && !STORY_MODE.bossArena) {
+        if (dragonPet.owned) {
             const d = dragonPet;
             const t = Date.now() / 1000;
 
-            // Find closest enemy for targeting
+            // Find closest enemy for targeting — including boss in boss arena
             let closestEnemy = null; let closestDist = 300;
             enemies.forEach(e => {
                 if (e.dying) return;
                 const dist = Math.abs(e.x - player.x);
                 if (dist < closestDist) { closestDist = dist; closestEnemy = e; }
             });
+            // Also target boss if in boss arena
+            if (STORY_MODE.bossArena && STORY_MODE.boss && !STORY_MODE.boss.dying) {
+                const boss = STORY_MODE.boss;
+                const dist = Math.abs(boss.x - player.x);
+                if (!closestEnemy || dist < closestDist) { closestDist = dist; closestEnemy = boss; }
+            }
 
             // Dragon hovers at player's shoulder level, offset to one side
             const offsetSide = player.facing === 'right' ? -80 : 80;
@@ -4320,11 +4299,22 @@
             if (closestEnemy && d.fireCooldown <= 0) {
                 d.fireCooldown = 600; // 10 seconds
                 d.state = 'attack'; d.frame = 0; d.frameTimer = 0;
-                const vx = closestEnemy.x > d.x ? 6 : -6;
+                // Auto-aim: compute direction vector toward enemy center
+                const targetCX = closestEnemy.x + (closestEnemy.width || 40) / 2;
+                const targetCY = closestEnemy.y + (closestEnemy.height || 70) / 2;
+                const fireStartX = d.x + 32;
+                const fireStartY = d.y + 20;
+                const dx2 = targetCX - fireStartX;
+                const dy2 = targetCY - fireStartY;
+                const dist2 = Math.sqrt(dx2*dx2 + dy2*dy2) || 1;
+                const speed = 7;
+                const vx = (dx2 / dist2) * speed;
+                const vy = (dy2 / dist2) * speed;
                 d.fireProjs.push({
-                    x: d.x + (vx > 0 ? 32 : -8),
-                    y: d.y + 20,
-                    vx,
+                    x: fireStartX,
+                    y: fireStartY,
+                    vx, vy,
+                    targetX: targetCX, targetY: targetCY,
                     frame: 0, frameTimer: 0
                 });
                 setTimeout(() => { if (dragonPet.owned) dragonPet.state = 'fly'; }, 500);
@@ -4335,10 +4325,10 @@
             // Update fire projectiles
             d.fireProjs.forEach(fp => {
                 fp.x += fp.vx;
-                fp.y += Math.sin(t * 8 + fp.x * 0.05) * 0.4; // slight wave
+                fp.y += fp.vy; // auto-aimed trajectory, no extra wave
                 fp.frameTimer++;
                 if (fp.frameTimer >= 3) { fp.frame = (fp.frame + 1) % 4; fp.frameTimer = 0; }
-                // Hit enemies
+                // Hit regular enemies
                 enemies.forEach(e => {
                     if (e.dying || fp.hit) return;
                     if (Math.abs(fp.x - (e.x + e.width/2)) < 28 && Math.abs(fp.y - (e.y + e.height/2)) < 28) {
@@ -4351,7 +4341,6 @@
                             if (STORY_MODE.active) STORY_MODE.totalKills++;
                             shakeTimer = 8; shakeMag = 4;
                         }
-                        // Fire burst particles
                         for (let i = 0; i < 8; i++) {
                             const ang = (Math.PI*2/8)*i;
                             particles.push({ x: fp.x, y: fp.y,
@@ -4360,8 +4349,24 @@
                         }
                     }
                 });
+                // Hit boss in boss arena
+                if (!fp.hit && STORY_MODE.bossArena && STORY_MODE.boss && !STORY_MODE.boss.dying) {
+                    const boss = STORY_MODE.boss;
+                    if (Math.abs(fp.x - (boss.x + boss.width/2)) < 40 && Math.abs(fp.y - (boss.y + boss.height/2)) < 50) {
+                        fp.hit = true;
+                        boss.hp -= 2;
+                        boss.hurtTimer = 10;
+                        dmgNumbers.push({ x: boss.x+20, y: boss.y-10, val: '🔥2', life: 45, color: '#ff6600' });
+                        for (let i = 0; i < 8; i++) {
+                            const ang = (Math.PI*2/8)*i;
+                            particles.push({ x: fp.x, y: fp.y,
+                                vx: Math.cos(ang)*3, vy: Math.sin(ang)*3-1,
+                                life: 22, color: i%2===0?'#ff6600':'#ffcc00' });
+                        }
+                    }
+                }
             });
-            d.fireProjs = d.fireProjs.filter(fp => !fp.hit && fp.x > -150 && fp.x < GAME_WIDTH+150);
+            d.fireProjs = d.fireProjs.filter(fp => !fp.hit && fp.x > -150 && fp.x < GAME_WIDTH+150 && fp.y > -150 && fp.y < GAME_HEIGHT+150);
         }
 
 
@@ -4762,8 +4767,8 @@
             if(STORY_MODE.portal) drawPortal();
             // Draw NPCs
             drawNPCs();
-            // Draw dragon pet (above player)
-            if(dragonPet.owned && !STORY_MODE.bossArena) drawDragonPet();
+            // Draw dragon pet (above player) — follows into boss arena too
+            if(dragonPet.owned) drawDragonPet();
             // Draw boss
             if(STORY_MODE.bossArena && STORY_MODE.boss) drawBossSprites();
         }
@@ -4781,6 +4786,7 @@
     }
 
     // ---- Sprite-based UI helpers ----
+    const _patternCache = {};
     function drawUI_img(key, dx, dy, dw, dh) {
         const img = images[key];
         if (!img || !img.complete || !img.naturalWidth) return;
@@ -4789,12 +4795,15 @@
     function drawUI_imgTiled(key, dx, dy, dw, dh) {
         const img = images[key];
         if (!img || !img.complete || !img.naturalWidth) return;
+        if (!_patternCache[key]) {
+            const pat = ctx.createPattern(img, 'repeat');
+            if (!pat) return;
+            _patternCache[key] = pat;
+        }
         ctx.save();
-        ctx.beginPath(); ctx.rect(dx, dy, dw, dh);
-        const pat = ctx.createPattern(img, 'repeat');
-        if (!pat) { ctx.restore(); return; }
+        ctx.beginPath(); ctx.rect(dx, dy, dw, dh); ctx.clip();
         ctx.translate(dx, dy);
-        ctx.fillStyle = pat;
+        ctx.fillStyle = _patternCache[key];
         ctx.fillRect(0, 0, dw, dh);
         ctx.restore();
     }
