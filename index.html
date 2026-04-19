@@ -1086,12 +1086,17 @@
         if (!STORY_MODE.market) return;
         STORY_MODE.marketOpen = true;
         STORY_MODE.marketPage = 0;
-        gamePaused = true;
+        STORY_MODE._marketBtns = [];
+        STORY_MODE._marketHover = undefined;
+        // Freeze only player input, not the whole game loop
+        STORY_MODE._marketFreezePlayer = true;
     }
 
     function closeMarket() {
         STORY_MODE.marketOpen = false;
-        gamePaused = false;
+        STORY_MODE._marketFreezePlayer = false;
+        STORY_MODE._marketBtns = [];
+        STORY_MODE._marketHover = undefined;
     }
 
     function buyMarketItem(item) {
@@ -2857,16 +2862,6 @@
 
         // Market UI (fullscreen overlay when open)
         if(SM.marketOpen) drawMarketUI();
-
-        // Dragon pet fire cooldown indicator
-        if(dragonPet.owned && !SM.bossArena && dragonPet.fireCooldown > 0) {
-            const pct = dragonPet.fireCooldown / 600;
-            const bx = dragonPet.x - 20, by = dragonPet.y - 16, bw = 40, bh = 5;
-            ctx.save();
-            ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.fillRect(bx,by,bw,bh);
-            ctx.fillStyle='#ff6600'; ctx.fillRect(bx,by,bw*pct,bh);
-            ctx.restore();
-        }
     }
 
     function drawDialogueBox(d) {
@@ -3261,56 +3256,104 @@
     // ===== DRAW DRAGON PET =====
     function drawDragonPet() {
         const d = dragonPet;
-        const stateMap   = { idle:'dragon_idle', fly:'dragon_fly', attack:'dragon_attack' };
-        const framesMap  = { idle:4, fly:4, attack:8 };
-        const key = stateMap[d.state] || 'dragon_idle';
-        const img = images[key];
+        const stateMap  = { idle:'dragon_idle', fly:'dragon_fly', attack:'dragon_attack' };
+        const framesMap = { idle:4, fly:4, attack:8 };
+        const key    = stateMap[d.state] || 'dragon_idle';
+        const img    = images[key];
         const totalF = framesMap[d.state] || 4;
         const DW = 64, DH = 64;
-        const t = Date.now()/1000;
+        const t = Date.now() / 1000;
+
         ctx.save();
         ctx.imageSmoothingEnabled = false;
-        ctx.shadowColor = `rgba(255,100,0,${0.4+0.3*Math.sin(t*3)})`;
-        ctx.shadowBlur  = 14+6*Math.sin(t*2);
+        // Orange glow
+        ctx.shadowColor = `rgba(255,120,0,${0.5+0.3*Math.sin(t*3)})`;
+        ctx.shadowBlur  = 12 + 5*Math.sin(t*2);
+
         if (img && img.complete && img.naturalWidth) {
-            const fw = img.naturalWidth / totalF;
-            const fh = img.naturalHeight;
-            const frame = Math.min(d.frame, totalF-1);
-            const facingLeft = player.x < d.x;
-            if (facingLeft) {
-                ctx.save(); ctx.scale(-1,1);
-                ctx.drawImage(img, frame*fw,0, fw,fh, -(d.x+DW), d.y, DW, DH);
+            const fw    = img.naturalWidth / totalF;
+            const fh    = img.naturalHeight;
+            const frame = Math.min(d.frame, totalF - 1);
+            const flip  = !d.facingRight; // flip when facing left
+            if (flip) {
+                ctx.save();
+                ctx.translate(d.x + DW, d.y);
+                ctx.scale(-1, 1);
+                ctx.drawImage(img, frame*fw, 0, fw, fh, 0, 0, DW, DH);
                 ctx.restore();
             } else {
-                ctx.drawImage(img, frame*fw,0, fw,fh, d.x, d.y, DW, DH);
+                ctx.drawImage(img, frame*fw, 0, fw, fh, d.x, d.y, DW, DH);
             }
         } else {
-            ctx.font='36px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
-            ctx.fillText('\uD83D\uDC09', d.x+DW/2, d.y+DH/2);
+            ctx.font = '36px Arial';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText('\uD83D\uDC09', d.x + DW/2, d.y + DH/2);
         }
         ctx.restore();
-        // Fire projectiles
-        const fireImg = images['dragon_fire'];
+
+        // ---- Draw fire projectiles as canvas-painted fireballs ----
         d.fireProjs.forEach(fp => {
-            ctx.save(); ctx.imageSmoothingEnabled=false;
-            ctx.shadowColor='#ff4400'; ctx.shadowBlur=12;
-            if (fireImg && fireImg.complete && fireImg.naturalWidth) {
-                const fw2 = fireImg.naturalWidth/4;
-                const fh2 = fireImg.naturalHeight;
-                const fr = Math.min(fp.frame, 3);
-                if (fp.vx < 0) {
-                    ctx.save(); ctx.scale(-1,1);
-                    ctx.drawImage(fireImg, fr*fw2,0, fw2,fh2, -(fp.x+32), fp.y-8, 32, 20);
-                    ctx.restore();
-                } else {
-                    ctx.drawImage(fireImg, fr*fw2,0, fw2,fh2, fp.x-16, fp.y-8, 32, 20);
-                }
-            } else {
-                ctx.fillStyle='#ff6600'; ctx.beginPath();
-                ctx.arc(fp.x, fp.y, 8, 0, Math.PI*2); ctx.fill();
+            const tt = Date.now() / 1000 + fp.x * 0.01;
+            const goingRight = fp.vx > 0;
+            ctx.save();
+            // Outer glow
+            const glowR = ctx.createRadialGradient(fp.x, fp.y, 0, fp.x, fp.y, 22);
+            glowR.addColorStop(0,   'rgba(255,220,80,0.9)');
+            glowR.addColorStop(0.35,'rgba(255,100,0,0.75)');
+            glowR.addColorStop(0.7, 'rgba(200,30,0,0.4)');
+            glowR.addColorStop(1,   'rgba(100,0,0,0)');
+            ctx.fillStyle = glowR;
+            ctx.beginPath(); ctx.arc(fp.x, fp.y, 22, 0, Math.PI*2); ctx.fill();
+
+            // Core bright sphere
+            const coreR = ctx.createRadialGradient(fp.x-3, fp.y-3, 0, fp.x, fp.y, 9);
+            coreR.addColorStop(0,   'rgba(255,255,200,1)');
+            coreR.addColorStop(0.5, 'rgba(255,160,20,1)');
+            coreR.addColorStop(1,   'rgba(220,50,0,0.8)');
+            ctx.fillStyle = coreR;
+            ctx.beginPath(); ctx.arc(fp.x, fp.y, 9, 0, Math.PI*2); ctx.fill();
+
+            // Flame tail — elongated blobs trailing behind
+            const tailDir = goingRight ? -1 : 1;
+            for (let i = 1; i <= 5; i++) {
+                const tx = fp.x + tailDir * i * 7;
+                const ty = fp.y + Math.sin(tt*10 + i) * 3;
+                const tr = Math.max(1, 8 - i*1.4);
+                const ta = Math.max(0, 0.55 - i*0.1);
+                ctx.save();
+                ctx.globalAlpha = ta;
+                const tailG = ctx.createRadialGradient(tx, ty, 0, tx, ty, tr);
+                tailG.addColorStop(0, 'rgba(255,150,0,0.9)');
+                tailG.addColorStop(1, 'rgba(200,40,0,0)');
+                ctx.fillStyle = tailG;
+                ctx.beginPath(); ctx.arc(tx, ty, tr*1.5, 0, Math.PI*2); ctx.fill();
+                ctx.restore();
+            }
+
+            // Sparkle flecks
+            for (let s = 0; s < 4; s++) {
+                const ang = tt*6 + s*(Math.PI/2);
+                const sr  = 13 + Math.sin(tt*8+s)*4;
+                ctx.save();
+                ctx.globalAlpha = 0.5+0.3*Math.sin(tt*5+s);
+                ctx.fillStyle = s%2===0 ? '#ffee44' : '#ff7700';
+                ctx.beginPath();
+                ctx.arc(fp.x+Math.cos(ang)*sr, fp.y+Math.sin(ang)*sr*0.5, 2.5, 0, Math.PI*2);
+                ctx.fill();
+                ctx.restore();
             }
             ctx.restore();
         });
+
+        // Fire cooldown bar just below dragon
+        if (d.fireCooldown > 0) {
+            const bx = d.x, by = d.y + DH + 4, bw = DW, bh = 4;
+            ctx.save();
+            ctx.fillStyle='rgba(0,0,0,0.55)'; ctx.fillRect(bx,by,bw,bh);
+            ctx.fillStyle='#ff6600';
+            ctx.fillRect(bx, by, bw*(d.fireCooldown/600), bh);
+            ctx.restore();
+        }
     }
 
     // ===== DRAW MARKET UI =====
@@ -3404,10 +3447,20 @@
                 // Highlight overlay frame when hovered
                 if (isHov) drawUI_img('ui_hlslot', sx+(SLOT-26)/2, sy+(SLOT-26)/2, 26, 26);
 
-                // Icon emoji
-                const icons=['⛑️','🍓','💎','🪶','🗝️'];
-                ctx.font='26px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
-                ctx.fillText(icons[i], sx+SLOT/2, sy+SLOT/2-4);
+                // Icon — real artifact image
+                const iconImg = ARTIFACT_ICONS[item.id];
+                ctx.save();
+                ctx.imageSmoothingEnabled = false;
+                if (iconImg && iconImg.complete && iconImg.naturalWidth) {
+                    const iconSz = SLOT - 20;
+                    ctx.drawImage(iconImg, sx + (SLOT-iconSz)/2, sy + 6, iconSz, iconSz);
+                } else {
+                    // Fallback while loading
+                    const fallbacks = ['⛑️','🍓','💎','🪶','🗝️'];
+                    ctx.font='26px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+                    ctx.fillText(fallbacks[i], sx+SLOT/2, sy+SLOT/2-4);
+                }
+                ctx.restore();
 
                 // Label inside slot bottom
                 ctx.font='bold 7px Arial'; ctx.fillStyle='#ffe07a';
@@ -3907,14 +3960,15 @@
         }
 
         // ---- PLAYER MOVEMENT ----
-        if (!player.isAttacking) {
+        if (!player.isAttacking && !STORY_MODE._marketFreezePlayer) {
             if (keys['ArrowRight'] || keys['KeyD']) { player.vx = player.speed; player.facing = 'right'; }
             else if (keys['ArrowLeft'] || keys['KeyA']) { player.vx = -player.speed; player.facing = 'left'; }
             else { player.vx *= 0.8; }
-        } else { player.vx *= 0.9; }
+        } else if (!STORY_MODE._marketFreezePlayer) { player.vx *= 0.9; }
+        else { player.vx *= 0.85; } // coast to stop when market open
 
         player.wasGrounded = player.grounded;
-        if ((keys['ArrowUp'] || keys['KeyW']) && player.grounded) {
+        if ((keys['ArrowUp'] || keys['KeyW']) && player.grounded && !STORY_MODE._marketFreezePlayer) {
             player.vy = player.jumpForce;
             player.grounded = false;
         }
@@ -4227,78 +4281,105 @@
         // ---- DRAGON PET UPDATE ----
         if (dragonPet.owned && !STORY_MODE.bossArena) {
             const d = dragonPet;
-            // Dragon hovers above-left of player, bobbing
             const t = Date.now() / 1000;
-            d.targetX = player.x - 80 + Math.sin(t * 1.2) * 18;
-            d.targetY = player.y - 70 + Math.sin(t * 2.0) * 10;
-            // Smooth follow
-            d.x += (d.targetX - d.x) * 0.08;
-            d.y += (d.targetY - d.y) * 0.08;
-            // Scroll dragon with camera like everything else — handled via targetX tracking player
-            // Animate frames
-            const dragonAnimConfig = { idle:{frames:4,speed:10}, fly:{frames:4,speed:7}, attack:{frames:8,speed:5} };
-            const dcfg = dragonAnimConfig[d.state] || dragonAnimConfig.idle;
-            d.frameTimer = (d.frameTimer || 0) + 1;
-            if (d.frameTimer >= dcfg.speed) { d.frame = (d.frame + 1) % dcfg.frames; d.frameTimer = 0; }
 
-            // Fire cooldown
-            if (d.fireCooldown > 0) d.fireCooldown--;
-
-            // Check for nearby enemies — if enemy within 300px, dragon attacks
+            // Find closest enemy for targeting
             let closestEnemy = null; let closestDist = 300;
             enemies.forEach(e => {
                 if (e.dying) return;
-                const dist = Math.abs(e.x - d.x);
+                const dist = Math.abs(e.x - player.x);
                 if (dist < closestDist) { closestDist = dist; closestEnemy = e; }
             });
+
+            // Dragon hovers at player's shoulder level, offset to one side
+            const offsetSide = player.facing === 'right' ? -80 : 80;
+            d.targetX = player.x + offsetSide + Math.sin(t * 1.2) * 10;
+            d.targetY = player.y + 10 + Math.sin(t * 2.0) * 6; // same level as player, slight bob
+
+            // Determine facing — toward closest enemy, else match player
+            if (closestEnemy) {
+                d.facingRight = closestEnemy.x > d.x;
+            } else {
+                d.facingRight = player.facing === 'right';
+            }
+
+            // Smooth follow
+            d.x += (d.targetX - d.x) * 0.1;
+            d.y += (d.targetY - d.y) * 0.1;
+
+            // Animate frames
+            const dragonAnimCfg = { idle:{frames:4,speed:10}, fly:{frames:4,speed:7}, attack:{frames:8,speed:5} };
+            const dcfg = dragonAnimCfg[d.state] || dragonAnimCfg.idle;
+            d.frameTimer = (d.frameTimer || 0) + 1;
+            if (d.frameTimer >= dcfg.speed) { d.frame = (d.frame + 1) % dcfg.frames; d.frameTimer = 0; }
+
+            // Fire cooldown tick
+            if (d.fireCooldown > 0) d.fireCooldown--;
+
+            // Attack closest enemy
             if (closestEnemy && d.fireCooldown <= 0) {
-                d.fireCooldown = 600; // 10 seconds at 60fps
+                d.fireCooldown = 600; // 10 seconds
                 d.state = 'attack'; d.frame = 0; d.frameTimer = 0;
-                // Spawn fire projectile toward enemy
-                const dx = closestEnemy.x - d.x;
-                const spd = 5;
-                const vx = dx < 0 ? -spd : spd;
-                d.fireProjs.push({ x: d.x, y: d.y + 20, vx, frame: 0, frameTimer: 0, targetEnemy: closestEnemy });
-                // Revert to fly state after attack anim
-                setTimeout(() => { if(dragonPet.owned) dragonPet.state = 'fly'; }, 400);
+                const vx = closestEnemy.x > d.x ? 6 : -6;
+                d.fireProjs.push({
+                    x: d.x + (vx > 0 ? 32 : -8),
+                    y: d.y + 20,
+                    vx,
+                    frame: 0, frameTimer: 0
+                });
+                setTimeout(() => { if (dragonPet.owned) dragonPet.state = 'fly'; }, 500);
             } else if (d.state !== 'attack') {
-                d.state = Math.abs(d.x - d.targetX) > 8 ? 'fly' : 'idle';
+                d.state = Math.abs(d.x - d.targetX) > 12 ? 'fly' : 'idle';
             }
 
             // Update fire projectiles
             d.fireProjs.forEach(fp => {
-                fp.x += fp.vx; fp.y += Math.sin(Date.now()/200) * 0.5;
-                // Animate fire frame
+                fp.x += fp.vx;
+                fp.y += Math.sin(t * 8 + fp.x * 0.05) * 0.4; // slight wave
                 fp.frameTimer++;
-                if (fp.frameTimer >= 4) { fp.frame = (fp.frame + 1) % 4; fp.frameTimer = 0; }
-                // Hit check vs enemies
+                if (fp.frameTimer >= 3) { fp.frame = (fp.frame + 1) % 4; fp.frameTimer = 0; }
+                // Hit enemies
                 enemies.forEach(e => {
                     if (e.dying || fp.hit) return;
-                    if (Math.abs(fp.x - e.x) < 30 && Math.abs(fp.y - (e.y + 20)) < 30) {
+                    if (Math.abs(fp.x - (e.x + e.width/2)) < 28 && Math.abs(fp.y - (e.y + e.height/2)) < 28) {
                         fp.hit = true;
                         e.hp -= 2;
                         e.hurtTimer = 12; e.state = 'hurt'; e.frame = 0;
-                        dmgNumbers.push({ x: e.x + 10, y: e.y - 10, val: '🔥2', life: 45, color: '#ff6600' });
+                        dmgNumbers.push({ x: e.x+10, y: e.y-10, val: '🔥2', life: 45, color: '#ff6600' });
                         if (e.hp <= 0 && !e.dying) {
                             e.dying = true; e.alpha = 1; e.frame = 0;
                             if (STORY_MODE.active) STORY_MODE.totalKills++;
                             shakeTimer = 8; shakeMag = 4;
                         }
-                        // Burst particles at hit
-                        for (let i = 0; i < 6; i++) {
+                        // Fire burst particles
+                        for (let i = 0; i < 8; i++) {
+                            const ang = (Math.PI*2/8)*i;
                             particles.push({ x: fp.x, y: fp.y,
-                                vx: (Math.random()-0.5)*4, vy: (Math.random()-2)*3,
-                                life: 20, color: `hsl(${20+Math.random()*30},100%,60%)` });
+                                vx: Math.cos(ang)*3, vy: Math.sin(ang)*3-1,
+                                life: 22, color: i%2===0?'#ff6600':'#ffcc00' });
                         }
                     }
                 });
             });
-            d.fireProjs = d.fireProjs.filter(fp => !fp.hit && fp.x > -100 && fp.x < GAME_WIDTH + 100);
+            d.fireProjs = d.fireProjs.filter(fp => !fp.hit && fp.x > -150 && fp.x < GAME_WIDTH+150);
         }
 
 
 
-        // Tick blood animations (30fps = advance every 2 game frames, 60fps = every 1)
+        // ---- PARTICLE UPDATE ----
+        particles.forEach(p => {
+            p.x += p.vx; p.y += p.vy;
+            p.vy += 0.18; // gravity
+            p.vx *= 0.97; // drag
+            p.life--;
+        });
+        particles = particles.filter(p => p.life > 0);
+
+        // dmgNumbers float upward and fade
+        dmgNumbers.forEach(d => { d.y -= 0.7; d.life--; });
+        dmgNumbers = dmgNumbers.filter(d => d.life > 0);
+
+
         bloodAnims.forEach(b => {
             b.frameTimer++;
             const frameDuration = b.fps30 ? 2 : 1;
@@ -4453,6 +4534,9 @@
             ctx.drawImage(images.background, -bgScroll, 0, GAME_WIDTH, GAME_HEIGHT);
             ctx.drawImage(images.background, GAME_WIDTH - bgScroll, 0, GAME_WIDTH, GAME_HEIGHT);
         }
+
+        // Market house drawn right after background — always behind platforms & characters
+        if(STORY_MODE.active && STORY_MODE.market && !STORY_MODE.bossArena) drawMarketHouse();
 
         // Platforms
         platforms.forEach(p => {
@@ -4651,25 +4735,21 @@
             drawSprite(spriteImg, totalFrames, player.frame, false, destX, destY, player.drawWidth, player.drawHeight);
         }
 
-        // Damage numbers
+        // Damage numbers (already moved up by update loop)
         dmgNumbers.forEach(d => {
             const alpha = Math.min(1, d.life / 20);
             ctx.save();
             ctx.globalAlpha = alpha;
             if (d.isText) {
                 ctx.font = 'bold 14px Arial';
-                ctx.strokeStyle = '#000';
-                ctx.lineWidth = 3;
+                ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
                 ctx.strokeText(d.val, d.x, d.y);
-                ctx.fillStyle = d.color;
-                ctx.fillText(d.val, d.x, d.y);
+                ctx.fillStyle = d.color; ctx.fillText(d.val, d.x, d.y);
             } else {
                 ctx.font = 'bold 22px Arial';
-                ctx.strokeStyle = '#000';
-                ctx.lineWidth = 4;
+                ctx.strokeStyle = '#000'; ctx.lineWidth = 4;
                 ctx.strokeText('-' + d.val, d.x, d.y);
-                ctx.fillStyle = d.color;
-                ctx.fillText('-' + d.val, d.x, d.y);
+                ctx.fillStyle = d.color; ctx.fillText('-' + d.val, d.x, d.y);
             }
             ctx.restore();
         });
@@ -4678,13 +4758,11 @@
 
         // ===== STORY MODE RENDERING =====
         if(STORY_MODE.active) {
-            // Draw market house on platform
-            if(STORY_MODE.market) drawMarketHouse();
-            // Draw portal
+            // Draw portal (behind player)
             if(STORY_MODE.portal) drawPortal();
             // Draw NPCs
             drawNPCs();
-            // Draw dragon pet
+            // Draw dragon pet (above player)
             if(dragonPet.owned && !STORY_MODE.bossArena) drawDragonPet();
             // Draw boss
             if(STORY_MODE.bossArena && STORY_MODE.boss) drawBossSprites();
