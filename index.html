@@ -1033,7 +1033,7 @@
         width: 50, height: 70,
         drawWidth: 130, drawHeight: 120,
         vy: 0, vx: 0,
-        speed: 7, jumpForce: -14.5, gravity: 0.72,
+        speed: 6, jumpForce: -14, gravity: 0.7,
         grounded: false, wasGrounded: false,
         facing: 'right',
         state: 'idle',
@@ -3918,8 +3918,11 @@
 
     window.restartGame = function restartGame() {
         gameOverEl.style.display = 'none';
-        _lastTime = 0; _accumulator = 0;
-        window._gameLoopActive = true;
+        if (!window._gameLoopActive) {
+            window._gameLoopActive = true;
+            _lastTime = 0; _accumulator = 0;
+            requestAnimationFrame(_gameLoopTick);
+        }
         if (STORY_MODE.active) {
             // Story mode death = full fresh restart of story mode
             if(window.AQ) AQ.finishSCRun(false);
@@ -3940,7 +3943,6 @@
     };
     window.goHome = function goHome() {
         window._gameLoopActive = false;
-        _lastTime = 0; _accumulator = 0;
         gamePaused = false;
         document.getElementById('pause-menu').style.display = 'none';
         // Fully reset story mode
@@ -4287,7 +4289,7 @@
                         }
                         if (!onEdge) {
                             e.state = 'run';
-                            e.vx = (dx > 0 ? 1 : -1) * 4.5;
+                            e.vx = (dx > 0 ? 1 : -1) * 3.5;
                         } else {
                             e.state = 'idle';
                             e.vx = 0;
@@ -4891,37 +4893,6 @@
         // ===== STORY UI (drawn on top of everything) =====
         if(STORY_MODE.active) drawStoryUI();
 
-        if (window._gameLoopActive) {
-            requestAnimationFrame(_gameLoopTick);
-        }
-    }
-
-    // ---- Fixed-timestep game loop (16.667ms = 60fps logic) ----
-    const FIXED_STEP = 1000 / 60;   // ms per logic tick
-    let _lastTime = 0;
-    let _accumulator = 0;
-
-    function _gameLoopTick(timestamp) {
-        if (!window._gameLoopActive) return;
-        requestAnimationFrame(_gameLoopTick);
-
-        if (_lastTime === 0) _lastTime = timestamp;
-        let dt = timestamp - _lastTime;
-        _lastTime = timestamp;
-
-        // Clamp: if tab was backgrounded / frame took >200ms, don't spiral
-        if (dt > 200) dt = 200;
-
-        _accumulator += dt;
-
-        // Run as many 60fps-equivalent logic ticks as needed
-        while (_accumulator >= FIXED_STEP) {
-            update();
-            _accumulator -= FIXED_STEP;
-        }
-
-        // Always render once per animation frame
-        draw();
     }
 
     // ---- Sprite-based UI helpers ----
@@ -5110,6 +5081,29 @@
     }
 
     window._gameLoopActive = false;
+
+    // Fixed-timestep game loop — always runs physics at 60fps
+    // regardless of monitor refresh rate or CPU speed
+    const _STEP = 1000 / 60; // 16.67ms per tick
+    let _lastTime = 0;
+    let _accumulator = 0;
+
+    function _gameLoopTick(timestamp) {
+        if (!window._gameLoopActive) return;
+        if (_lastTime === 0) _lastTime = timestamp;
+        let delta = timestamp - _lastTime;
+        _lastTime = timestamp;
+        // Cap delta so a tab that was backgrounded doesn't explode
+        if (delta > 200) delta = 200;
+        _accumulator += delta;
+        // Run as many fixed steps as accumulated time allows
+        while (_accumulator >= _STEP) {
+            update();
+            _accumulator -= _STEP;
+        }
+        draw();
+        requestAnimationFrame(_gameLoopTick);
+    }
 
     loadAssets(() => {
         resetGame();
