@@ -461,13 +461,7 @@
         }
         .aq-lb-page button:hover { border-color:#8a6030; }
         .aq-lb-page span { font-family:'Cinzel',serif; font-size:11px; color:#6a5030; }
-        #aq-game-coins-display {
-            position:absolute; top:10px; left:50%; transform:translateX(-50%);
-            background:rgba(0,0,0,0.6); border:1px solid #5a3818;
-            border-radius:4px; padding:4px 12px;
-            font-family:'Cinzel',serif; font-size:12px; color:#ffd700;
-            z-index:40; display:none;
-        }
+        #aq-game-coins-display { display:none !important; }
 </style>
     <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -539,6 +533,12 @@
                 </div>
                 <div class="stone-btn secondary" onclick="showView('home-howto')">
                     <div class="stone-btn-inner">HOW TO PLAY</div>
+                </div>
+                <div class="stone-btn secondary" onclick="showView('home-assets')">
+                    <div class="stone-btn-inner">🎨 ASSETS</div>
+                </div>
+                <div class="stone-btn secondary" onclick="showView('home-credits')">
+                    <div class="stone-btn-inner">★ CREDITS</div>
                 </div>
             </div>
 
@@ -678,11 +678,130 @@
                     </div>
                 </div>
             </div>
-            <div class="stone-btn secondary" style="margin-top:24px" onclick="showView('home-main')">
+                <div class="howto-section span2" style="background:linear-gradient(160deg,rgba(30,0,60,0.5),rgba(10,0,30,0.6));border-color:#6622aa;">
+                    <div class="howto-section-title" style="color:#cc88ff;">🔮 Coming Soon — Shadow Chronicle: Chapter II</div>
+                    <div class="howto-tips">
+                        <div class="tip-row"><span class="tip-icon">🌑</span><span style="color:#cc88ff;">A new chapter of darkness approaches. The Void-Warden may have fallen — but something older stirs beneath the ruins of Ardenmoor.</span></div>
+                        <div class="tip-row"><span class="tip-icon">🗺️</span><span>New environments. New enemies. A deeper story. The chronicle is far from over.</span></div>
+                        <div class="tip-row"><span class="tip-icon">👁</span><span style="color:#9966cc;">Follow <b style="color:#cc88ff;">@PRECIDOBOSS</b> on X for updates and sneak peeks.</span></div>
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex;gap:12px;margin-top:24px;">
+                <div class="stone-btn secondary" onclick="showView('home-main')">
+                    <div class="stone-btn-inner">← Back</div>
+                </div>
+                <div class="stone-btn secondary" onclick="showView('home-credits')">
+                    <div class="stone-btn-inner">★ Credits</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CREDITS VIEW -->
+    <div id="home-credits" class="home-view">
+        <div class="howto-box" style="max-width:600px;">
+            <div class="howto-title" style="font-size:26px;letter-spacing:6px;">★ CREDITS ★</div>
+            <div style="font-family:'Cinzel',serif;font-size:11px;color:#7a5830;letter-spacing:3px;text-transform:uppercase;text-align:center;margin-bottom:4px;">Adventurer's Quest — Built for The Grotto</div>
+            <div style="width:100%;height:1px;background:linear-gradient(90deg,transparent,#5a3a18,transparent);margin:4px 0 16px;"></div>
+
+            <!-- Main Credit -->
+            <div style="text-align:center;padding:20px;background:rgba(255,200,0,0.05);border:1px solid #6a4a18;border-radius:6px;width:100%;">
+                <div style="font-family:'Cinzel Decorative',cursive;font-size:28px;color:#ffd700;text-shadow:0 0 30px rgba(255,200,0,0.5);margin-bottom:6px;">PRECIDOBOSS</div>
+                <div style="font-family:'Cinzel',serif;font-size:12px;color:#c8a040;letter-spacing:4px;text-transform:uppercase;">Creator &amp; Producer</div>
+                <div style="font-family:'Cinzel',serif;font-size:11px;color:#7a6040;margin-top:8px;">Game Design · Art Direction · Development</div>
+                <a href="https://x.com/PRECIDOBOSS" target="_blank" style="display:inline-block;margin-top:12px;font-family:'Cinzel',serif;font-size:11px;color:#cc88ff;letter-spacing:2px;text-decoration:none;border:1px solid #6622aa;padding:4px 14px;border-radius:3px;">𝕏 @PRECIDOBOSS</a>
+            </div>
+
+            <div style="width:100%;height:1px;background:linear-gradient(90deg,transparent,#5a3a18,transparent);margin:16px 0;"></div>
+
+            <!-- Role Credits -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;">
+                <div style="background:rgba(255,255,255,0.02);border:1px solid #3a2810;border-radius:4px;padding:12px 16px;">
+                    <div style="font-family:'Cinzel',serif;font-size:9px;color:#7a5830;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">🎮 Game Design</div>
+                    <div style="font-family:'Cinzel Decorative',cursive;font-size:14px;color:#e8c870;">PRECIDOBOSS</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.02);border:1px solid #3a2810;border-radius:4px;padding:12px 16px;">
+                    <div style="font-family:'Cinzel',serif;font-size:9px;color:#7a5830;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">🎨 Art &amp; Sprites</div>
+                    <div style="font-family:'Cinzel Decorative',cursive;font-size:14px;color:#e8c870;">PRECIDOBOSS</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.02);border:1px solid #3a2810;border-radius:4px;padding:12px 16px;">
+                    <div style="font-family:'Cinzel',serif;font-size:9px;color:#7a5830;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">💻 Development</div>
+                    <div style="font-family:'Cinzel Decorative',cursive;font-size:14px;color:#e8c870;">PRECIDOBOSS</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.02);border:1px solid #3a2810;border-radius:4px;padding:12px 16px;">
+                    <div style="font-family:'Cinzel',serif;font-size:9px;color:#7a5830;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">🎵 Sound &amp; Music</div>
+                    <div style="font-family:'Cinzel Decorative',cursive;font-size:14px;color:#e8c870;">PRECIDOBOSS</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.02);border:1px solid #3a2810;border-radius:4px;padding:12px 16px;">
+                    <div style="font-family:'Cinzel',serif;font-size:9px;color:#7a5830;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">📖 Story &amp; Lore</div>
+                    <div style="font-family:'Cinzel Decorative',cursive;font-size:14px;color:#e8c870;">PRECIDOBOSS</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.02);border:1px solid #3a2810;border-radius:4px;padding:12px 16px;">
+                    <div style="font-family:'Cinzel',serif;font-size:9px;color:#7a5830;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">🌍 World Building</div>
+                    <div style="font-family:'Cinzel Decorative',cursive;font-size:14px;color:#e8c870;">PRECIDOBOSS</div>
+                </div>
+            </div>
+
+            <div style="width:100%;height:1px;background:linear-gradient(90deg,transparent,#5a3a18,transparent);margin:16px 0;"></div>
+
+            <!-- Built for -->
+            <div style="text-align:center;width:100%;">
+                <div style="font-family:'Cinzel',serif;font-size:11px;color:#7a5830;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">Built For</div>
+                <div style="font-family:'Cinzel Decorative',cursive;font-size:20px;color:#cc88ff;text-shadow:0 0 20px rgba(180,80,255,0.4);">The Grotto</div>
+                <div style="font-family:'Cinzel',serif;font-size:10px;color:#6a4050;margin-top:6px;letter-spacing:2px;">A community forged in darkness and ambition.</div>
+            </div>
+
+            <div style="width:100%;height:1px;background:linear-gradient(90deg,transparent,#5a3a18,transparent);margin:16px 0;"></div>
+
+            <!-- Tech stack -->
+            <div style="text-align:center;font-family:'Cinzel',serif;font-size:10px;color:#5a4030;letter-spacing:2px;line-height:1.8;">
+                Built with HTML5 Canvas · Web Audio API · Supabase · Vanilla JavaScript<br>
+                No engines. No frameworks. Pure craft.
+            </div>
+
+            <div style="width:100%;height:1px;background:linear-gradient(90deg,transparent,#5a3a18,transparent);margin:16px 0;"></div>
+
+            <div style="text-align:center;font-family:'Cinzel',serif;font-size:10px;color:#4a3020;letter-spacing:1px;">
+                © PRECIDOBOSS · Adventurer's Quest · All Rights Reserved
+            </div>
+
+            <div class="stone-btn secondary" style="margin-top:16px;width:100%;" onclick="showView('home-main')">
                 <div class="stone-btn-inner">← Back</div>
             </div>
         </div>
     </div>
+
+    <!-- ASSETS VIEW -->
+    <div id="home-assets" class="home-view">
+        <div class="howto-box" style="max-width:900px;">
+            <div class="howto-title" style="font-size:20px;letter-spacing:4px;">🎨 SPRITES &amp; ASSETS</div>
+            <div style="font-family:'Cinzel',serif;font-size:10px;color:#7a5830;letter-spacing:2px;text-align:center;margin-bottom:8px;">Every image, sprite sheet, and animation used in Adventurer's Quest</div>
+            <div style="width:100%;height:1px;background:linear-gradient(90deg,transparent,#5a3a18,transparent);margin-bottom:16px;"></div>
+
+            <!-- Category filter -->
+            <div id="assets-filter" style="display:flex;flex-wrap:wrap;gap:6px;width:100%;margin-bottom:8px;">
+                <button onclick="filterAssets('all')" class="aq-lb-tab active" id="af-all">All</button>
+                <button onclick="filterAssets('Character')" class="aq-lb-tab" id="af-Character">Characters</button>
+                <button onclick="filterAssets('Enemy')" class="aq-lb-tab" id="af-Enemy">Enemies</button>
+                <button onclick="filterAssets('Boss')" class="aq-lb-tab" id="af-Boss">Boss</button>
+                <button onclick="filterAssets('Companion')" class="aq-lb-tab" id="af-Companion">Companion</button>
+                <button onclick="filterAssets('Environment')" class="aq-lb-tab" id="af-Environment">Environment</button>
+                <button onclick="filterAssets('Trap')" class="aq-lb-tab" id="af-Trap">Traps</button>
+                <button onclick="filterAssets('Items')" class="aq-lb-tab" id="af-Items">Items</button>
+                <button onclick="filterAssets('Artifact')" class="aq-lb-tab" id="af-Artifact">Artifacts</button>
+                <button onclick="filterAssets('UI')" class="aq-lb-tab" id="af-UI">UI</button>
+                <button onclick="filterAssets('VFX')" class="aq-lb-tab" id="af-VFX">VFX</button>
+                <button onclick="filterAssets('NPC')" class="aq-lb-tab" id="af-NPC">NPC</button>
+            </div>
+            <div id="assets-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;width:100%;max-height:55vh;overflow-y:auto;"></div>
+
+            <div class="stone-btn secondary" style="margin-top:20px;width:100%;" onclick="showView('home-main')">
+                <div class="stone-btn-inner">← Back</div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <div id="game-container">
@@ -3050,7 +3169,7 @@
         if(SM.boardOpen) drawObjectiveBoard();
 
         // Portal enter hint (NPC hints are drawn in drawNPCs)
-        if(SM.portal && Math.abs(SM.portal.x + 48 - player.x) < 130) {
+        if(SM.portal && !SM.bossArena && Math.abs(SM.portal.x + 48 - player.x) < 130) {
             ctx.save();
             ctx.fillStyle = 'rgba(80,0,120,0.75)';
             roundRect2(ctx, SM.portal.x - 10, SM.portal.y - 32, 116, 20, 4);
@@ -3851,7 +3970,7 @@
             const SM=STORY_MODE;
             if(SM.npc1&&!SM.npc1Talked&&Math.abs(SM.npc1.x-player.x)<120) { tryInteractNPC(1); return; }
             if(SM.npc2&&!SM.npc2Talked&&Math.abs(SM.npc2.x-player.x)<120) { tryInteractNPC(2); return; }
-            if(SM.portal&&Math.abs(SM.portal.x+48-player.x)<130) { tryEnterPortal(); return; }
+            if(SM.portal&&!SM.bossArena&&Math.abs(SM.portal.x+48-player.x)<130) { tryEnterPortal(); return; }
             if(SM.market&&Math.abs(SM.market.x+50-player.x)<130) { openMarket(); return; }
         }
         // Story dialogue advance
@@ -4192,8 +4311,14 @@
             if (!c.collected && player.x < c.x + c.w && player.x + player.width > c.x &&
                 player.y < c.y + c.h && player.y + player.height > c.y) {
                 c.collected = true;
-                player.coins += ITEM_TYPES[c.type].val;
+                const coinVal = ITEM_TYPES[c.type].val;
+                player.coins += coinVal;
                 uiCoins = player.coins;
+                if(window.AQ) {
+                    const _val = coinVal;
+                    if(STORY_MODE.active) { for(let _i=0;_i<_val;_i++) AQ.trackSCCoin(); }
+                    else { for(let _i=0;_i<_val;_i++) AQ.trackEndlessCoin(); }
+                }
                 if (c.type === 'COIN') {
                     playSound('coin');
                 }
@@ -4425,26 +4550,31 @@
         }
 
         // ---- DRAGON PET UPDATE ----
-        if (dragonPet.owned && !STORY_MODE.bossArena) {
+        if (dragonPet.owned) {
             const d = dragonPet;
             const t = Date.now() / 1000;
 
-            // Find closest enemy for targeting
-            let closestEnemy = null; let closestDist = 300;
+            // Find closest target — enemies OR boss
+            let closestTarget = null; let closestDist = 600;
             enemies.forEach(e => {
                 if (e.dying) return;
-                const dist = Math.abs(e.x - player.x);
-                if (dist < closestDist) { closestDist = dist; closestEnemy = e; }
+                const dist = Math.abs(e.x - d.x);
+                if (dist < closestDist) { closestDist = dist; closestTarget = e; }
             });
+            // Also consider boss as target
+            if (STORY_MODE.bossArena && STORY_MODE.boss && !STORY_MODE.boss.dying) {
+                const bDist = Math.abs(STORY_MODE.boss.x - d.x);
+                if (bDist < closestDist) { closestDist = bDist; closestTarget = STORY_MODE.boss; }
+            }
 
-            // Dragon hovers at player's shoulder level, offset to one side
-            const offsetSide = player.facing === 'right' ? -80 : 80;
-            d.targetX = player.x + offsetSide + Math.sin(t * 1.2) * 10;
-            d.targetY = player.y + 10 + Math.sin(t * 2.0) * 6; // same level as player, slight bob
+            // Dragon hovers behind player (opposite side to facing direction)
+            const offsetSide = player.facing === 'right' ? -70 : 70;
+            d.targetX = player.x + offsetSide + Math.sin(t * 1.2) * 8;
+            d.targetY = player.y + 10 + Math.sin(t * 2.0) * 6;
 
-            // Determine facing — toward closest enemy, else match player
-            if (closestEnemy) {
-                d.facingRight = closestEnemy.x > d.x;
+            // Facing — always toward target if one exists, else match player
+            if (closestTarget) {
+                d.facingRight = closestTarget.x > d.x;
             } else {
                 d.facingRight = player.facing === 'right';
             }
@@ -4462,15 +4592,22 @@
             // Fire cooldown tick
             if (d.fireCooldown > 0) d.fireCooldown--;
 
-            // Attack closest enemy
-            if (closestEnemy && d.fireCooldown <= 0) {
+            // Attack closest target (enemy or boss) — auto-aim
+            if (closestTarget && d.fireCooldown <= 0) {
                 d.fireCooldown = 600; // 10 seconds
                 d.state = 'attack'; d.frame = 0; d.frameTimer = 0;
-                const vx = closestEnemy.x > d.x ? 6 : -6;
+                // Calculate aimed velocity toward target center
+                const tx = closestTarget.x + (closestTarget.width || 50) / 2;
+                const ty = closestTarget.y + (closestTarget.height || 70) / 2;
+                const dx = tx - (d.x + 32);
+                const dy = ty - (d.y + 20);
+                const len = Math.sqrt(dx*dx + dy*dy) || 1;
+                const spd = 7;
                 d.fireProjs.push({
-                    x: d.x + (vx > 0 ? 32 : -8),
+                    x: d.x + (dx > 0 ? 40 : 0),
                     y: d.y + 20,
-                    vx,
+                    vx: (dx / len) * spd,
+                    vy: (dy / len) * spd,
                     frame: 0, frameTimer: 0
                 });
                 setTimeout(() => { if (dragonPet.owned) dragonPet.state = 'fly'; }, 500);
@@ -4481,9 +4618,10 @@
             // Update fire projectiles
             d.fireProjs.forEach(fp => {
                 fp.x += fp.vx;
-                fp.y += Math.sin(t * 8 + fp.x * 0.05) * 0.4; // slight wave
+                fp.y += (fp.vy || 0);
                 fp.frameTimer++;
                 if (fp.frameTimer >= 3) { fp.frame = (fp.frame + 1) % 4; fp.frameTimer = 0; }
+                if (fp.hit) return;
                 // Hit enemies
                 enemies.forEach(e => {
                     if (e.dying || fp.hit) return;
@@ -4494,20 +4632,38 @@
                         dmgNumbers.push({ x: e.x+10, y: e.y-10, val: '🔥2', life: 45, color: '#ff6600' });
                         if (e.hp <= 0 && !e.dying) {
                             e.dying = true; e.alpha = 1; e.frame = 0;
-                            if (STORY_MODE.active) STORY_MODE.totalKills++;
+                            if (STORY_MODE.active) { STORY_MODE.totalKills++; if(window.AQ) AQ.trackSCKill(); }
                             shakeTimer = 8; shakeMag = 4;
                         }
-                        // Fire burst particles
                         for (let i = 0; i < 8; i++) {
                             const ang = (Math.PI*2/8)*i;
-                            particles.push({ x: fp.x, y: fp.y,
-                                vx: Math.cos(ang)*3, vy: Math.sin(ang)*3-1,
-                                life: 22, color: i%2===0?'#ff6600':'#ffcc00' });
+                            particles.push({ x: fp.x, y: fp.y, vx: Math.cos(ang)*3, vy: Math.sin(ang)*3-1, life: 22, color: i%2===0?'#ff6600':'#ffcc00' });
                         }
                     }
                 });
+                // Hit boss
+                if (STORY_MODE.bossArena && STORY_MODE.boss && !STORY_MODE.boss.dying && !fp.hit) {
+                    const b = STORY_MODE.boss;
+                    if (Math.abs(fp.x - (b.x + b.width/2)) < 40 && Math.abs(fp.y - (b.y + b.height/2)) < 50) {
+                        fp.hit = true;
+                        b.hp -= 2;
+                        b.hurtTimer = 10;
+                        if(window.AQ) AQ.trackSCDamageDealt(2);
+                        dmgNumbers.push({ x: b.x+30, y: b.y-10, val: '🔥2', life: 45, color: '#ff6600' });
+                        for (let i = 0; i < 6; i++) {
+                            const ang = (Math.PI*2/6)*i;
+                            particles.push({ x: fp.x, y: fp.y, vx: Math.cos(ang)*3, vy: Math.sin(ang)*3-1, life: 22, color: '#ff6600' });
+                        }
+                        if (b.hp <= 0 && !b.dying) {
+                            b.dying = true; b.state = 'death'; b.frame = 0; b.frameTimer = 0; b.alpha = 1;
+                            shakeTimer = 30; shakeMag = 10;
+                            playBossDefeatSpeech();
+                            setTimeout(() => { if(STORY_MODE.bossArena && !STORY_MODE.bossDefeated) startBossDeathCinematic(); }, 4500);
+                        }
+                    }
+                }
             });
-            d.fireProjs = d.fireProjs.filter(fp => !fp.hit && fp.x > -150 && fp.x < GAME_WIDTH+150);
+            d.fireProjs = d.fireProjs.filter(fp => !fp.hit && fp.x > -150 && fp.x < GAME_WIDTH+150 && fp.y > -100 && fp.y < GAME_HEIGHT+100);
         }
 
 
@@ -4882,7 +5038,7 @@
             // Draw NPCs
             drawNPCs();
             // Draw dragon pet (above player)
-            if(dragonPet.owned && !STORY_MODE.bossArena) drawDragonPet();
+            if(dragonPet.owned) drawDragonPet();
             // Draw boss
             if(STORY_MODE.bossArena && STORY_MODE.boss) drawBossSprites();
         }
@@ -5115,6 +5271,14 @@
         document.querySelectorAll('.home-view').forEach(v => v.classList.remove('active'));
         const el = document.getElementById(id);
         if (el) el.classList.add('active');
+        if (id === 'home-assets' && window._populateAssetsPage) {
+            const g = document.getElementById('assets-grid');
+            if (g) {
+                g.innerHTML = ''; // always repopulate so ticker restarts fresh
+                window._assetAnimators = [];
+                window._populateAssetsPage();
+            }
+        }
     };
 
     ;(function() {
@@ -5320,6 +5484,235 @@
         }
         window.animateHome();
 
+
+    // ===== ASSETS PAGE POPULATION =====
+    window._populateAssetsPage = function() {
+        const grid = document.getElementById('assets-grid');
+        if (!grid) return;
+        grid.innerHTML = '';
+
+        const SPRITE_CATALOG = [
+            // Characters
+            { label:'Warrior — Idle (Right)', key:'idle_right',    frames:8,  fps:10, w:130, h:120, category:'Character', desc:'The player hero at rest, facing right. 8-frame loop drawn each tick via drawSprite().' },
+            { label:'Warrior — Idle (Left)',  key:'idle_left',     frames:8,  fps:10, w:130, h:120, category:'Character', desc:'Mirror of idle_right. Swapped in when player.facing === "left".' },
+            { label:'Warrior — Run (Right)',  key:'run_right',     frames:8,  fps:7,  w:130, h:120, category:'Character', desc:'Plays when player.vx > 0.5 and moving right. Cycles faster than idle.' },
+            { label:'Warrior — Run (Left)',   key:'run_left',      frames:8,  fps:7,  w:130, h:120, category:'Character', desc:'Mirror run animation for left movement.' },
+            { label:'Warrior — Attack (R)',   key:'attack_right',  frames:8,  fps:5,  w:130, h:120, category:'Character', desc:'Plays on K/Space press. Frames 3–5 are the active hit window that deal damage to enemies.' },
+            { label:'Warrior — Attack (L)',   key:'attack_left',   frames:8,  fps:5,  w:130, h:120, category:'Character', desc:'Left-facing attack. Same hit window frames 3–5.' },
+            // Enemies
+            { label:'Guardian — Idle',        key:'enemy_idle',    frames:10, fps:10, w:160, h:160, category:'Enemy', desc:'10-frame idle loop. Enemy stands at rest when player is out of 450px aggro range.' },
+            { label:'Guardian — Run',         key:'enemy_run',     frames:16, fps:5,  w:160, h:160, category:'Enemy', desc:'16-frame run used when chasing player. Fastest enemy animation.' },
+            { label:'Guardian — Attack',      key:'enemy_attack',  frames:7,  fps:6,  w:160, h:160, category:'Enemy', desc:'7-frame strike. Damage is applied at the last frame of the cycle.' },
+            { label:'Guardian — Hurt',        key:'enemy_hurt',    frames:4,  fps:7,  w:160, h:160, category:'Enemy', desc:'Plays for 18 frames after taking damage. Enemy is briefly immune to attack stacking.' },
+            // Boss
+            { label:'Void-Warden — Idle',     key:'boss_idle',     frames:9,  fps:8,  w:200, h:200, category:'Boss', desc:'9-frame loop. Boss breathes in this state when patrolling or at a distance.' },
+            { label:'Void-Warden — Walk',     key:'boss_walk',     frames:8,  fps:8,  w:200, h:200, category:'Boss', desc:'Slow approach animation when player is beyond 300px.' },
+            { label:'Void-Warden — Run',      key:'boss_run',      frames:8,  fps:6,  w:200, h:200, category:'Boss', desc:'Faster charge used in Phase 2 (below 50% HP).' },
+            { label:'Void-Warden — Attack',   key:'boss_attack',   frames:13, fps:5,  w:200, h:200, category:'Boss', desc:'Melee strike. Deals 12 DMG (Phase 1) or 20 DMG (Phase 2). Ancient Core halves this.' },
+            { label:'Void-Warden — Hurt',     key:'boss_hurt',     frames:3,  fps:7,  w:200, h:200, category:'Boss', desc:'3-frame flinch on hit. Brief recovery window for the player.' },
+            { label:'Void-Warden — Death',    key:'boss_death',    frames:19, fps:6,  w:200, h:200, category:'Boss', desc:'19-frame death plays then triggers the arena collapse cinematic.' },
+            { label:'Void-Warden — Jump',     key:'boss_jump',     frames:9,  fps:7,  w:200, h:200, category:'Boss', desc:'Occasional leap. Triggered randomly when grounded in boss AI.' },
+            { label:'Boss Projectile',        key:'boss_proj',     frames:4,  fps:6,  w:60,  h:40,  category:'Boss', desc:'4-frame fireball shot at the player from range. Deals 10 DMG (5 with Ancient Core).' },
+            // NPC
+            { label:'Zephira / Sentinel Kael', key:'npc_idle',     frames:10, fps:8,  w:120, h:120, category:'NPC', desc:'Shared NPC sprite. Tinted blue for Sentinel Kael. Stands on a platform until approached.' },
+            // Dragon
+            { label:'Fire Dragon — Idle',     key:'dragon_idle',   frames:4,  fps:10, w:64,  h:64,  category:'Companion', desc:'4-frame idle hover. Shows when dragon is close to player position.' },
+            { label:'Fire Dragon — Fly',      key:'dragon_fly',    frames:4,  fps:7,  w:64,  h:64,  category:'Companion', desc:'Flying loop. Active when dragon is moving toward target offset position.' },
+            { label:'Fire Dragon — Attack',   key:'dragon_attack', frames:8,  fps:5,  w:64,  h:64,  category:'Companion', desc:'8-frame fire breath. Triggers when fireCooldown hits 0 and an enemy is within 600px.' },
+            // Environment
+            { label:'Background Scroll',      key:'background',    frames:1,  fps:0,  w:960, h:540, category:'Environment', desc:'Wide parallax background. Scrolls at 0.3× player speed for depth effect.' },
+            { label:'Platform Tiles',         key:'platforms',     frames:1,  fps:0,  w:300, h:300, category:'Environment', desc:'Sprite sheet sliced into 3 platform types. Each platform randomly picks a slice on spawn.' },
+            { label:'Arena Background',       key:'arena_back',    frames:1,  fps:0,  w:960, h:540, category:'Environment', desc:'Boss arena static background replacing the parallax scroll during the boss fight.' },
+            { label:'Arena Platform',         key:'arena_platform',frames:1,  fps:0,  w:200, h:40,  category:'Environment', desc:'Tiled platform texture used on all boss arena platforms.' },
+            { label:'Arena Rock 1',           key:'arena_rock1',   frames:1,  fps:0,  w:64,  h:50,  category:'Environment', desc:'Decorative boulder placed throughout the boss arena.' },
+            { label:'Arena Rock 2',           key:'arena_rock2',   frames:1,  fps:0,  w:70,  h:46,  category:'Environment', desc:'Second rock variant for visual variety in the arena.' },
+            { label:'Arena Tree',             key:'arena_tree',    frames:1,  fps:0,  w:120, h:190, category:'Environment', desc:'Dead tree decoration in the boss arena.' },
+            { label:'Arena Palm',             key:'arena_palm',    frames:1,  fps:0,  w:80,  h:180, category:'Environment', desc:'Palm tree placed at arena edges.' },
+            { label:'Arena Tree House',       key:'arena_treehouse',frames:1, fps:0,  w:180, h:230, category:'Environment', desc:'Mid-arena landmark decoration.' },
+            { label:'Arena Skulls',           key:'arena_skulls',  frames:1,  fps:0,  w:60,  h:36,  category:'Environment', desc:'Skull pile decoration scattered across arena floor.' },
+            { label:'Arena Spikes',           key:'arena_spikes',  frames:1,  fps:0,  w:56,  h:30,  category:'Environment', desc:'Visual hazard decoration — non-damaging in boss arena.' },
+            { label:'Arena Crate',            key:'arena_crate',   frames:1,  fps:0,  w:52,  h:52,  category:'Environment', desc:'Breakable-looking crate decoration.' },
+            { label:'Arena Bush',             key:'arena_bush',    frames:1,  fps:0,  w:60,  h:36,  category:'Environment', desc:'Bush foliage placed throughout the arena.' },
+            { label:'Arena Sign',             key:'arena_sign',    frames:1,  fps:0,  w:44,  h:54,  category:'Environment', desc:'Sign at the arena entrance.' },
+            { label:'Market House',           key:'market_house',  frames:1,  fps:0,  w:100, h:120, category:'Environment', desc:'The wooden house that appears as the Artifact Marketplace at 80% objectives.' },
+            { label:'Dimensional Portal',     key:'portal_sheet',  frames:6,  fps:8,  w:96,  h:64,  category:'Environment', desc:'6-frame portal animation (3 cols × 2 rows, 32×32 each). Appears when all objectives done.' },
+            // Traps
+            { label:'Trap — Fire',            key:'trap_fire',     frames:4,  fps:8,  w:40,  h:28,  category:'Trap', desc:'4-frame fire animation. Deals 5 DMG on contact. Blocked by Fire Feather shield.' },
+            { label:'Trap — Spike',           key:'trap_spike',    frames:5,  fps:12, w:48,  h:32,  category:'Trap', desc:'5-frame spike. Deals 5 DMG on contact. Appears on wide platforms past x=600.' },
+            { label:'Trap — Arrow Shooter',   key:'trap_arrow',    frames:6,  fps:15, w:32,  h:32,  category:'Trap', desc:'Fires a 7-DMG arrow left every 6 seconds. Placed at right edges of wide platforms.' },
+            // Items
+            { label:'Coins &amp; Chests',     key:'items',         frames:1,  fps:0,  w:60,  h:60,  category:'Items', desc:'Item sprite sheet. Coins use slice (16,16,16,16) — worth 1 gold. Chests use (16,560,32,32) — worth 10 gold and spawn a random artifact animation.' },
+            // Blood
+            { label:'Blood Splat Sheet',      key:'blood_sheet',   frames:30, fps:15, w:100, h:100, category:'VFX', desc:'30-frame blood splat (6 cols × 5 rows, 100×100 each). Spawns at enemy hit point on sword contact.' },
+            // UI
+            { label:'UI — Health Bar Panel',  key:'ui_healthbar',  frames:1,  fps:0,  w:160, h:41,  category:'UI', desc:'Health bar container drawn in the top-left HUD. Stretches to fit HP value.' },
+            { label:'UI — HP Fill (Red)',      key:'ui_valuered',   frames:1,  fps:0,  w:120, h:8,   category:'UI', desc:'Red fill bar drawn inside the health bar proportional to current HP.' },
+            { label:'UI — HP Bar Track',      key:'ui_valuebar',   frames:1,  fps:0,  w:128, h:16,  category:'UI', desc:'Background track of the HP bar.' },
+            { label:'UI — Coin Icon',         key:'ui_coinicon',   frames:1,  fps:0,  w:16,  h:18,  category:'UI', desc:'Gold coin icon displayed next to coin count in HUD and marketplace.' },
+            { label:'UI — Title Box',         key:'ui_titlebox',   frames:1,  fps:0,  w:64,  h:16,  category:'UI', desc:'Used for distance and timer panels in the top-left HUD.' },
+            { label:'UI — Top Pattern BG',    key:'ui_topbg',      frames:1,  fps:0,  w:116, h:67,  category:'UI', desc:'Tiled decorative border at the top of the home screen canvas.' },
+            { label:'UI — Bottom Pattern BG', key:'ui_bottombg',   frames:1,  fps:0,  w:128, h:112, category:'UI', desc:'Tiled decorative border at the bottom of the home screen canvas.' },
+            { label:'UI — Corner Knot',       key:'ui_cornerknot', frames:1,  fps:0,  w:14,  h:14,  category:'UI', desc:'Decorative corner element used on HUD panels and home screen.' },
+            { label:'UI — Hotkey Box',        key:'ui_hotkeybox',  frames:1,  fps:0,  w:34,  h:34,  category:'UI', desc:'Key cap image used in the How to Play controls reference.' },
+            { label:'UI — Highlight Button',  key:'ui_hlbutton',   frames:1,  fps:0,  w:60,  h:23,  category:'UI', desc:'Highlighted button sprite used in marketplace selected state.' },
+            { label:'UI — Highlight Slot',    key:'ui_hlslot',     frames:1,  fps:0,  w:26,  h:26,  category:'UI', desc:'Selected slot highlight in the artifact market grid.' },
+            { label:'UI — Left Arrow',        key:'ui_larrow',     frames:1,  fps:0,  w:7,   h:10,  category:'UI', desc:'Marketplace page left navigation arrow.' },
+            { label:'UI — Right Arrow',       key:'ui_rarrow',     frames:1,  fps:0,  w:7,   h:10,  category:'UI', desc:'Marketplace page right navigation arrow.' },
+            { label:'UI — Char Box',          key:'ui_charbox',    frames:1,  fps:0,  w:56,  h:57,  category:'UI', desc:'Character portrait frame in the HUD.' },
+            { label:'UI — Pipe',              key:'ui_pipe',       frames:1,  fps:0,  w:36,  h:11,  category:'UI', desc:'Decorative pipe used along the bottom of the home screen.' },
+            { label:'UI — Attr Bar',          key:'ui_attrbar',    frames:1,  fps:0,  w:41,  h:9,   category:'UI', desc:'Attribute bar used for stat display.' },
+            { label:'UI — Heart Icons',       key:'ui_hearticons', frames:1,  fps:0,  w:32,  h:32,  category:'UI', desc:'Heart icon sheet for HP visual indicators.' },
+            { label:'UI — Top Mid BG',        key:'ui_topmidBG',   frames:1,  fps:0,  w:199, h:48,  category:'UI', desc:'Middle top decorative background strip.' },
+            { label:'UI — Rect Box',          key:'ui_rectbox',    frames:1,  fps:0,  w:96,  h:96,  category:'UI', desc:'Generic rectangle panel box.' },
+            { label:'UI — Quit Icon',         key:'ui_quiticon',   frames:1,  fps:0,  w:20,  h:20,  category:'UI', desc:'Quit/close icon for the pause menu.' },
+            // Artifacts
+            { label:'Artifact — Iron Helm',   key:null, src:'https://raw.githubusercontent.com/precidoboss/adventurer/main/Icon4.png', frames:1, fps:0, w:44, h:44, category:'Artifact', desc:'[1] Iron Helm. +1 Max HP per pickup. Passive — applies instantly on collection from chest or marketplace.' },
+            { label:'Artifact — Shadow Berries',key:null, src:'https://raw.githubusercontent.com/precidoboss/adventurer/main/Icon2.png', frames:1, fps:0, w:44, h:44, category:'Artifact', desc:'[2] Shadow Berries. Restores 5 HP instantly on pickup. Passive. Max purchases limited by HP deficit.' },
+            { label:'Artifact — Mana Crystal', key:null, src:'https://raw.githubusercontent.com/precidoboss/adventurer/main/Icon3.png', frames:1, fps:0, w:44, h:44, category:'Artifact', desc:'[3] Mana Crystal. +1 to player.attackDmg permanently. Passive.' },
+            { label:'Artifact — Fire Feather', key:null, src:'https://raw.githubusercontent.com/precidoboss/adventurer/main/Icon1.png', frames:1, fps:0, w:44, h:44, category:'Artifact', desc:'[4] Fire Feather. Active — press 4. Activates fireShield for 600 frames (10 seconds), blocking trap damage.' },
+            { label:'Artifact — Ancient Core', key:null, src:'https://raw.githubusercontent.com/precidoboss/adventurer/main/Icon5.png', frames:1, fps:0, w:44, h:44, category:'Artifact', desc:'[5] Ancient Core. Active — press 5 during boss fight. Permanently halves boss attack damage. One use.' },
+        ];
+
+        const categoryColors = {
+            Character:'#4488ff', Enemy:'#ff4444', Boss:'#cc0033', NPC:'#cc88ff',
+            Companion:'#ff8800', Environment:'#44aa66', Trap:'#ff6600',
+            Items:'#ffd700', VFX:'#ff44ff', UI:'#aaaaaa', Artifact:'#ffcc00'
+        };
+
+        SPRITE_CATALOG.forEach(asset => {
+            const card = document.createElement('div');
+            card.dataset.cat = asset.category;
+            card.style.cssText = 'background:rgba(255,255,255,0.02);border:1px solid #3a2810;border-radius:6px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px;';
+
+            // Category badge
+            const badge = document.createElement('div');
+            const col = categoryColors[asset.category] || '#888';
+            badge.style.cssText = `font-family:'Cinzel',serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:${col};border:1px solid ${col}44;padding:2px 8px;border-radius:2px;align-self:flex-start;`;
+            badge.textContent = asset.category;
+            card.appendChild(badge);
+
+            // Canvas for animated preview
+            const cvs = document.createElement('canvas');
+            cvs.width  = Math.min(asset.w, 128);
+            cvs.height = Math.min(asset.h, 128);
+            cvs.style.cssText = 'image-rendering:pixelated;background:rgba(0,0,0,0.3);border-radius:3px;max-width:100%;';
+            card.appendChild(cvs);
+
+            // Label
+            const lbl = document.createElement('div');
+            lbl.style.cssText = "font-family:'Cinzel',serif;font-size:10px;color:#c0a060;text-align:center;letter-spacing:1px;";
+            lbl.innerHTML = asset.label;
+            card.appendChild(lbl);
+
+            // Dimensions
+            const dim = document.createElement('div');
+            dim.style.cssText = "font-family:'Cinzel',serif;font-size:9px;color:#5a4030;text-align:center;";
+            dim.textContent = asset.frames > 1 ? `${asset.frames} frames · ${asset.fps}fps` : 'Static';
+            card.appendChild(dim);
+
+            // Desc
+            const desc = document.createElement('div');
+            desc.style.cssText = "font-family:'Cinzel',serif;font-size:9px;color:#6a5040;line-height:1.5;text-align:center;";
+            desc.innerHTML = asset.desc;
+            card.appendChild(desc);
+
+            grid.appendChild(card);
+
+            // Animate the canvas
+            const ctx2 = cvs.getContext('2d');
+            const CW = cvs.width, CH = cvs.height;
+            let frame = 0, frameTimer = 0;
+            const spd = asset.fps > 0 ? Math.round(60 / asset.fps) : 999;
+
+            function drawAssetFrame(curFrame) {
+                if (curFrame === undefined) curFrame = frame;
+                ctx2.clearRect(0, 0, CW, CH);
+                let img = null;
+                if (asset.key && window._gameImages && window._gameImages[asset.key]) {
+                    img = window._gameImages[asset.key];
+                } else if (asset.src) {
+                    if (!asset._img) { asset._img = new Image(); asset._img.src = asset.src; }
+                    img = asset._img;
+                }
+                if (!img || !img.complete || !img.naturalWidth) return;
+                ctx2.imageSmoothingEnabled = false;
+
+                if (asset.frames <= 1) {
+                    // Static — scale to fit
+                    const sw = img.naturalWidth, sh = img.naturalHeight;
+                    const scale = Math.min(CW / sw, CH / sh);
+                    const dw = sw * scale, dh = sh * scale;
+                    ctx2.drawImage(img, 0, 0, sw, sh, (CW-dw)/2, (CH-dh)/2, dw, dh);
+                } else if (asset.key === 'portal_sheet') {
+                    // Portal: 3 cols x 2 rows grid, each cell 32x32
+                    const COLS = 3, FW = 32, FH = 32;
+                    const f = curFrame % 6;
+                    const col = f % COLS, row = Math.floor(f / COLS);
+                    const scale = Math.min(CW / FW, CH / FH);
+                    const dw = FW * scale, dh = FH * scale;
+                    ctx2.drawImage(img, col*FW, row*FH, FW, FH, (CW-dw)/2, (CH-dh)/2, dw, dh);
+                } else if (asset.key === 'blood_sheet') {
+                    // Blood: 6 cols x 5 rows, 100x100 each
+                    const COLS = 6, FW = 100, FH = 100;
+                    const f = curFrame % 30;
+                    const col = f % COLS, row = Math.floor(f / COLS);
+                    const scale = Math.min(CW / FW, CH / FH);
+                    const dw = FW * scale, dh = FH * scale;
+                    ctx2.drawImage(img, col*FW, row*FH, FW, FH, (CW-dw)/2, (CH-dh)/2, dw, dh);
+                } else {
+                    // Standard horizontal sprite strip
+                    const frameW = img.naturalWidth / asset.frames;
+                    const frameH = img.naturalHeight;
+                    const scale = Math.min(CW / frameW, CH / frameH);
+                    const dw = frameW * scale, dh = frameH * scale;
+                    ctx2.drawImage(img, curFrame * frameW, 0, frameW, frameH, (CW-dw)/2, (CH-dh)/2, dw, dh);
+                }
+            }
+
+            // Register with shared ticker instead of own rAF
+            window._assetAnimators = window._assetAnimators || [];
+            window._assetAnimators.push({ drawFrame: drawAssetFrame, frameTimer: [0], frame: [0], spd, frames: asset.frames });
+        });
+
+        // Single shared rAF ticker for ALL asset cards
+        let _assetRafId = null;
+        function _assetTick() {
+            // Stop if assets page is no longer visible
+            const assetsView = document.getElementById('home-assets');
+            if (!assetsView || !assetsView.classList.contains('active')) {
+                _assetRafId = null;
+                return;
+            }
+            (window._assetAnimators || []).forEach(a => {
+                a.frameTimer[0]++;
+                if (a.frameTimer[0] >= a.spd && a.spd < 999) {
+                    a.frame[0] = (a.frame[0] + 1) % a.frames;
+                    a.frameTimer[0] = 0;
+                }
+                a.drawFrame(a.frame[0]);
+            });
+            _assetRafId = requestAnimationFrame(_assetTick);
+        }
+        window._startAssetTicker = function() {
+            window._assetAnimators = []; // reset so cards re-register on re-open
+        };
+        // Kick ticker once populated
+        _assetRafId = requestAnimationFrame(_assetTick);
+    };
+
+    // Expose game images for asset page
+    window._gameImages = images;
+
+    // Asset page category filter
+    window.filterAssets = function(cat) {
+        document.querySelectorAll('#assets-filter .aq-lb-tab').forEach(b => b.classList.remove('active'));
+        const btn = document.getElementById('af-' + cat);
+        if (btn) btn.classList.add('active');
+        const cards = document.querySelectorAll('#assets-grid [data-cat]');
+        cards.forEach(card => {
+            card.style.display = (cat === 'all' || card.dataset.cat === cat) ? '' : 'none';
+        });
+    };
         window.startGame = function(mode) {
             window._gameMode = mode || 'endless';
             if(mode !== 'story' && window.AQ) AQ.startEndlessRun();
@@ -5528,11 +5921,14 @@ async function finishSCRun(completed) {
     if (!_session || _isGuest) return;
     const s = _runStats.sc;
     const time_ms = completed ? (Date.now() - s.startMs) : null;
+    // Use max of tracked vs actual player coins as safety net
+    const actualCoins = (typeof player !== 'undefined' ? player.coins : 0);
+    const coinsEarned = Math.max(s.coinsEarned, actualCoins + s.coinsSpent);
     const { data: run, error } = await db.from('shadow_chronicle_runs').insert({
         user_id:       _session.id,
         completed:     !!completed,
         time_taken_ms: time_ms,
-        coins_earned:  s.coinsEarned,
+        coins_earned:  coinsEarned,
         coins_spent:   s.coinsSpent,
         enemies_killed: s.kills,
         damage_dealt:  s.damageDone,
