@@ -118,7 +118,6 @@
             align-items: center; justify-content: center;
             overflow: hidden;
             background: #0d0a07;
-            width: 100vw; height: 100vh;
         }
         #home-canvas { position: absolute; inset: 0; width:100%; height:100%; }
 
@@ -144,7 +143,7 @@
         .stone-corner.br { bottom:0; right:0; clip-path: polygon(100% 0, 0 100%, 100% 100%); }
 
         /* View system */
-        .home-view { position:absolute; inset:0; display:none; align-items:center; justify-content:center; z-index:2; overflow-y:auto; padding:20px 0; }
+        .home-view { position:absolute; inset:0; display:none; align-items:center; justify-content:center; z-index:2; }
         .home-view.active { display:flex; }
 
         .home-content {
@@ -535,11 +534,11 @@
                 <div class="stone-btn secondary" onclick="showView('home-howto')">
                     <div class="stone-btn-inner">HOW TO PLAY</div>
                 </div>
-                <div class="stone-btn secondary" onclick="showView('home-assets')">
-                    <div class="stone-btn-inner">🎨 ASSETS</div>
-                </div>
                 <div class="stone-btn secondary" onclick="showView('home-credits')">
-                    <div class="stone-btn-inner">★ CREDITS</div>
+                    <div class="stone-btn-inner">✦ CREDITS</div>
+                </div>
+                <div class="stone-btn secondary" onclick="showView('home-sprites')">
+                    <div class="stone-btn-inner">🎨 SPRITE GALLERY</div>
                 </div>
             </div>
 
@@ -612,6 +611,11 @@
                     <div class="howto-tips">
                         <div class="tip-row"><span class="tip-icon">⚔</span><span><b style="color:#e8c870">Endless Mode</b> — Survive as long as possible. No time limit. Fight until death.</span></div>
                         <div class="tip-row"><span class="tip-icon">✦</span><span><b style="color:#cc88ff">Shadow Chronicle</b> — Complete 8 objectives in 3 mins. Speak to NPCs. Discover the password. Reach the boss.</span></div>
+                        <div class="tip-row" style="background:rgba(100,0,180,0.08);border:1px solid rgba(150,60,255,0.25);border-radius:4px;padding:8px 10px;margin-top:4px;">
+                            <span class="tip-icon">🔮</span>
+                            <span style="color:#9966ff;"><b style="color:#bb88ff">Coming Soon — Chapter II: The Ashen Depths</b><br>
+                            <span style="font-size:10px;opacity:0.8;">A new Shadow Chronicle level descends into cursed catacombs beneath the Void-Warden's realm. New enemies, hidden relics, and a darkness even the Warrior fears. The seals are almost broken…</span></span>
+                        </div>
                         <div class="tip-row"><span class="tip-icon">🗝</span><span>In Story Mode: Press <b>F</b> to interact with NPCs and enter the dimensional portal.</span></div>
                         <div class="tip-row"><span class="tip-icon">📋</span><span>Press <b>TAB</b> in Story Mode to toggle the Objective Board.</span></div>
                         <div class="tip-row"><span class="tip-icon">☠</span><span>Defeat the Void-Warden boss to earn a final rating based on performance.</span></div>
@@ -679,125 +683,303 @@
                     </div>
                 </div>
             </div>
-                <div class="howto-section span2" style="background:linear-gradient(160deg,rgba(30,0,60,0.5),rgba(10,0,30,0.6));border-color:#6622aa;">
-                    <div class="howto-section-title" style="color:#cc88ff;">🔮 Coming Soon — Shadow Chronicle: Chapter II</div>
-                    <div class="howto-tips">
-                        <div class="tip-row"><span class="tip-icon">🌑</span><span style="color:#cc88ff;">A new chapter of darkness approaches. The Void-Warden may have fallen — but something older stirs beneath the ruins of Ardenmoor.</span></div>
-                        <div class="tip-row"><span class="tip-icon">🗺️</span><span>New environments. New enemies. A deeper story. The chronicle is far from over.</span></div>
-                        <div class="tip-row"><span class="tip-icon">👁</span><span style="color:#9966cc;">Follow <b style="color:#cc88ff;">@PRECIDOBOSS</b> on X for updates and sneak peeks.</span></div>
-                    </div>
+            <div class="howto-section span2" style="border-color:#4a2e8a;background:rgba(60,20,100,0.1);">
+                <div class="howto-section-title" style="color:#9966cc;border-color:#4a2e8a;">✦ Game Credits</div>
+                <div style="text-align:center;font-family:'Cinzel',serif;font-size:11px;color:#907080;line-height:2;">
+                    <div style="font-family:'Cinzel Decorative',cursive;font-size:16px;color:#cc88ff;letter-spacing:3px;margin-bottom:8px;">ADVENTURER'S QUEST</div>
+                    <div><span style="color:#7a5890;">Producer &amp; Lead Developer</span> &nbsp;·&nbsp; <b style="color:#e8c0ff;">@PRECIDOBOS</b></div>
+                    <div><span style="color:#7a5890;">Built for</span> &nbsp;·&nbsp; <b style="color:#c0a0ff;">The Grotto</b></div>
+                    <div style="margin-top:6px;font-size:10px;color:#5a3870;">Sprite assets · Game design · Lore · Combat systems · Story mode</div>
+                    <div style="margin-top:4px;font-size:10px;color:#4a2a60;">© @PRECIDOBOS — All rights reserved</div>
                 </div>
             </div>
-            <div style="display:flex;gap:12px;margin-top:24px;">
-                <div class="stone-btn secondary" onclick="showView('home-main')">
-                    <div class="stone-btn-inner">← Back</div>
-                </div>
-                <div class="stone-btn secondary" onclick="showView('home-credits')">
-                    <div class="stone-btn-inner">★ Credits</div>
-                </div>
+            <div class="stone-btn secondary" style="margin-top:24px" onclick="showView('home-main')">
+                <div class="stone-btn-inner">← Back</div>
             </div>
         </div>
     </div>
 
     <!-- CREDITS VIEW -->
     <div id="home-credits" class="home-view">
-        <div class="howto-box" style="max-width:600px;">
-            <div class="howto-title" style="font-size:26px;letter-spacing:6px;">★ CREDITS ★</div>
-            <div style="font-family:'Cinzel',serif;font-size:11px;color:#7a5830;letter-spacing:3px;text-transform:uppercase;text-align:center;margin-bottom:4px;">Adventurer's Quest — Built for The Grotto</div>
-            <div style="width:100%;height:1px;background:linear-gradient(90deg,transparent,#5a3a18,transparent);margin:4px 0 16px;"></div>
-
-            <!-- Main Credit -->
-            <div style="text-align:center;padding:20px;background:rgba(255,200,0,0.05);border:1px solid #6a4a18;border-radius:6px;width:100%;">
-                <div style="font-family:'Cinzel Decorative',cursive;font-size:28px;color:#ffd700;text-shadow:0 0 30px rgba(255,200,0,0.5);margin-bottom:6px;">PRECIDOBOSS</div>
-                <div style="font-family:'Cinzel',serif;font-size:12px;color:#c8a040;letter-spacing:4px;text-transform:uppercase;">Creator &amp; Producer</div>
-                <div style="font-family:'Cinzel',serif;font-size:11px;color:#7a6040;margin-top:8px;">Game Design · Art Direction · Development</div>
-                <a href="https://x.com/PRECIDOBOSS" target="_blank" style="display:inline-block;margin-top:12px;font-family:'Cinzel',serif;font-size:11px;color:#cc88ff;letter-spacing:2px;text-decoration:none;border:1px solid #6622aa;padding:4px 14px;border-radius:3px;">𝕏 @PRECIDOBOSS</a>
+        <div class="howto-box" style="max-width:680px;">
+            <div class="howto-title" style="color:#cc88ff;text-shadow:0 0 20px rgba(180,80,255,0.5);">✦ GAME CREDITS ✦</div>
+            <div style="text-align:center;font-family:'Cinzel',serif;font-size:11px;color:#907080;line-height:1.8;width:100%;">
+                <div style="font-family:'Cinzel Decorative',cursive;font-size:22px;color:#e8d0ff;letter-spacing:4px;margin-bottom:4px;">ADVENTURER'S QUEST</div>
+                <div style="font-size:11px;color:#6a4888;letter-spacing:4px;margin-bottom:20px;">A GROTTO ORIGINAL</div>
             </div>
 
-            <div style="width:100%;height:1px;background:linear-gradient(90deg,transparent,#5a3a18,transparent);margin:16px 0;"></div>
+            <!-- Producer block -->
+            <div style="background:linear-gradient(160deg,rgba(80,20,120,0.3),rgba(30,10,60,0.4));border:1.5px solid #8844cc;border-radius:8px;padding:22px 32px;width:100%;text-align:center;">
+                <div style="font-family:'Cinzel',serif;font-size:10px;color:#9966cc;letter-spacing:4px;text-transform:uppercase;margin-bottom:10px;">PRODUCER &amp; LEAD DEVELOPER</div>
+                <div style="font-family:'Cinzel Decorative',cursive;font-size:28px;color:#cc88ff;letter-spacing:3px;text-shadow:0 0 30px rgba(200,100,255,0.6);">@PRECIDOBOS</div>
+                <div style="font-family:'Cinzel',serif;font-size:11px;color:#7a5888;margin-top:8px;letter-spacing:2px;">X (Twitter) · <a href="https://x.com/precidobos" target="_blank" style="color:#bb77ff;text-decoration:none;">x.com/precidobos</a></div>
+            </div>
 
-            <!-- Role Credits -->
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;">
-                <div style="background:rgba(255,255,255,0.02);border:1px solid #3a2810;border-radius:4px;padding:12px 16px;">
-                    <div style="font-family:'Cinzel',serif;font-size:9px;color:#7a5830;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">🎮 Game Design</div>
-                    <div style="font-family:'Cinzel Decorative',cursive;font-size:14px;color:#e8c870;">PRECIDOBOSS</div>
+            <!-- Roles grid -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%;margin-top:4px;">
+                <div style="background:rgba(255,255,255,0.02);border:1px solid #3a2850;border-radius:4px;padding:14px;">
+                    <div style="font-family:'Cinzel',serif;font-size:10px;color:#9966cc;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;border-bottom:1px solid #3a2850;padding-bottom:6px;">Game Design</div>
+                    <div style="font-family:'Cinzel',serif;font-size:11px;color:#c0a0e0;line-height:1.8;">
+                        Combat Systems<br>Level Architecture<br>Artifact Mechanics<br>Boss Encounter Design<br>Roguelite Progression
+                    </div>
                 </div>
-                <div style="background:rgba(255,255,255,0.02);border:1px solid #3a2810;border-radius:4px;padding:12px 16px;">
-                    <div style="font-family:'Cinzel',serif;font-size:9px;color:#7a5830;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">🎨 Art &amp; Sprites</div>
-                    <div style="font-family:'Cinzel Decorative',cursive;font-size:14px;color:#e8c870;">PRECIDOBOSS</div>
+                <div style="background:rgba(255,255,255,0.02);border:1px solid #3a2850;border-radius:4px;padding:14px;">
+                    <div style="font-family:'Cinzel',serif;font-size:10px;color:#9966cc;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;border-bottom:1px solid #3a2850;padding-bottom:6px;">Development</div>
+                    <div style="font-family:'Cinzel',serif;font-size:11px;color:#c0a0e0;line-height:1.8;">
+                        HTML5 / Canvas Engine<br>Sprite Animation System<br>Supabase Integration<br>Leaderboard &amp; Auth<br>Procedural Audio
+                    </div>
                 </div>
-                <div style="background:rgba(255,255,255,0.02);border:1px solid #3a2810;border-radius:4px;padding:12px 16px;">
-                    <div style="font-family:'Cinzel',serif;font-size:9px;color:#7a5830;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">💻 Development</div>
-                    <div style="font-family:'Cinzel Decorative',cursive;font-size:14px;color:#e8c870;">PRECIDOBOSS</div>
+                <div style="background:rgba(255,255,255,0.02);border:1px solid #3a2850;border-radius:4px;padding:14px;">
+                    <div style="font-family:'Cinzel',serif;font-size:10px;color:#9966cc;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;border-bottom:1px solid #3a2850;padding-bottom:6px;">Story &amp; Lore</div>
+                    <div style="font-family:'Cinzel',serif;font-size:11px;color:#c0a0e0;line-height:1.8;">
+                        Shadow Chronicle Narrative<br>NPC Dialogue (Zephira &amp; Kael)<br>Void-Warden Mythos<br>World Building
+                    </div>
                 </div>
-                <div style="background:rgba(255,255,255,0.02);border:1px solid #3a2810;border-radius:4px;padding:12px 16px;">
-                    <div style="font-family:'Cinzel',serif;font-size:9px;color:#7a5830;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">🎵 Sound &amp; Music</div>
-                    <div style="font-family:'Cinzel Decorative',cursive;font-size:14px;color:#e8c870;">PRECIDOBOSS</div>
-                </div>
-                <div style="background:rgba(255,255,255,0.02);border:1px solid #3a2810;border-radius:4px;padding:12px 16px;">
-                    <div style="font-family:'Cinzel',serif;font-size:9px;color:#7a5830;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">📖 Story &amp; Lore</div>
-                    <div style="font-family:'Cinzel Decorative',cursive;font-size:14px;color:#e8c870;">PRECIDOBOSS</div>
-                </div>
-                <div style="background:rgba(255,255,255,0.02);border:1px solid #3a2810;border-radius:4px;padding:12px 16px;">
-                    <div style="font-family:'Cinzel',serif;font-size:9px;color:#7a5830;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">🌍 World Building</div>
-                    <div style="font-family:'Cinzel Decorative',cursive;font-size:14px;color:#e8c870;">PRECIDOBOSS</div>
+                <div style="background:rgba(255,255,255,0.02);border:1px solid #3a2850;border-radius:4px;padding:14px;">
+                    <div style="font-family:'Cinzel',serif;font-size:10px;color:#9966cc;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;border-bottom:1px solid #3a2850;padding-bottom:6px;">Art Direction</div>
+                    <div style="font-family:'Cinzel',serif;font-size:11px;color:#c0a0e0;line-height:1.8;">
+                        Sprite Curation &amp; Integration<br>UI / HUD Design<br>Arena &amp; Environment Layout<br>Visual FX Systems
+                    </div>
                 </div>
             </div>
 
-            <div style="width:100%;height:1px;background:linear-gradient(90deg,transparent,#5a3a18,transparent);margin:16px 0;"></div>
-
-            <!-- Built for -->
-            <div style="text-align:center;width:100%;">
-                <div style="font-family:'Cinzel',serif;font-size:11px;color:#7a5830;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">Built For</div>
-                <div style="font-family:'Cinzel Decorative',cursive;font-size:20px;color:#cc88ff;text-shadow:0 0 20px rgba(180,80,255,0.4);">The Grotto</div>
-                <div style="font-family:'Cinzel',serif;font-size:10px;color:#6a4050;margin-top:6px;letter-spacing:2px;">A community forged in darkness and ambition.</div>
+            <!-- Built for block -->
+            <div style="background:linear-gradient(160deg,rgba(30,20,10,0.8),rgba(15,10,5,0.9));border:1.5px solid #7a5020;border-radius:6px;padding:18px 28px;width:100%;text-align:center;">
+                <div style="font-family:'Cinzel',serif;font-size:10px;color:#8a6030;letter-spacing:4px;text-transform:uppercase;margin-bottom:8px;">BUILT FOR</div>
+                <div style="font-family:'Cinzel Decorative',cursive;font-size:20px;color:#e8c870;letter-spacing:3px;text-shadow:0 0 20px rgba(220,180,60,0.4);">THE GROTTO</div>
+                <div style="font-family:'Cinzel',serif;font-size:10px;color:#6a4820;margin-top:6px;letter-spacing:2px;">Avalanche Ecosystem · Browser Gaming · Web3 Native</div>
             </div>
 
-            <div style="width:100%;height:1px;background:linear-gradient(90deg,transparent,#5a3a18,transparent);margin:16px 0;"></div>
-
-            <!-- Tech stack -->
-            <div style="text-align:center;font-family:'Cinzel',serif;font-size:10px;color:#5a4030;letter-spacing:2px;line-height:1.8;">
-                Built with HTML5 Canvas · Web Audio API · Supabase · Vanilla JavaScript<br>
-                No engines. No frameworks. Pure craft.
+            <!-- Special thanks -->
+            <div style="width:100%;background:rgba(255,255,255,0.02);border:1px solid #3a2820;border-radius:4px;padding:14px 20px;text-align:center;">
+                <div style="font-family:'Cinzel',serif;font-size:10px;color:#7a5830;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">Special Thanks</div>
+                <div style="font-family:'Cinzel',serif;font-size:11px;color:#806050;line-height:2;">
+                    The Grotto Community &nbsp;·&nbsp; Avalanche Builders &nbsp;·&nbsp; @clubhashcash<br>
+                    Every adventurer who picked up the sword and entered the void.
+                </div>
             </div>
 
-            <div style="width:100%;height:1px;background:linear-gradient(90deg,transparent,#5a3a18,transparent);margin:16px 0;"></div>
+            <div style="font-family:'Cinzel',serif;font-size:10px;color:#4a3020;letter-spacing:2px;text-align:center;margin-top:4px;">© @PRECIDOBOS — All Rights Reserved</div>
 
-            <div style="text-align:center;font-family:'Cinzel',serif;font-size:10px;color:#4a3020;letter-spacing:1px;">
-                © PRECIDOBOSS · Adventurer's Quest · All Rights Reserved
-            </div>
-
-            <div class="stone-btn secondary" style="margin-top:16px;width:100%;" onclick="showView('home-main')">
+            <div class="stone-btn secondary" style="margin-top:16px" onclick="showView('home-main')">
                 <div class="stone-btn-inner">← Back</div>
             </div>
         </div>
     </div>
 
-    <!-- ASSETS VIEW -->
-    <div id="home-assets" class="home-view">
+    <!-- SPRITE GALLERY VIEW -->
+    <div id="home-sprites" class="home-view">
         <div class="howto-box" style="max-width:900px;">
-            <div class="howto-title" style="font-size:20px;letter-spacing:4px;">🎨 SPRITES &amp; ASSETS</div>
-            <div style="font-family:'Cinzel',serif;font-size:10px;color:#7a5830;letter-spacing:2px;text-align:center;margin-bottom:8px;">Every image, sprite sheet, and animation used in Adventurer's Quest</div>
-            <div style="width:100%;height:1px;background:linear-gradient(90deg,transparent,#5a3a18,transparent);margin-bottom:16px;"></div>
+            <div class="howto-title" style="color:#d4a373;">🎨 SPRITE &amp; ASSET GALLERY</div>
+            <div style="font-family:'Cinzel',serif;font-size:11px;color:#7a5830;text-align:center;letter-spacing:2px;margin-bottom:4px;">Every animated character, trap, environment and UI element used in-game</div>
 
-            <!-- Category filter -->
-            <div id="assets-filter" style="display:flex;flex-wrap:wrap;gap:6px;width:100%;margin-bottom:8px;">
-                <button onclick="filterAssets('all')" class="aq-lb-tab active" id="af-all">All</button>
-                <button onclick="filterAssets('Character')" class="aq-lb-tab" id="af-Character">Characters</button>
-                <button onclick="filterAssets('Enemy')" class="aq-lb-tab" id="af-Enemy">Enemies</button>
-                <button onclick="filterAssets('Boss')" class="aq-lb-tab" id="af-Boss">Boss</button>
-                <button onclick="filterAssets('Companion')" class="aq-lb-tab" id="af-Companion">Companion</button>
-                <button onclick="filterAssets('Environment')" class="aq-lb-tab" id="af-Environment">Environment</button>
-                <button onclick="filterAssets('Trap')" class="aq-lb-tab" id="af-Trap">Traps</button>
-                <button onclick="filterAssets('Items')" class="aq-lb-tab" id="af-Items">Items</button>
-                <button onclick="filterAssets('Artifact')" class="aq-lb-tab" id="af-Artifact">Artifacts</button>
-                <button onclick="filterAssets('UI')" class="aq-lb-tab" id="af-UI">UI</button>
-                <button onclick="filterAssets('VFX')" class="aq-lb-tab" id="af-VFX">VFX</button>
-                <button onclick="filterAssets('NPC')" class="aq-lb-tab" id="af-NPC">NPC</button>
+            <!-- CHARACTER SPRITES -->
+            <div style="width:100%;background:rgba(255,255,255,0.02);border:1px solid #5a3820;border-radius:6px;padding:16px 20px;">
+                <div style="font-family:'Cinzel',serif;font-size:11px;letter-spacing:3px;color:#c8a040;text-transform:uppercase;border-bottom:1px solid #3a2810;padding-bottom:6px;margin-bottom:14px;">⚔ Player Character — The Warrior</div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;">
+                    <div style="text-align:center;">
+                        <canvas id="sg-hero-idle" width="96" height="72" style="image-rendering:pixelated;background:rgba(0,0,0,0.3);border-radius:4px;border:1px solid #3a2810;"></canvas>
+                        <div style="font-family:'Cinzel',serif;font-size:10px;color:#a07838;margin-top:4px;letter-spacing:1px;">IDLE</div>
+                        <div style="font-family:'Cinzel',serif;font-size:9px;color:#5a3820;margin-top:2px;">6-frame loop · Standing still</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <canvas id="sg-hero-run" width="96" height="72" style="image-rendering:pixelated;background:rgba(0,0,0,0.3);border-radius:4px;border:1px solid #3a2810;"></canvas>
+                        <div style="font-family:'Cinzel',serif;font-size:10px;color:#a07838;margin-top:4px;letter-spacing:1px;">RUN</div>
+                        <div style="font-family:'Cinzel',serif;font-size:9px;color:#5a3820;margin-top:2px;">8-frame loop · A/D movement</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <canvas id="sg-hero-attack" width="96" height="72" style="image-rendering:pixelated;background:rgba(0,0,0,0.3);border-radius:4px;border:1px solid #3a2810;"></canvas>
+                        <div style="font-family:'Cinzel',serif;font-size:10px;color:#a07838;margin-top:4px;letter-spacing:1px;">ATTACK</div>
+                        <div style="font-family:'Cinzel',serif;font-size:9px;color:#5a3820;margin-top:2px;">4-frame · K / Space · deals 8–20 dmg</div>
+                    </div>
+                </div>
+                <div style="font-family:'Cinzel',serif;font-size:10px;color:#5a3820;margin-top:10px;line-height:1.6;">The Warrior's animations use horizontal sprite sheets (frames side by side). The engine reads <b style="color:#8a6030;">frameWidth = imageWidth / frameCount</b>, advancing one frame per game tick at a set interval. Left-facing versions are mirrored sheets loaded separately (idle_left, run_left, attack_left) for correct pixel-art mirroring.</div>
             </div>
-            <div id="assets-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;width:100%;max-height:55vh;overflow-y:auto;"></div>
 
-            <div class="stone-btn secondary" style="margin-top:20px;width:100%;" onclick="showView('home-main')">
+            <!-- ENEMY SPRITES -->
+            <div style="width:100%;background:rgba(255,255,255,0.02);border:1px solid #5a3820;border-radius:6px;padding:16px 20px;">
+                <div style="font-family:'Cinzel',serif;font-size:11px;letter-spacing:3px;color:#c8a040;text-transform:uppercase;border-bottom:1px solid #3a2810;padding-bottom:6px;margin-bottom:14px;">🛡 Enemy — The Guardian</div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;">
+                    <div style="text-align:center;">
+                        <canvas id="sg-enemy-idle" width="96" height="80" style="image-rendering:pixelated;background:rgba(0,0,0,0.3);border-radius:4px;border:1px solid #3a2810;"></canvas>
+                        <div style="font-family:'Cinzel',serif;font-size:10px;color:#a07838;margin-top:4px;">IDLE</div>
+                        <div style="font-family:'Cinzel',serif;font-size:9px;color:#5a3820;margin-top:2px;">Patrol breathing cycle</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <canvas id="sg-enemy-run" width="96" height="80" style="image-rendering:pixelated;background:rgba(0,0,0,0.3);border-radius:4px;border:1px solid #3a2810;"></canvas>
+                        <div style="font-family:'Cinzel',serif;font-size:10px;color:#a07838;margin-top:4px;">RUN / CHASE</div>
+                        <div style="font-family:'Cinzel',serif;font-size:9px;color:#5a3820;margin-top:2px;">Triggers when player in range</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <canvas id="sg-enemy-attack" width="96" height="80" style="image-rendering:pixelated;background:rgba(0,0,0,0.3);border-radius:4px;border:1px solid #3a2810;"></canvas>
+                        <div style="font-family:'Cinzel',serif;font-size:10px;color:#a07838;margin-top:4px;">ATTACK</div>
+                        <div style="font-family:'Cinzel',serif;font-size:9px;color:#5a3820;margin-top:2px;">Deals 5 damage per hit</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <canvas id="sg-enemy-hurt" width="96" height="80" style="image-rendering:pixelated;background:rgba(0,0,0,0.3);border-radius:4px;border:1px solid #3a2810;"></canvas>
+                        <div style="font-family:'Cinzel',serif;font-size:10px;color:#ff8888;margin-top:4px;">HURT</div>
+                        <div style="font-family:'Cinzel',serif;font-size:9px;color:#5a3820;margin-top:2px;">Flash on hit · 3 hits to defeat</div>
+                    </div>
+                </div>
+                <div style="font-family:'Cinzel',serif;font-size:10px;color:#5a3820;margin-top:10px;line-height:1.6;">Enemies use a state machine: <b style="color:#8a6030;">patrol → chase → attack → hurt</b>. The current animation state is switched by the AI logic every frame, and the sprite sheet for that state is drawn. Enemies auto-flip based on their velocity direction.</div>
+            </div>
+
+            <!-- BOSS SPRITES -->
+            <div style="width:100%;background:rgba(20,5,40,0.3);border:1px solid #6a3a9a;border-radius:6px;padding:16px 20px;">
+                <div style="font-family:'Cinzel',serif;font-size:11px;letter-spacing:3px;color:#cc88ff;text-transform:uppercase;border-bottom:1px solid #4a2870;padding-bottom:6px;margin-bottom:14px;">☠ Boss — The Void-Warden</div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;">
+                    <div style="text-align:center;">
+                        <canvas id="sg-boss-idle" width="96" height="80" style="image-rendering:pixelated;background:rgba(10,0,20,0.5);border-radius:4px;border:1px solid #4a2870;"></canvas>
+                        <div style="font-family:'Cinzel',serif;font-size:10px;color:#cc88ff;margin-top:4px;">IDLE / WALK</div>
+                        <div style="font-family:'Cinzel',serif;font-size:9px;color:#7a5890;margin-top:2px;">Phase 1 — 750 HP</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <canvas id="sg-boss-run" width="96" height="80" style="image-rendering:pixelated;background:rgba(10,0,20,0.5);border-radius:4px;border:1px solid #4a2870;"></canvas>
+                        <div style="font-family:'Cinzel',serif;font-size:10px;color:#cc88ff;margin-top:4px;">RUN / ENRAGE</div>
+                        <div style="font-family:'Cinzel',serif;font-size:9px;color:#7a5890;margin-top:2px;">Phase 2 at 50% HP — faster</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <canvas id="sg-boss-attack" width="96" height="80" style="image-rendering:pixelated;background:rgba(10,0,20,0.5);border-radius:4px;border:1px solid #4a2870;"></canvas>
+                        <div style="font-family:'Cinzel',serif;font-size:10px;color:#ff8888;margin-top:4px;">ATTACK</div>
+                        <div style="font-family:'Cinzel',serif;font-size:9px;color:#7a5890;margin-top:2px;">12–20 dmg · melee + projectile</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <canvas id="sg-boss-hurt" width="96" height="80" style="image-rendering:pixelated;background:rgba(10,0,20,0.5);border-radius:4px;border:1px solid #4a2870;"></canvas>
+                        <div style="font-family:'Cinzel',serif;font-size:10px;color:#ffaa44;margin-top:4px;">GET HIT</div>
+                        <div style="font-family:'Cinzel',serif;font-size:9px;color:#7a5890;margin-top:2px;">Brief stagger on damage</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <canvas id="sg-boss-death" width="96" height="80" style="image-rendering:pixelated;background:rgba(10,0,20,0.5);border-radius:4px;border:1px solid #4a2870;"></canvas>
+                        <div style="font-family:'Cinzel',serif;font-size:10px;color:#ff6644;margin-top:4px;">DEATH</div>
+                        <div style="font-family:'Cinzel',serif;font-size:9px;color:#7a5890;margin-top:2px;">Triggers speech + arena collapse</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <canvas id="sg-boss-proj" width="96" height="80" style="image-rendering:pixelated;background:rgba(10,0,20,0.5);border-radius:4px;border:1px solid #4a2870;"></canvas>
+                        <div style="font-family:'Cinzel',serif;font-size:10px;color:#cc88ff;margin-top:4px;">PROJECTILE</div>
+                        <div style="font-family:'Cinzel',serif;font-size:9px;color:#7a5890;margin-top:2px;">Moving void orb · homing</div>
+                    </div>
+                </div>
+                <div style="font-family:'Cinzel',serif;font-size:10px;color:#6a4880;margin-top:10px;line-height:1.6;">The Void-Warden has a 2-phase system. At 50% HP a <b style="color:#aa77dd;">phase transition fires</b>: speed multiplies, attack rate increases, and the boss roar SFX + screen rumble trigger. The projectile sprite (Moving.png) is a separate entity that travels at a fixed velocity toward the player.</div>
+            </div>
+
+            <!-- DRAGON PET -->
+            <div style="width:100%;background:rgba(40,10,0,0.3);border:1px solid #8a4020;border-radius:6px;padding:16px 20px;">
+                <div style="font-family:'Cinzel',serif;font-size:11px;letter-spacing:3px;color:#ff8800;text-transform:uppercase;border-bottom:1px solid #5a2810;padding-bottom:6px;margin-bottom:14px;">🔥 Companion — Fire Dragon</div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;">
+                    <div style="text-align:center;">
+                        <canvas id="sg-dragon-idle" width="96" height="80" style="image-rendering:pixelated;background:rgba(20,5,0,0.5);border-radius:4px;border:1px solid #5a2810;"></canvas>
+                        <div style="font-family:'Cinzel',serif;font-size:10px;color:#ff8800;margin-top:4px;">IDLE</div>
+                        <div style="font-family:'Cinzel',serif;font-size:9px;color:#7a4020;margin-top:2px;">Hover bob while following</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <canvas id="sg-dragon-fly" width="96" height="80" style="image-rendering:pixelated;background:rgba(20,5,0,0.5);border-radius:4px;border:1px solid #5a2810;"></canvas>
+                        <div style="font-family:'Cinzel',serif;font-size:10px;color:#ff8800;margin-top:4px;">FLYING</div>
+                        <div style="font-family:'Cinzel',serif;font-size:9px;color:#7a4020;margin-top:2px;">Wing flap while moving</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <canvas id="sg-dragon-attack" width="96" height="80" style="image-rendering:pixelated;background:rgba(20,5,0,0.5);border-radius:4px;border:1px solid #5a2810;"></canvas>
+                        <div style="font-family:'Cinzel',serif;font-size:10px;color:#ffaa00;margin-top:4px;">ATTACK</div>
+                        <div style="font-family:'Cinzel',serif;font-size:9px;color:#7a4020;margin-top:2px;">Fires projectile.png toward enemy</div>
+                    </div>
+                </div>
+                <div style="font-family:'Cinzel',serif;font-size:10px;color:#6a3810;margin-top:10px;line-height:1.6;">The Fire Dragon is purchased for 100g from the Marketplace. It orbits ~80px behind the player, auto-targeting the nearest enemy. The fireball (<b style="color:#cc7720;">projectile.png</b>) is spawned at the dragon's position and travels in a straight line. The dragon cannot die and follows into the Boss Arena.</div>
+            </div>
+
+            <!-- NPC / PORTAL -->
+            <div style="width:100%;background:rgba(255,255,255,0.02);border:1px solid #4a3820;border-radius:6px;padding:16px 20px;">
+                <div style="font-family:'Cinzel',serif;font-size:11px;letter-spacing:3px;color:#c8a040;text-transform:uppercase;border-bottom:1px solid #3a2810;padding-bottom:6px;margin-bottom:14px;">🌀 NPCs &amp; Portal</div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;">
+                    <div style="text-align:center;">
+                        <canvas id="sg-npc-idle" width="96" height="80" style="image-rendering:pixelated;background:rgba(0,0,0,0.3);border-radius:4px;border:1px solid #3a2810;"></canvas>
+                        <div style="font-family:'Cinzel',serif;font-size:10px;color:#a07838;margin-top:4px;">ZEPHIRA / KAEL</div>
+                        <div style="font-family:'Cinzel',serif;font-size:9px;color:#5a3820;margin-top:2px;">Press F to interact · holds lore password</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <canvas id="sg-portal" width="96" height="96" style="image-rendering:pixelated;background:rgba(0,0,10,0.4);border-radius:4px;border:1px solid #3a2870;"></canvas>
+                        <div style="font-family:'Cinzel',serif;font-size:10px;color:#aa88ff;margin-top:4px;">DIMENSIONAL PORTAL</div>
+                        <div style="font-family:'Cinzel',serif;font-size:9px;color:#5a4880;margin-top:2px;">Enter after 6+ objectives done</div>
+                    </div>
+                </div>
+                <div style="font-family:'Cinzel',serif;font-size:10px;color:#5a3820;margin-top:10px;line-height:1.6;">The Dimensional Portal (Dimensional_Portal.png) is a looped sprite sheet that spins continuously. It spawns once 6+ story objectives are completed. The NPC (Idle2.png) stands still and triggers a dialogue box when the player presses F within proximity range.</div>
+            </div>
+
+            <!-- TRAPS -->
+            <div style="width:100%;background:rgba(255,255,255,0.02);border:1px solid #5a3820;border-radius:6px;padding:16px 20px;">
+                <div style="font-family:'Cinzel',serif;font-size:11px;letter-spacing:3px;color:#c8a040;text-transform:uppercase;border-bottom:1px solid #3a2810;padding-bottom:6px;margin-bottom:14px;">⚠ Traps</div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;">
+                    <div style="text-align:center;">
+                        <canvas id="sg-trap-fire" width="96" height="72" style="image-rendering:pixelated;background:rgba(10,0,0,0.4);border-radius:4px;border:1px solid #5a2810;"></canvas>
+                        <div style="font-family:'Cinzel',serif;font-size:10px;color:#ff6622;margin-top:4px;">FIRE TRAP</div>
+                        <div style="font-family:'Cinzel',serif;font-size:9px;color:#5a3820;margin-top:2px;">Continuous burn · 1 dmg/frame on contact</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <canvas id="sg-trap-arrow" width="96" height="72" style="image-rendering:pixelated;background:rgba(0,0,0,0.3);border-radius:4px;border:1px solid #3a2810;"></canvas>
+                        <div style="font-family:'Cinzel',serif;font-size:10px;color:#c8a040;margin-top:4px;">ARROW TRAP</div>
+                        <div style="font-family:'Cinzel',serif;font-size:9px;color:#5a3820;margin-top:2px;">Shoots projectile every 90 frames</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <canvas id="sg-trap-spike" width="96" height="72" style="image-rendering:pixelated;background:rgba(0,0,0,0.3);border-radius:4px;border:1px solid #3a2810;"></canvas>
+                        <div style="font-family:'Cinzel',serif;font-size:10px;color:#888888;margin-top:4px;">SPIKE TRAP</div>
+                        <div style="font-family:'Cinzel',serif;font-size:9px;color:#5a3820;margin-top:2px;">Static hazard · instant 10 dmg on touch</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <canvas id="sg-blood" width="80" height="80" style="image-rendering:pixelated;background:rgba(10,0,0,0.5);border-radius:4px;border:1px solid #5a1810;"></canvas>
+                        <div style="font-family:'Cinzel',serif;font-size:10px;color:#ff4444;margin-top:4px;">BLOOD FX</div>
+                        <div style="font-family:'Cinzel',serif;font-size:9px;color:#5a1810;margin-top:2px;">100x100px · 5-frame burst on hit</div>
+                    </div>
+                </div>
+                <div style="font-family:'Cinzel',serif;font-size:10px;color:#5a3820;margin-top:10px;line-height:1.6;">Traps are placed at fixed intervals by the level generator. The Fire trap (Fire.png) loops endlessly. The Arrow trap (Shooter_Arrow_Trap.png) fires a projectile entity on a timer. Spikes (Trap_Spike.png) are static — no animation, damage on overlap. Blood (5_100x100px.png) is a 5-frame one-shot effect spawned at hit position.</div>
+            </div>
+
+            <!-- ENVIRONMENT -->
+            <div style="width:100%;background:rgba(255,255,255,0.02);border:1px solid #4a3820;border-radius:6px;padding:16px 20px;">
+                <div style="font-family:'Cinzel',serif;font-size:11px;letter-spacing:3px;color:#c8a040;text-transform:uppercase;border-bottom:1px solid #3a2810;padding-bottom:6px;margin-bottom:14px;">🏔 Environment &amp; Arena</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div>
+                        <div style="font-family:'Cinzel',serif;font-size:10px;color:#a07838;margin-bottom:6px;letter-spacing:2px;">MAIN WORLD</div>
+                        <div style="font-family:'Cinzel',serif;font-size:10px;color:#6a4820;line-height:2;">
+                            <b style="color:#8a6030;">Background</b> — adventurer background.png · Parallax scrolling bg layer<br>
+                            <b style="color:#8a6030;">Platforms</b> — Platforms rocks.png · Tiled platform tiles<br>
+                            <b style="color:#8a6030;">Items Sheet</b> — coins-chests-etc-2-0.png · Coins, chests, artifacts cut from one sheet
+                        </div>
+                    </div>
+                    <div>
+                        <div style="font-family:'Cinzel',serif;font-size:10px;color:#a07838;margin-bottom:6px;letter-spacing:2px;">BOSS ARENA</div>
+                        <div style="font-family:'Cinzel',serif;font-size:10px;color:#6a4820;line-height:2;">
+                            <b style="color:#8a6030;">Back</b> — back.png · Full arena background<br>
+                            <b style="color:#8a6030;">Platform</b> — platform-long.png · Fight floor<br>
+                            <b style="color:#8a6030;">Props</b> — rock-1, rock-2, skulls, spikes, bush, tree, palm, big-crate, sign, tree-house · Decorative depth layers<br>
+                            <b style="color:#8a6030;">Market</b> — wooden-house.png · Marketplace building
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- UI SPRITES -->
+            <div style="width:100%;background:rgba(255,255,255,0.02);border:1px solid #4a3820;border-radius:6px;padding:16px 20px;">
+                <div style="font-family:'Cinzel',serif;font-size:11px;letter-spacing:3px;color:#c8a040;text-transform:uppercase;border-bottom:1px solid #3a2810;padding-bottom:6px;margin-bottom:14px;">🖼 UI Sprite Sheets</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-family:'Cinzel',serif;font-size:10px;color:#6a4820;line-height:1.9;">
+                    <div><b style="color:#8a6030;">HealthBarPanel_160x41</b> — HUD health bar frame</div>
+                    <div><b style="color:#8a6030;">ValueRed_120x8</b> — Red fill inside health bar</div>
+                    <div><b style="color:#8a6030;">ValueBar_128x16</b> — HP bar backing track</div>
+                    <div><b style="color:#8a6030;">CoinIcon_16x18</b> — Coin counter icon</div>
+                    <div><b style="color:#8a6030;">HotkeyBox_34x34</b> — Artifact hotkey slot background</div>
+                    <div><b style="color:#8a6030;">CharacterBox_56x57</b> — HUD character portrait frame</div>
+                    <div><b style="color:#8a6030;">HeartIcons_32x32</b> — HP heart icon sprites</div>
+                    <div><b style="color:#8a6030;">AttributesIcons_17x17</b> — Stat attribute icons</div>
+                    <div><b style="color:#8a6030;">HighlightButton_60x23</b> — Active/hover button state</div>
+                    <div><b style="color:#8a6030;">Button_52x14</b> — Standard UI button sprite</div>
+                    <div><b style="color:#8a6030;">CornerKnot_14x14</b> — UI panel corner decoration</div>
+                    <div><b style="color:#8a6030;">QuitIcon</b> — Pause menu quit icon</div>
+                    <div><b style="color:#8a6030;">TopPatternBG / BottomPatternBG</b> — HUD pattern backgrounds</div>
+                    <div><b style="color:#8a6030;">RectangleBox_96x96</b> — Tooltip / info panel box</div>
+                </div>
+                <div style="font-family:'Cinzel',serif;font-size:10px;color:#5a3820;margin-top:10px;line-height:1.6;">All UI sprites are drawn directly onto the game canvas via <b style="color:#8a6030;">ctx.drawImage()</b> at fixed HUD coordinates, scaled up 2–3x from their original pixel dimensions. They never animate — they're static pixel-art frames placed as overlays on top of the game world.</div>
+            </div>
+
+            <div style="font-family:'Cinzel',serif;font-size:10px;color:#4a3020;letter-spacing:2px;text-align:center;margin-top:4px;">All sprites sourced from <b style="color:#7a5830;">github.com/precidoboss/adventurer</b> · Integrated by <b style="color:#9966cc;">@PRECIDOBOS</b></div>
+
+            <div class="stone-btn secondary" style="margin-top:16px" onclick="showView('home-main')">
                 <div class="stone-btn-inner">← Back</div>
             </div>
         </div>
@@ -1132,19 +1314,17 @@
     const totalAssets = Object.keys(ASSETS).length;
 
     function loadAssets(callback) {
-        function onDone() {
-            assetsLoaded++;
-            if (assetsLoaded === totalAssets) {
-                loadingEl.style.display = 'none';
-                callback();
-            }
-        }
         for (let key in ASSETS) {
             images[key] = new Image();
             images[key].crossOrigin = "anonymous";
             images[key].src = ASSETS[key];
-            images[key].onload = onDone;
-            images[key].onerror = onDone;
+            images[key].onload = () => {
+                assetsLoaded++;
+                if (assetsLoaded === totalAssets) {
+                    loadingEl.style.display = 'none';
+                    callback();
+                }
+            };
         }
     }
 
@@ -5274,14 +5454,6 @@
         document.querySelectorAll('.home-view').forEach(v => v.classList.remove('active'));
         const el = document.getElementById(id);
         if (el) el.classList.add('active');
-        if (id === 'home-assets' && window._populateAssetsPage) {
-            const g = document.getElementById('assets-grid');
-            if (g) {
-                g.innerHTML = ''; // always repopulate so ticker restarts fresh
-                window._assetAnimators = [];
-                window._populateAssetsPage();
-            }
-        }
     };
 
     ;(function() {
@@ -5330,6 +5502,40 @@
             animateSpriteOnCanvas('howto-dragon-canvas','dragon_fly',  4,  6);
         }
         tryStartSprites();
+
+        // ---- Sprite Gallery animations ----
+        function tryStartGallerySprites() {
+            if (assetsLoaded < totalAssets) { setTimeout(tryStartGallerySprites, 300); return; }
+            // Player sprites
+            animateSpriteOnCanvas('sg-hero-idle',     'idle_right',    8,  10);
+            animateSpriteOnCanvas('sg-hero-run',      'run_right',     8,   7);
+            animateSpriteOnCanvas('sg-hero-attack',   'attack_right',  4,   8);
+            // Enemy sprites
+            animateSpriteOnCanvas('sg-enemy-idle',    'enemy_idle',   10,  10);
+            animateSpriteOnCanvas('sg-enemy-run',     'enemy_run',    16,   5);
+            animateSpriteOnCanvas('sg-enemy-attack',  'enemy_attack',  6,   8);
+            animateSpriteOnCanvas('sg-enemy-hurt',    'enemy_hurt',    3,  10);
+            // Boss sprites
+            animateSpriteOnCanvas('sg-boss-idle',     'boss_idle',     9,   8);
+            animateSpriteOnCanvas('sg-boss-run',      'boss_run',      8,   6);
+            animateSpriteOnCanvas('sg-boss-attack',   'boss_attack',   8,   7);
+            animateSpriteOnCanvas('sg-boss-hurt',     'boss_hurt',     4,   8);
+            animateSpriteOnCanvas('sg-boss-death',    'boss_death',    9,   8);
+            animateSpriteOnCanvas('sg-boss-proj',     'boss_proj',     8,   8);
+            // Dragon sprites
+            animateSpriteOnCanvas('sg-dragon-idle',   'dragon_idle',   4,   8);
+            animateSpriteOnCanvas('sg-dragon-fly',    'dragon_fly',    4,   6);
+            animateSpriteOnCanvas('sg-dragon-attack', 'dragon_attack', 4,   7);
+            // NPC & Portal
+            animateSpriteOnCanvas('sg-npc-idle',      'npc_idle',     10,   8);
+            animateSpriteOnCanvas('sg-portal',        'portal_sheet', 8,    7);
+            // Traps
+            animateSpriteOnCanvas('sg-trap-fire',     'trap_fire',     4,   8);
+            animateSpriteOnCanvas('sg-trap-arrow',    'trap_arrow',    3,  12);
+            animateSpriteOnCanvas('sg-trap-spike',    'trap_spike',    1,  60);
+            animateSpriteOnCanvas('sg-blood',         'blood_sheet',   5,   6);
+        }
+        tryStartGallerySprites();
 
         // ---- Falling rock dust particles ----
         const dustParts = [];
@@ -5487,235 +5693,6 @@
         }
         window.animateHome();
 
-
-    // ===== ASSETS PAGE POPULATION =====
-    window._populateAssetsPage = function() {
-        const grid = document.getElementById('assets-grid');
-        if (!grid) return;
-        grid.innerHTML = '';
-
-        const SPRITE_CATALOG = [
-            // Characters
-            { label:'Warrior — Idle (Right)', key:'idle_right',    frames:8,  fps:10, w:130, h:120, category:'Character', desc:'The player hero at rest, facing right. 8-frame loop drawn each tick via drawSprite().' },
-            { label:'Warrior — Idle (Left)',  key:'idle_left',     frames:8,  fps:10, w:130, h:120, category:'Character', desc:'Mirror of idle_right. Swapped in when player.facing === "left".' },
-            { label:'Warrior — Run (Right)',  key:'run_right',     frames:8,  fps:7,  w:130, h:120, category:'Character', desc:'Plays when player.vx > 0.5 and moving right. Cycles faster than idle.' },
-            { label:'Warrior — Run (Left)',   key:'run_left',      frames:8,  fps:7,  w:130, h:120, category:'Character', desc:'Mirror run animation for left movement.' },
-            { label:'Warrior — Attack (R)',   key:'attack_right',  frames:8,  fps:5,  w:130, h:120, category:'Character', desc:'Plays on K/Space press. Frames 3–5 are the active hit window that deal damage to enemies.' },
-            { label:'Warrior — Attack (L)',   key:'attack_left',   frames:8,  fps:5,  w:130, h:120, category:'Character', desc:'Left-facing attack. Same hit window frames 3–5.' },
-            // Enemies
-            { label:'Guardian — Idle',        key:'enemy_idle',    frames:10, fps:10, w:160, h:160, category:'Enemy', desc:'10-frame idle loop. Enemy stands at rest when player is out of 450px aggro range.' },
-            { label:'Guardian — Run',         key:'enemy_run',     frames:16, fps:5,  w:160, h:160, category:'Enemy', desc:'16-frame run used when chasing player. Fastest enemy animation.' },
-            { label:'Guardian — Attack',      key:'enemy_attack',  frames:7,  fps:6,  w:160, h:160, category:'Enemy', desc:'7-frame strike. Damage is applied at the last frame of the cycle.' },
-            { label:'Guardian — Hurt',        key:'enemy_hurt',    frames:4,  fps:7,  w:160, h:160, category:'Enemy', desc:'Plays for 18 frames after taking damage. Enemy is briefly immune to attack stacking.' },
-            // Boss
-            { label:'Void-Warden — Idle',     key:'boss_idle',     frames:9,  fps:8,  w:200, h:200, category:'Boss', desc:'9-frame loop. Boss breathes in this state when patrolling or at a distance.' },
-            { label:'Void-Warden — Walk',     key:'boss_walk',     frames:8,  fps:8,  w:200, h:200, category:'Boss', desc:'Slow approach animation when player is beyond 300px.' },
-            { label:'Void-Warden — Run',      key:'boss_run',      frames:8,  fps:6,  w:200, h:200, category:'Boss', desc:'Faster charge used in Phase 2 (below 50% HP).' },
-            { label:'Void-Warden — Attack',   key:'boss_attack',   frames:13, fps:5,  w:200, h:200, category:'Boss', desc:'Melee strike. Deals 12 DMG (Phase 1) or 20 DMG (Phase 2). Ancient Core halves this.' },
-            { label:'Void-Warden — Hurt',     key:'boss_hurt',     frames:3,  fps:7,  w:200, h:200, category:'Boss', desc:'3-frame flinch on hit. Brief recovery window for the player.' },
-            { label:'Void-Warden — Death',    key:'boss_death',    frames:19, fps:6,  w:200, h:200, category:'Boss', desc:'19-frame death plays then triggers the arena collapse cinematic.' },
-            { label:'Void-Warden — Jump',     key:'boss_jump',     frames:9,  fps:7,  w:200, h:200, category:'Boss', desc:'Occasional leap. Triggered randomly when grounded in boss AI.' },
-            { label:'Boss Projectile',        key:'boss_proj',     frames:4,  fps:6,  w:60,  h:40,  category:'Boss', desc:'4-frame fireball shot at the player from range. Deals 10 DMG (5 with Ancient Core).' },
-            // NPC
-            { label:'Zephira / Sentinel Kael', key:'npc_idle',     frames:10, fps:8,  w:120, h:120, category:'NPC', desc:'Shared NPC sprite. Tinted blue for Sentinel Kael. Stands on a platform until approached.' },
-            // Dragon
-            { label:'Fire Dragon — Idle',     key:'dragon_idle',   frames:4,  fps:10, w:64,  h:64,  category:'Companion', desc:'4-frame idle hover. Shows when dragon is close to player position.' },
-            { label:'Fire Dragon — Fly',      key:'dragon_fly',    frames:4,  fps:7,  w:64,  h:64,  category:'Companion', desc:'Flying loop. Active when dragon is moving toward target offset position.' },
-            { label:'Fire Dragon — Attack',   key:'dragon_attack', frames:8,  fps:5,  w:64,  h:64,  category:'Companion', desc:'8-frame fire breath. Triggers when fireCooldown hits 0 and an enemy is within 600px.' },
-            // Environment
-            { label:'Background Scroll',      key:'background',    frames:1,  fps:0,  w:960, h:540, category:'Environment', desc:'Wide parallax background. Scrolls at 0.3× player speed for depth effect.' },
-            { label:'Platform Tiles',         key:'platforms',     frames:1,  fps:0,  w:300, h:300, category:'Environment', desc:'Sprite sheet sliced into 3 platform types. Each platform randomly picks a slice on spawn.' },
-            { label:'Arena Background',       key:'arena_back',    frames:1,  fps:0,  w:960, h:540, category:'Environment', desc:'Boss arena static background replacing the parallax scroll during the boss fight.' },
-            { label:'Arena Platform',         key:'arena_platform',frames:1,  fps:0,  w:200, h:40,  category:'Environment', desc:'Tiled platform texture used on all boss arena platforms.' },
-            { label:'Arena Rock 1',           key:'arena_rock1',   frames:1,  fps:0,  w:64,  h:50,  category:'Environment', desc:'Decorative boulder placed throughout the boss arena.' },
-            { label:'Arena Rock 2',           key:'arena_rock2',   frames:1,  fps:0,  w:70,  h:46,  category:'Environment', desc:'Second rock variant for visual variety in the arena.' },
-            { label:'Arena Tree',             key:'arena_tree',    frames:1,  fps:0,  w:120, h:190, category:'Environment', desc:'Dead tree decoration in the boss arena.' },
-            { label:'Arena Palm',             key:'arena_palm',    frames:1,  fps:0,  w:80,  h:180, category:'Environment', desc:'Palm tree placed at arena edges.' },
-            { label:'Arena Tree House',       key:'arena_treehouse',frames:1, fps:0,  w:180, h:230, category:'Environment', desc:'Mid-arena landmark decoration.' },
-            { label:'Arena Skulls',           key:'arena_skulls',  frames:1,  fps:0,  w:60,  h:36,  category:'Environment', desc:'Skull pile decoration scattered across arena floor.' },
-            { label:'Arena Spikes',           key:'arena_spikes',  frames:1,  fps:0,  w:56,  h:30,  category:'Environment', desc:'Visual hazard decoration — non-damaging in boss arena.' },
-            { label:'Arena Crate',            key:'arena_crate',   frames:1,  fps:0,  w:52,  h:52,  category:'Environment', desc:'Breakable-looking crate decoration.' },
-            { label:'Arena Bush',             key:'arena_bush',    frames:1,  fps:0,  w:60,  h:36,  category:'Environment', desc:'Bush foliage placed throughout the arena.' },
-            { label:'Arena Sign',             key:'arena_sign',    frames:1,  fps:0,  w:44,  h:54,  category:'Environment', desc:'Sign at the arena entrance.' },
-            { label:'Market House',           key:'market_house',  frames:1,  fps:0,  w:100, h:120, category:'Environment', desc:'The wooden house that appears as the Artifact Marketplace at 80% objectives.' },
-            { label:'Dimensional Portal',     key:'portal_sheet',  frames:6,  fps:8,  w:96,  h:64,  category:'Environment', desc:'6-frame portal animation (3 cols × 2 rows, 32×32 each). Appears when all objectives done.' },
-            // Traps
-            { label:'Trap — Fire',            key:'trap_fire',     frames:4,  fps:8,  w:40,  h:28,  category:'Trap', desc:'4-frame fire animation. Deals 5 DMG on contact. Blocked by Fire Feather shield.' },
-            { label:'Trap — Spike',           key:'trap_spike',    frames:5,  fps:12, w:48,  h:32,  category:'Trap', desc:'5-frame spike. Deals 5 DMG on contact. Appears on wide platforms past x=600.' },
-            { label:'Trap — Arrow Shooter',   key:'trap_arrow',    frames:6,  fps:15, w:32,  h:32,  category:'Trap', desc:'Fires a 7-DMG arrow left every 6 seconds. Placed at right edges of wide platforms.' },
-            // Items
-            { label:'Coins &amp; Chests',     key:'items',         frames:1,  fps:0,  w:60,  h:60,  category:'Items', desc:'Item sprite sheet. Coins use slice (16,16,16,16) — worth 1 gold. Chests use (16,560,32,32) — worth 10 gold and spawn a random artifact animation.' },
-            // Blood
-            { label:'Blood Splat Sheet',      key:'blood_sheet',   frames:30, fps:15, w:100, h:100, category:'VFX', desc:'30-frame blood splat (6 cols × 5 rows, 100×100 each). Spawns at enemy hit point on sword contact.' },
-            // UI
-            { label:'UI — Health Bar Panel',  key:'ui_healthbar',  frames:1,  fps:0,  w:160, h:41,  category:'UI', desc:'Health bar container drawn in the top-left HUD. Stretches to fit HP value.' },
-            { label:'UI — HP Fill (Red)',      key:'ui_valuered',   frames:1,  fps:0,  w:120, h:8,   category:'UI', desc:'Red fill bar drawn inside the health bar proportional to current HP.' },
-            { label:'UI — HP Bar Track',      key:'ui_valuebar',   frames:1,  fps:0,  w:128, h:16,  category:'UI', desc:'Background track of the HP bar.' },
-            { label:'UI — Coin Icon',         key:'ui_coinicon',   frames:1,  fps:0,  w:16,  h:18,  category:'UI', desc:'Gold coin icon displayed next to coin count in HUD and marketplace.' },
-            { label:'UI — Title Box',         key:'ui_titlebox',   frames:1,  fps:0,  w:64,  h:16,  category:'UI', desc:'Used for distance and timer panels in the top-left HUD.' },
-            { label:'UI — Top Pattern BG',    key:'ui_topbg',      frames:1,  fps:0,  w:116, h:67,  category:'UI', desc:'Tiled decorative border at the top of the home screen canvas.' },
-            { label:'UI — Bottom Pattern BG', key:'ui_bottombg',   frames:1,  fps:0,  w:128, h:112, category:'UI', desc:'Tiled decorative border at the bottom of the home screen canvas.' },
-            { label:'UI — Corner Knot',       key:'ui_cornerknot', frames:1,  fps:0,  w:14,  h:14,  category:'UI', desc:'Decorative corner element used on HUD panels and home screen.' },
-            { label:'UI — Hotkey Box',        key:'ui_hotkeybox',  frames:1,  fps:0,  w:34,  h:34,  category:'UI', desc:'Key cap image used in the How to Play controls reference.' },
-            { label:'UI — Highlight Button',  key:'ui_hlbutton',   frames:1,  fps:0,  w:60,  h:23,  category:'UI', desc:'Highlighted button sprite used in marketplace selected state.' },
-            { label:'UI — Highlight Slot',    key:'ui_hlslot',     frames:1,  fps:0,  w:26,  h:26,  category:'UI', desc:'Selected slot highlight in the artifact market grid.' },
-            { label:'UI — Left Arrow',        key:'ui_larrow',     frames:1,  fps:0,  w:7,   h:10,  category:'UI', desc:'Marketplace page left navigation arrow.' },
-            { label:'UI — Right Arrow',       key:'ui_rarrow',     frames:1,  fps:0,  w:7,   h:10,  category:'UI', desc:'Marketplace page right navigation arrow.' },
-            { label:'UI — Char Box',          key:'ui_charbox',    frames:1,  fps:0,  w:56,  h:57,  category:'UI', desc:'Character portrait frame in the HUD.' },
-            { label:'UI — Pipe',              key:'ui_pipe',       frames:1,  fps:0,  w:36,  h:11,  category:'UI', desc:'Decorative pipe used along the bottom of the home screen.' },
-            { label:'UI — Attr Bar',          key:'ui_attrbar',    frames:1,  fps:0,  w:41,  h:9,   category:'UI', desc:'Attribute bar used for stat display.' },
-            { label:'UI — Heart Icons',       key:'ui_hearticons', frames:1,  fps:0,  w:32,  h:32,  category:'UI', desc:'Heart icon sheet for HP visual indicators.' },
-            { label:'UI — Top Mid BG',        key:'ui_topmidBG',   frames:1,  fps:0,  w:199, h:48,  category:'UI', desc:'Middle top decorative background strip.' },
-            { label:'UI — Rect Box',          key:'ui_rectbox',    frames:1,  fps:0,  w:96,  h:96,  category:'UI', desc:'Generic rectangle panel box.' },
-            { label:'UI — Quit Icon',         key:'ui_quiticon',   frames:1,  fps:0,  w:20,  h:20,  category:'UI', desc:'Quit/close icon for the pause menu.' },
-            // Artifacts
-            { label:'Artifact — Iron Helm',   key:null, src:'https://raw.githubusercontent.com/precidoboss/adventurer/main/Icon4.png', frames:1, fps:0, w:44, h:44, category:'Artifact', desc:'[1] Iron Helm. +1 Max HP per pickup. Passive — applies instantly on collection from chest or marketplace.' },
-            { label:'Artifact — Shadow Berries',key:null, src:'https://raw.githubusercontent.com/precidoboss/adventurer/main/Icon2.png', frames:1, fps:0, w:44, h:44, category:'Artifact', desc:'[2] Shadow Berries. Restores 5 HP instantly on pickup. Passive. Max purchases limited by HP deficit.' },
-            { label:'Artifact — Mana Crystal', key:null, src:'https://raw.githubusercontent.com/precidoboss/adventurer/main/Icon3.png', frames:1, fps:0, w:44, h:44, category:'Artifact', desc:'[3] Mana Crystal. +1 to player.attackDmg permanently. Passive.' },
-            { label:'Artifact — Fire Feather', key:null, src:'https://raw.githubusercontent.com/precidoboss/adventurer/main/Icon1.png', frames:1, fps:0, w:44, h:44, category:'Artifact', desc:'[4] Fire Feather. Active — press 4. Activates fireShield for 600 frames (10 seconds), blocking trap damage.' },
-            { label:'Artifact — Ancient Core', key:null, src:'https://raw.githubusercontent.com/precidoboss/adventurer/main/Icon5.png', frames:1, fps:0, w:44, h:44, category:'Artifact', desc:'[5] Ancient Core. Active — press 5 during boss fight. Permanently halves boss attack damage. One use.' },
-        ];
-
-        const categoryColors = {
-            Character:'#4488ff', Enemy:'#ff4444', Boss:'#cc0033', NPC:'#cc88ff',
-            Companion:'#ff8800', Environment:'#44aa66', Trap:'#ff6600',
-            Items:'#ffd700', VFX:'#ff44ff', UI:'#aaaaaa', Artifact:'#ffcc00'
-        };
-
-        SPRITE_CATALOG.forEach(asset => {
-            const card = document.createElement('div');
-            card.dataset.cat = asset.category;
-            card.style.cssText = 'background:rgba(255,255,255,0.02);border:1px solid #3a2810;border-radius:6px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px;';
-
-            // Category badge
-            const badge = document.createElement('div');
-            const col = categoryColors[asset.category] || '#888';
-            badge.style.cssText = `font-family:'Cinzel',serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:${col};border:1px solid ${col}44;padding:2px 8px;border-radius:2px;align-self:flex-start;`;
-            badge.textContent = asset.category;
-            card.appendChild(badge);
-
-            // Canvas for animated preview
-            const cvs = document.createElement('canvas');
-            cvs.width  = Math.min(asset.w, 128);
-            cvs.height = Math.min(asset.h, 128);
-            cvs.style.cssText = 'image-rendering:pixelated;background:rgba(0,0,0,0.3);border-radius:3px;max-width:100%;';
-            card.appendChild(cvs);
-
-            // Label
-            const lbl = document.createElement('div');
-            lbl.style.cssText = "font-family:'Cinzel',serif;font-size:10px;color:#c0a060;text-align:center;letter-spacing:1px;";
-            lbl.innerHTML = asset.label;
-            card.appendChild(lbl);
-
-            // Dimensions
-            const dim = document.createElement('div');
-            dim.style.cssText = "font-family:'Cinzel',serif;font-size:9px;color:#5a4030;text-align:center;";
-            dim.textContent = asset.frames > 1 ? `${asset.frames} frames · ${asset.fps}fps` : 'Static';
-            card.appendChild(dim);
-
-            // Desc
-            const desc = document.createElement('div');
-            desc.style.cssText = "font-family:'Cinzel',serif;font-size:9px;color:#6a5040;line-height:1.5;text-align:center;";
-            desc.innerHTML = asset.desc;
-            card.appendChild(desc);
-
-            grid.appendChild(card);
-
-            // Animate the canvas
-            const ctx2 = cvs.getContext('2d');
-            const CW = cvs.width, CH = cvs.height;
-            let frame = 0, frameTimer = 0;
-            const spd = asset.fps > 0 ? Math.round(60 / asset.fps) : 999;
-
-            function drawAssetFrame(curFrame) {
-                if (curFrame === undefined) curFrame = frame;
-                ctx2.clearRect(0, 0, CW, CH);
-                let img = null;
-                if (asset.key && window._gameImages && window._gameImages[asset.key]) {
-                    img = window._gameImages[asset.key];
-                } else if (asset.src) {
-                    if (!asset._img) { asset._img = new Image(); asset._img.src = asset.src; }
-                    img = asset._img;
-                }
-                if (!img || !img.complete || !img.naturalWidth) return;
-                ctx2.imageSmoothingEnabled = false;
-
-                if (asset.frames <= 1) {
-                    // Static — scale to fit
-                    const sw = img.naturalWidth, sh = img.naturalHeight;
-                    const scale = Math.min(CW / sw, CH / sh);
-                    const dw = sw * scale, dh = sh * scale;
-                    ctx2.drawImage(img, 0, 0, sw, sh, (CW-dw)/2, (CH-dh)/2, dw, dh);
-                } else if (asset.key === 'portal_sheet') {
-                    // Portal: 3 cols x 2 rows grid, each cell 32x32
-                    const COLS = 3, FW = 32, FH = 32;
-                    const f = curFrame % 6;
-                    const col = f % COLS, row = Math.floor(f / COLS);
-                    const scale = Math.min(CW / FW, CH / FH);
-                    const dw = FW * scale, dh = FH * scale;
-                    ctx2.drawImage(img, col*FW, row*FH, FW, FH, (CW-dw)/2, (CH-dh)/2, dw, dh);
-                } else if (asset.key === 'blood_sheet') {
-                    // Blood: 6 cols x 5 rows, 100x100 each
-                    const COLS = 6, FW = 100, FH = 100;
-                    const f = curFrame % 30;
-                    const col = f % COLS, row = Math.floor(f / COLS);
-                    const scale = Math.min(CW / FW, CH / FH);
-                    const dw = FW * scale, dh = FH * scale;
-                    ctx2.drawImage(img, col*FW, row*FH, FW, FH, (CW-dw)/2, (CH-dh)/2, dw, dh);
-                } else {
-                    // Standard horizontal sprite strip
-                    const frameW = img.naturalWidth / asset.frames;
-                    const frameH = img.naturalHeight;
-                    const scale = Math.min(CW / frameW, CH / frameH);
-                    const dw = frameW * scale, dh = frameH * scale;
-                    ctx2.drawImage(img, curFrame * frameW, 0, frameW, frameH, (CW-dw)/2, (CH-dh)/2, dw, dh);
-                }
-            }
-
-            // Register with shared ticker instead of own rAF
-            window._assetAnimators = window._assetAnimators || [];
-            window._assetAnimators.push({ drawFrame: drawAssetFrame, frameTimer: [0], frame: [0], spd, frames: asset.frames });
-        });
-
-        // Single shared rAF ticker for ALL asset cards
-        let _assetRafId = null;
-        function _assetTick() {
-            // Stop if assets page is no longer visible
-            const assetsView = document.getElementById('home-assets');
-            if (!assetsView || !assetsView.classList.contains('active')) {
-                _assetRafId = null;
-                return;
-            }
-            (window._assetAnimators || []).forEach(a => {
-                a.frameTimer[0]++;
-                if (a.frameTimer[0] >= a.spd && a.spd < 999) {
-                    a.frame[0] = (a.frame[0] + 1) % a.frames;
-                    a.frameTimer[0] = 0;
-                }
-                a.drawFrame(a.frame[0]);
-            });
-            _assetRafId = requestAnimationFrame(_assetTick);
-        }
-        window._startAssetTicker = function() {
-            window._assetAnimators = []; // reset so cards re-register on re-open
-        };
-        // Kick ticker once populated
-        _assetRafId = requestAnimationFrame(_assetTick);
-    };
-
-    // Expose game images for asset page
-    window._gameImages = images;
-
-    // Asset page category filter
-    window.filterAssets = function(cat) {
-        document.querySelectorAll('#assets-filter .aq-lb-tab').forEach(b => b.classList.remove('active'));
-        const btn = document.getElementById('af-' + cat);
-        if (btn) btn.classList.add('active');
-        const cards = document.querySelectorAll('#assets-grid [data-cat]');
-        cards.forEach(card => {
-            card.style.display = (cat === 'all' || card.dataset.cat === cat) ? '' : 'none';
-        });
-    };
         window.startGame = function(mode) {
             window._gameMode = mode || 'endless';
             if(mode !== 'story' && window.AQ) AQ.startEndlessRun();
