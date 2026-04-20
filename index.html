@@ -118,6 +118,7 @@
             align-items: center; justify-content: center;
             overflow: hidden;
             background: #0d0a07;
+            width: 100vw; height: 100vh;
         }
         #home-canvas { position: absolute; inset: 0; width:100%; height:100%; }
 
@@ -143,7 +144,7 @@
         .stone-corner.br { bottom:0; right:0; clip-path: polygon(100% 0, 0 100%, 100% 100%); }
 
         /* View system */
-        .home-view { position:absolute; inset:0; display:none; align-items:center; justify-content:center; z-index:2; }
+        .home-view { position:absolute; inset:0; display:none; align-items:center; justify-content:center; z-index:2; overflow-y:auto; padding:20px 0; }
         .home-view.active { display:flex; }
 
         .home-content {
@@ -1131,17 +1132,19 @@
     const totalAssets = Object.keys(ASSETS).length;
 
     function loadAssets(callback) {
+        function onDone() {
+            assetsLoaded++;
+            if (assetsLoaded === totalAssets) {
+                loadingEl.style.display = 'none';
+                callback();
+            }
+        }
         for (let key in ASSETS) {
             images[key] = new Image();
             images[key].crossOrigin = "anonymous";
             images[key].src = ASSETS[key];
-            images[key].onload = () => {
-                assetsLoaded++;
-                if (assetsLoaded === totalAssets) {
-                    loadingEl.style.display = 'none';
-                    callback();
-                }
-            };
+            images[key].onload = onDone;
+            images[key].onerror = onDone;
         }
     }
 
